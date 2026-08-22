@@ -45,6 +45,7 @@ interface ImmichApi {
 data class UpdateAssetsRequest(
     val ids: List<String>,
     val isFavorite: Boolean? = null,
+    val rating: Int? = null,
     val visibility: String? = null // archive, timeline, hidden, locked
 )
 

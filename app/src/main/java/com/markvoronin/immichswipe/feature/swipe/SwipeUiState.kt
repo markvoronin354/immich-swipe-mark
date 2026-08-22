@@ -45,15 +45,19 @@ data class SwipeUiState(
     val isMuted: Boolean = false,
     val showFavoriteButton: Boolean = true,
     val autoNextOnFav: Boolean = false,
+    val autoNextOnRating: Boolean = false,
+    val isRatingMode: Boolean = false,
     val includeArchived: Boolean = false,
     val sortCategory: com.markvoronin.immichswipe.core.SortCategory = com.markvoronin.immichswipe.core.SortCategory.TIME,
     val sortOrder: SortOrder = SortOrder.CHRONOLOGICAL_DESC,
     val localFavorites: Map<String, Boolean> = emptyMap(), // Map de AssetID -> Nouveau statut favori
+    val localRatings: Map<String, Int> = emptyMap(), // Map de AssetID -> Nouveau rating
     val cardDisplayMode: CardDisplayMode = CardDisplayMode.FIT,
     val showSwipeButtons: Boolean = false,
     val swapSummaryArchive: Boolean = false,
     val isFullscreenMode: Boolean = false,
     val showResetConfirmation: Boolean = false,
+    val showRatingResetConfirmation: Boolean = false,
     val syncLocalDeletion: Boolean = false,
     val trashLocalDeletion: Boolean = true,
     val tapToSwipeEnabled: Boolean = false,
@@ -67,6 +71,17 @@ data class SwipeUiState(
 ) {
     val currentAsset: Asset? get() = assets.getOrNull(bulkLastIndex ?: currentIndex)
     
+    /**
+     * Retourne le rating d'un asset en tenant compte des modifs locales.
+     */
+    fun getRating(assetId: String): Int {
+        if (localRatings.containsKey(assetId)) {
+            val r = localRatings[assetId]
+            return if (r != null && r > 0) r else 0
+        }
+        return assets.find { it.id == assetId }?.rating ?: 0
+    }
+
     /**
      * Retourne si un asset est favori en tenant compte des modifs locales.
      */

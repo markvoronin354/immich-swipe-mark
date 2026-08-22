@@ -58,6 +58,16 @@ interface SwipeDecisionDao {
     suspend fun deleteDecisionsForAllAlbums(assetIds: List<String>, userId: String)
     
     /**
+     * Supprime tous les ratings pour des assets spécifiques d'un utilisateur donné.
+     */
+    @Query("""
+        UPDATE swipe_decisions 
+        SET rating = NULL 
+        WHERE userId = :userId AND assetId IN (:assetIds)
+    """)
+    suspend fun clearRatingsForAssets(assetIds: List<String>, userId: String)
+
+    /**
      * Compte le nombre de décisions prises pour un album spécifique d'un utilisateur.
      */
     @Query("SELECT COUNT(*) FROM swipe_decisions WHERE albumId = :albumId AND userId = :userId")

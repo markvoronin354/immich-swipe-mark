@@ -40,13 +40,15 @@ class SwipeDecisionRepository(
     /**
      * Enregistre un nouveau swipe en base locale.
      */
-    suspend fun saveDecision(assetId: String, albumId: String, userId: String, decision: String, fileSize: Long? = null, isSynced: Boolean = false) {
+    suspend fun saveDecision(assetId: String, albumId: String, userId: String, decision: String?, fileSize: Long? = null, rating: Int? = null, isFavorite: Boolean? = null, isSynced: Boolean = false) {
         val entity = SwipeDecisionEntity(
             assetId = assetId,
             albumId = albumId,
             userId = userId,
             decision = decision,
             fileSize = fileSize,
+            rating = rating,
+            isFavorite = isFavorite,
             createdAt = System.currentTimeMillis(),
             isSynced = isSynced,
             wasSyncedSkip = false
@@ -84,6 +86,13 @@ class SwipeDecisionRepository(
      */
     suspend fun removeDecisions(assetIds: List<String>, userId: String) {
         swipeDecisionDao.deleteDecisions(assetIds, userId)
+    }
+
+    /**
+     * Supprime tous les ratings pour une liste d'assets spécifique.
+     */
+    suspend fun clearRatingsForAssets(assetIds: List<String>, userId: String) {
+        swipeDecisionDao.clearRatingsForAssets(assetIds, userId)
     }
 
     /**

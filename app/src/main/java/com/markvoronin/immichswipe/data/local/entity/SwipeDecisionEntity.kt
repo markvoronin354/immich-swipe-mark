@@ -25,8 +25,10 @@ data class SwipeDecisionEntity(
     val assetId: String,
     val albumId: String,
     val userId: String,
-    val decision: String,
+    val decision: String?,
     val fileSize: Long? = null,
+    val rating: Int? = null,
+    val isFavorite: Boolean? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val isSynced: Boolean = false,
     val wasSyncedSkip: Boolean = false

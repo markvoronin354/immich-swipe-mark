@@ -70,6 +70,7 @@ class SwipeViewModel(
                 sessionRepository.shareButtonPosition,
                 sessionRepository.showSwipeButtons,
                 sessionRepository.autoNextOnFav,
+                sessionRepository.autoNextOnRating,
                 sessionRepository.swapSummaryArchive,
                 sessionRepository.syncLocalDeletion,
                 sessionRepository.trashLocalDeletion,
@@ -78,13 +79,14 @@ class SwipeViewModel(
             ) { values ->
                 // On regroupe toutes les mises à jour en un seul bloc pour optimiser les recompositions
                 _uiState.update { state ->
-                    val order = values[18] as SortOrder
+                    val order = values[19] as SortOrder
                     val category = when (order) {
                         SortOrder.CHRONOLOGICAL_DESC, SortOrder.CHRONOLOGICAL_ASC, SortOrder.SHUFFLED -> SortCategory.TIME
                         SortOrder.SIZE_DESC, SortOrder.SIZE_ASC -> SortCategory.SIZE
                         SortOrder.TYPE_VIDEO_FIRST, SortOrder.TYPE_PHOTO_FIRST,
                         SortOrder.TYPE_VIDEO_FIRST_ASC, SortOrder.TYPE_PHOTO_FIRST_ASC,
                         SortOrder.TYPE_VIDEO_FIRST_SHUFFLED, SortOrder.TYPE_PHOTO_FIRST_SHUFFLED -> SortCategory.TYPE
+                        SortOrder.RATING_DESC, SortOrder.RATING_ASC -> SortCategory.RATING
                     }
 
                     // On déclenche le rechargement si l'ordre change (géré plus bas)
@@ -106,12 +108,13 @@ class SwipeViewModel(
                         shareButtonPosition = values[12] as com.markvoronin.immichswipe.core.IconPosition,
                         showSwipeButtons = values[13] as Boolean,
                         autoNextOnFav = values[14] as Boolean,
-                        swapSummaryArchive = values[15] as Boolean,
-                        syncLocalDeletion = values[16] as Boolean,
-                        trashLocalDeletion = values[17] as Boolean,
+                        autoNextOnRating = values[15] as Boolean,
+                        swapSummaryArchive = values[16] as Boolean,
+                        syncLocalDeletion = values[17] as Boolean,
+                        trashLocalDeletion = values[18] as Boolean,
                         sortOrder = order,
                         sortCategory = category,
-                        tapToSwipeEnabled = values[19] as Boolean
+                        tapToSwipeEnabled = values[20] as Boolean
                     ).also { 
                         if (needsReload) loadAssetsAndDecisions()
                     }
@@ -135,6 +138,7 @@ class SwipeViewModel(
             SortCategory.TIME -> SortOrder.CHRONOLOGICAL_DESC
             SortCategory.SIZE -> SortOrder.SIZE_DESC
             SortCategory.TYPE -> SortOrder.TYPE_VIDEO_FIRST
+            SortCategory.RATING -> SortOrder.RATING_DESC
         }
         setSortOrder(defaultOrder)
     }
@@ -154,7 +158,17 @@ class SwipeViewModel(
     private fun loadAssetsAndDecisions() {
         loadingJob?.cancel()
         loadingJob = viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, assets = emptyList(), decisions = emptyMap(), assetSizes = emptyMap(), currentIndex = 0, remoteTotalCount = 0) }
+            _uiState.update { it.copy(
+                isLoading = true, 
+                assets = emptyList(), 
+                decisions = emptyMap(), 
+                assetSizes = emptyMap(), 
+                localRatings = emptyMap(),
+                localFavorites = emptyMap(),
+                history = emptyList(),
+                currentIndex = 0, 
+                remoteTotalCount = 0
+            ) }
             initialSyncedDecisions = emptyMap()
             try {
                 AppLogger.d("Swipe", "Chargement de l'album ${album.albumName} (ID: ${album.id})")
@@ -189,7 +203,7 @@ class SwipeViewModel(
                     val newSynced = localDecisionsForChunk
                         .filter { it.isSynced }
                         .associate { entity ->
-                            val decision = try { SwipeDecision.valueOf(entity.decision) } catch (_: Exception) { SwipeDecision.KEEP }
+                            val decision = try { SwipeDecision.valueOf(entity.decision ?: "") } catch (_: Exception) { SwipeDecision.KEEP }
                             entity.assetId to decision
                         }
                     initialSyncedDecisions += newSynced
@@ -197,13 +211,19 @@ class SwipeViewModel(
                     // On transforme les décisions du chunk en Map
                     val chunkDecisionMap = mutableMapOf<String, SwipeDecision>()
                     val chunkSizeMap = mutableMapOf<String, Long>()
+                    val chunkRatingMap = mutableMapOf<String, Int>()
+                    val chunkFavoriteMap = mutableMapOf<String, Boolean>()
 
                     localDecisionsForChunk.forEach { entity ->
-                        try {
-                            chunkDecisionMap[entity.assetId] = SwipeDecision.valueOf(entity.decision)
-                        } catch (_: Exception) {}
+                        entity.decision?.let { dec ->
+                            try {
+                                chunkDecisionMap[entity.assetId] = SwipeDecision.valueOf(dec)
+                            } catch (_: Exception) {}
+                        }
                         
                         entity.fileSize?.let { chunkSizeMap[entity.assetId] = it }
+                        chunkRatingMap[entity.assetId] = entity.rating ?: 0
+                        chunkFavoriteMap[entity.assetId] = entity.isFavorite ?: (chunk.find { it.id == entity.assetId }?.isFavorite ?: false)
                     }
 
                     _uiState.update { state ->
@@ -228,6 +248,8 @@ class SwipeViewModel(
                             assets = updatedAssets,
                             decisions = updatedDecisions,
                             assetSizes = updatedSizes,
+                            localRatings = state.localRatings + chunkRatingMap,
+                            localFavorites = state.localFavorites + chunkFavoriteMap,
                             currentIndex = nextIndex,
                             remoteTotalCount = remoteTotal,
                             isLoading = false
@@ -288,7 +310,9 @@ class SwipeViewModel(
                 albumId = album.id,
                 userId = config.userId,
                 decision = decision.name,
-                fileSize = currentAsset.exifInfo?.fileSizeInBytes
+                fileSize = currentAsset.exifInfo?.fileSizeInBytes,
+                rating = currentState.getRating(currentAsset.id).takeIf { it > 0 },
+                isFavorite = currentState.localFavorites[currentAsset.id] ?: currentAsset.isFavorite
             )
 
             // 2. Mise à jour UI
@@ -323,12 +347,60 @@ class SwipeViewModel(
         val currentAsset = currentState.currentAsset ?: return
         
         val currentFav = currentState.isFavorite(currentAsset.id)
+        val newFav = !currentFav
         val newFavorites = currentState.localFavorites.toMutableMap()
-        newFavorites[currentAsset.id] = !currentFav
+        newFavorites[currentAsset.id] = newFav
         
-        _uiState.update { it.copy(localFavorites = newFavorites) }
-        if (currentState.autoNextOnFav) {
-            onSwipe(SwipeDecision.KEEP) // Avance à la suivante
+        viewModelScope.launch {
+            val config = sessionRepository.sessionConfig.first() ?: return@launch
+            swipeDecisionRepository.saveDecision(
+                assetId = currentAsset.id,
+                albumId = album.id,
+                userId = config.userId,
+                decision = currentState.decisions[currentAsset.id]?.name,
+                fileSize = currentAsset.exifInfo?.fileSizeInBytes,
+                rating = currentState.getRating(currentAsset.id).takeIf { it > 0 },
+                isFavorite = newFav
+            )
+            
+            _uiState.update { it.copy(localFavorites = newFavorites) }
+            if (currentState.autoNextOnFav) {
+                onSwipe(SwipeDecision.KEEP) // Avance à la suivante
+            }
+        }
+    }
+
+    fun setRating(rating: Int) {
+        val currentAsset = _uiState.value.currentAsset ?: return
+        
+        viewModelScope.launch {
+            val config = sessionRepository.sessionConfig.first() ?: return@launch
+            
+            // Persist locally
+            val decision = _uiState.value.decisions[currentAsset.id]?.name ?: "KEEP"
+            swipeDecisionRepository.saveDecision(
+                assetId = currentAsset.id,
+                albumId = album.id,
+                userId = config.userId,
+                decision = decision,
+                fileSize = currentAsset.exifInfo?.fileSizeInBytes,
+                rating = if (rating == 0) null else rating,
+                isFavorite = _uiState.value.localFavorites[currentAsset.id] ?: currentAsset.isFavorite
+            )
+
+            _uiState.update { 
+                val newRatings = it.localRatings.toMutableMap()
+                if (rating == 0) {
+                    newRatings[currentAsset.id] = 0
+                } else {
+                    newRatings[currentAsset.id] = rating
+                }
+                it.copy(localRatings = newRatings)
+            }
+
+            if (rating > 0 && _uiState.value.autoNextOnRating) {
+                onSwipe(SwipeDecision.KEEP)
+            }
         }
     }
 
@@ -338,6 +410,10 @@ class SwipeViewModel(
 
     fun toggleLock() {
         onSwipe(SwipeDecision.LOCK)
+    }
+
+    fun toggleRatingMode() {
+        _uiState.update { it.copy(isRatingMode = !it.isRatingMode) }
     }
 
     fun toggleDisplayMode() {
@@ -404,7 +480,9 @@ class SwipeViewModel(
                         albumId = album.id,
                         userId = config.userId,
                         decision = decision.name,
-                        fileSize = asset?.exifInfo?.fileSizeInBytes
+                        fileSize = asset?.exifInfo?.fileSizeInBytes,
+                        rating = currentState.getRating(assetId).takeIf { it > 0 },
+                        isFavorite = currentState.localFavorites[assetId] ?: asset?.isFavorite
                     )
                     newDecisions[assetId] = decision
                     newHistory.add(assetId)
@@ -462,8 +540,22 @@ class SwipeViewModel(
                 val previouslySynced = initialSyncedDecisions[lastAssetIdFromHistory]
                 
                 if (previouslySynced == null) {
-                    // C'était une nouvelle décision : on supprime totalement de la base locale
-                    swipeDecisionRepository.removeDecision(lastAssetIdFromHistory, config.userId)
+                    // C'était une nouvelle décision : on supprime totalement de la base locale SAUF s'il y a un rating
+                    val currentRating = currentState.getRating(lastAssetIdFromHistory)
+                    val currentFav = currentState.localFavorites[lastAssetIdFromHistory]
+                    if (currentRating > 0 || currentFav != null) {
+                        swipeDecisionRepository.saveDecision(
+                            assetId = lastAssetIdFromHistory,
+                            albumId = album.id,
+                            userId = config.userId,
+                            decision = null,
+                            fileSize = currentState.assets.find { it.id == lastAssetIdFromHistory }?.exifInfo?.fileSizeInBytes,
+                            rating = currentRating.takeIf { it > 0 },
+                            isFavorite = currentFav
+                        )
+                    } else {
+                        swipeDecisionRepository.removeDecision(lastAssetIdFromHistory, config.userId)
+                    }
                 } else {
                     // C'était la modification d'un état déjà synchronisé : on restaure l'ancien état
                     swipeDecisionRepository.saveDecision(
@@ -471,6 +563,9 @@ class SwipeViewModel(
                         albumId = album.id,
                         userId = config.userId,
                         decision = previouslySynced.name,
+                        fileSize = currentState.assets.find { it.id == lastAssetIdFromHistory }?.exifInfo?.fileSizeInBytes,
+                        rating = currentState.getRating(lastAssetIdFromHistory).takeIf { it > 0 },
+                        isFavorite = currentState.localFavorites[lastAssetIdFromHistory],
                         isSynced = true
                     )
                 }
@@ -527,8 +622,12 @@ class SwipeViewModel(
     }
 
     /**
-     * Réinitialise toutes les décisions pour l'album actuel.
+     * Affiche ou cache le dialogue de confirmation de reset des ratings.
      */
+    fun toggleRatingResetConfirmation(visible: Boolean) {
+        _uiState.update { it.copy(showRatingResetConfirmation = visible) }
+    }
+
     fun resetAlbumDecisions() {
         val currentState = _uiState.value
         val assetIds = currentState.assets.map { it.id }
@@ -552,6 +651,31 @@ class SwipeViewModel(
     }
 
     /**
+     * Réinitialise tous les ratings pour l'album actuel.
+     */
+    fun resetAlbumRatings() {
+        val currentState = _uiState.value
+        val assetIds = currentState.assets.map { it.id }
+        
+        viewModelScope.launch {
+            try {
+                val config = sessionRepository.sessionConfig.first() ?: return@launch
+                
+                // 1. Reset des ratings en base pour les assets actuels
+                swipeDecisionRepository.clearRatingsForAssets(assetIds, config.userId)
+                
+                // 2. Recharger les données pour mettre à jour l'UI
+                _uiState.update { it.copy(showRatingResetConfirmation = false) }
+                loadAssetsAndDecisions()
+                
+                AppLogger.i("Swipe", "Ratings de l'album ${album.albumName} réinitialisés")
+            } catch (e: Exception) {
+                AppLogger.e("Swipe", "Erreur lors du reset des ratings", e)
+            }
+        }
+    }
+
+    /**
      * Active ou désactive le mode plein écran.
      */
     fun toggleFullscreen(enabled: Boolean) {
@@ -568,13 +692,30 @@ class SwipeViewModel(
             
             val previouslySynced = initialSyncedDecisions[assetId]
             if (previouslySynced == null) {
-                swipeDecisionRepository.removeDecision(assetId, config.userId)
+                val currentRating = currentState.getRating(assetId)
+                val currentFav = currentState.localFavorites[assetId]
+                if (currentRating > 0 || currentFav != null) {
+                    swipeDecisionRepository.saveDecision(
+                        assetId = assetId,
+                        albumId = album.id,
+                        userId = config.userId,
+                        decision = null,
+                        fileSize = currentState.assets.find { it.id == assetId }?.exifInfo?.fileSizeInBytes,
+                        rating = currentRating.takeIf { it > 0 },
+                        isFavorite = currentFav
+                    )
+                } else {
+                    swipeDecisionRepository.removeDecision(assetId, config.userId)
+                }
             } else {
                 swipeDecisionRepository.saveDecision(
                     assetId = assetId,
                     albumId = album.id,
                     userId = config.userId,
                     decision = previouslySynced.name,
+                    fileSize = currentState.assets.find { it.id == assetId }?.exifInfo?.fileSizeInBytes,
+                    rating = currentState.getRating(assetId).takeIf { it > 0 },
+                    isFavorite = currentState.localFavorites[assetId],
                     isSynced = true
                 )
             }
@@ -618,8 +759,10 @@ class SwipeViewModel(
         // Gestion des favoris (toujours synchronisés car ils sont volatiles dans l'UI)
         val toFavorite = currentState.localFavorites.filter { it.value }.keys.toList()
         val toUnfavorite = currentState.localFavorites.filter { !it.value }.keys.toList()
+        val toUpdateRating = currentState.localRatings
 
-        if (toDeleteIds.isEmpty() && toArchive.isEmpty() && toLock.isEmpty() && toKeep.isEmpty() && toFavorite.isEmpty() && toUnfavorite.isEmpty()) {
+        if (toDeleteIds.isEmpty() && toArchive.isEmpty() && toLock.isEmpty() && toKeep.isEmpty() && 
+            toFavorite.isEmpty() && toUnfavorite.isEmpty() && toUpdateRating.isEmpty()) {
             AppLogger.d("Swipe", "Aucun changement à synchroniser")
             _uiState.update { it.copy(showSummary = false) }
             return
@@ -652,6 +795,13 @@ class SwipeViewModel(
                 if (toArchive.isNotEmpty()) assetRepository.updateAssets(toArchive, visibility = "archive")
                 if (toLock.isNotEmpty()) assetRepository.updateAssets(toLock, visibility = "locked")
 
+                // Update ratings
+                toUpdateRating.entries.groupBy { it.value }.forEach { (rating, ids) ->
+                    // For Immich, rating 0 often means 'unrated'. 
+                    // Some versions prefer null, but 0 is generally accepted as 'none'.
+                    assetRepository.updateAssets(ids.map { it.key }, rating = rating)
+                }
+
                 // 2. Vérification et mise à jour de la base locale
                 val freshAssets = mutableListOf<Asset>()
                 assetRepository.getAssetsByAlbum(album.id, includeArchived = true, userId = config.userId).collect { batch ->
@@ -662,7 +812,10 @@ class SwipeViewModel(
                 // - Identification des succès (ceux qui ont disparu de l'album)
                 val successfullyDisappeared = (toDeleteIds + toLock).filter { !freshIds.contains(it) }
                 
-                val successfulKeeps = (toKeep + toArchive).filter { freshIds.contains(it) }
+                // Tout ce qui a été traité avec succès et reste dans l'album (Swipes, Ratings, Favoris)
+                val successfulKeeps = (toKeep + toArchive + toUpdateRating.keys + toFavorite + toUnfavorite)
+                    .distinct()
+                    .filter { freshIds.contains(it) }
 
                 // 3. Mise à jour de la base de données locale
                 if (successfullyDisappeared.isNotEmpty()) {
@@ -699,27 +852,47 @@ class SwipeViewModel(
                 // Mise à jour de l'état local pour refléter la synchronisation
                 val currentAssetId = currentState.currentAsset?.id
                 val newSyncedDecisions = initialSyncedDecisions.toMutableMap()
-                successfulKeeps.forEach { id -> newSyncedDecisions[id] = decisions[id] ?: SwipeDecision.KEEP }
+                
+                // On met à jour les décisions synchronisées (uniquement pour les vrais swipes)
+                (toKeep + toArchive).filter { freshIds.contains(it) }.forEach { id -> 
+                    newSyncedDecisions[id] = decisions[id] ?: SwipeDecision.KEEP 
+                }
                 successfullyDisappeared.forEach { newSyncedDecisions.remove(it) }
                 initialSyncedDecisions = newSyncedDecisions
 
-                _uiState.update { 
-                    val filteredAssets = it.assets.filter { asset -> !successfullyDisappeared.contains(asset.id) }
-                    // Recalcul de l'index pour éviter les sauts lors du filtrage
-                    val newIndex = if (currentAssetId != null) {
-                        val foundIndex = filteredAssets.indexOfFirst { a -> a.id == currentAssetId }
-                        if (foundIndex != -1) foundIndex else it.currentIndex.coerceAtMost(filteredAssets.size)
-                    } else {
-                        it.currentIndex.coerceAtMost(filteredAssets.size)
+                val freshAssetsMap = freshAssets.associateBy { it.id }
+                _uiState.update { state ->
+                    // On met à jour la liste des assets en fusionnant les données fraîches du serveur
+                    // et nos modifs locales qu'on vient de synchroniser pour éviter tout saut visuel.
+                    val updatedAssets = state.assets.mapNotNull { asset ->
+                        if (successfullyDisappeared.contains(asset.id)) {
+                            null
+                        } else {
+                            val fresh = freshAssetsMap[asset.id]
+                            val base = fresh ?: asset
+                            base.copy(
+                                rating = state.localRatings[asset.id] ?: base.rating,
+                                isFavorite = state.localFavorites[asset.id] ?: base.isFavorite
+                            )
+                        }
                     }
 
-                    it.copy(
-                        assets = filteredAssets,
+                    // Recalcul de l'index pour éviter les sauts lors du filtrage
+                    val newIndex = if (currentAssetId != null) {
+                        val foundIndex = updatedAssets.indexOfFirst { a -> a.id == currentAssetId }
+                        if (foundIndex != -1) foundIndex else state.currentIndex.coerceAtMost(updatedAssets.size)
+                    } else {
+                        state.currentIndex.coerceAtMost(updatedAssets.size)
+                    }
+
+                    state.copy(
+                        assets = updatedAssets,
                         currentIndex = newIndex,
                         isSyncing = false,
                         showSuccessAnimation = true,
                         showSummary = false,
                         localFavorites = emptyMap(),
+                        localRatings = emptyMap(),
                         localDeletePendingIntent = pendingIntent
                     )
                 }

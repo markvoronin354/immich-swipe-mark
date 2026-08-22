@@ -3,11 +3,7 @@ package com.markvoronin.immichswipe.feature.home
 import android.content.Intent
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.lazy.LazyColumn
@@ -67,7 +63,7 @@ import com.markvoronin.immichswipe.feature.auth.AuthViewModel
 import com.markvoronin.immichswipe.feature.swipe.SwipeScreen
 import com.markvoronin.immichswipe.ui.theme.VirtualGold
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
@@ -138,6 +134,26 @@ fun HomeScreen(
                                 )
                             }
                         } else if (uiState.currentTab == HomeTab.SWIPE) {
+                            // Bouton Toggle Rating Mode (Nouveau)
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 4.dp)
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .combinedClickable(
+                                        onClick = { viewModel.requestToggleRatingMode() },
+                                        onLongClick = { viewModel.requestRatingReset() }
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = "Rating Mode",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
                             // Bouton Reset (Nouveau)
                             IconButton(onClick = { viewModel.requestReset() }) {
                                 Icon(
@@ -310,6 +326,8 @@ fun HomeScreen(
                                     sessionRepository = viewModel.getSessionRepository(),
                                     sessionKey = sessionKey,
                                     resetSignal = viewModel.resetRequestSignal,
+                                    ratingModeSignal = viewModel.ratingModeRequestSignal,
+                                    ratingResetSignal = viewModel.ratingResetRequestSignal,
                                     userQuotaBytes = uiState.user?.quotaUsageInBytes
                                 )
                             } else {

@@ -15,6 +15,7 @@ data class Asset(
     val isArchived: Boolean = false,
     val isLocked: Boolean = false,
     val isTrashed: Boolean = false,
+    val rating: Int = 0, // 0 = unrated, 1-5 = stars, -1 = rejected
     val originalFileName: String? = null,
     val checksum: String? = null,
     @SerializedName("extension")

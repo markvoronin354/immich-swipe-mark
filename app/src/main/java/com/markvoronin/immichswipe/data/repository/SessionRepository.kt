@@ -119,6 +119,7 @@ class SessionRepository(context: Context) {
 
     val showFavoriteButton: Flow<Boolean> = dataStore.isShowFavorite()
     val autoNextOnFav: Flow<Boolean> = dataStore.isAutoNextOnFav()
+    val autoNextOnRating: Flow<Boolean> = dataStore.isAutoNextOnRating()
     val includeArchived: Flow<Boolean> = dataStore.isIncludeArchived()
     val showSwipeButtons: Flow<Boolean> = dataStore.isShowSwipeButtons()
     val swapSummaryArchive: Flow<Boolean> = dataStore.isSwapSummaryArchive()
@@ -225,6 +226,7 @@ class SessionRepository(context: Context) {
 
     suspend fun saveShowFavorite(show: Boolean) { dataStore.saveShowFavorite(show) }
     suspend fun saveAutoNextOnFav(autoNextOnFav: Boolean) { dataStore.saveAutoNextOnFav(autoNextOnFav) }
+    suspend fun saveAutoNextOnRating(autoNextOnRating: Boolean) { dataStore.saveAutoNextOnRating(autoNextOnRating) }
     suspend fun saveIncludeArchived(include: Boolean) { dataStore.saveIncludeArchived(include) }
     suspend fun saveShowSwipeButtons(show: Boolean) { dataStore.saveShowSwipeButtons(show) }
     suspend fun saveSwapSummaryArchive(swap: Boolean) { dataStore.saveSwapSummaryArchive(swap) }

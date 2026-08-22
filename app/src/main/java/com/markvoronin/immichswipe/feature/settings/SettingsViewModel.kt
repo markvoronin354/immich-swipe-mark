@@ -146,6 +146,11 @@ class SettingsViewModel(
             }
         }
         viewModelScope.launch {
+            sessionRepository.autoNextOnRating.collect { autoNextOnRating ->
+                _uiState.value = _uiState.value.copy(autoNextOnRating = autoNextOnRating)
+            }
+        }
+        viewModelScope.launch {
             sessionRepository.includeArchived.collect { include ->
                 _uiState.value = _uiState.value.copy(includeArchived = include)
             }
@@ -277,6 +282,10 @@ class SettingsViewModel(
 
     fun setAutoNextOnFav(autoNextOnFav: Boolean) {
         viewModelScope.launch { sessionRepository.saveAutoNextOnFav(autoNextOnFav) }
+    }
+
+    fun setAutoNextOnRating(autoNextOnRating: Boolean) {
+        viewModelScope.launch { sessionRepository.saveAutoNextOnRating(autoNextOnRating) }
     }
 
     fun setIncludeArchived(include: Boolean) {

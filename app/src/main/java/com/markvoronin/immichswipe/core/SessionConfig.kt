@@ -46,7 +46,9 @@ enum class SortOrder {
     TYPE_VIDEO_FIRST_ASC, // Vidéos -> Photos (Date Asc)
     TYPE_PHOTO_FIRST_ASC, // Photos -> Vidéos (Date Asc)
     TYPE_VIDEO_FIRST_SHUFFLED, // Vidéos -> Photos (Aléatoire)
-    TYPE_PHOTO_FIRST_SHUFFLED  // Photos -> Vidéos (Aléatoire)
+    TYPE_PHOTO_FIRST_SHUFFLED,  // Photos -> Vidéos (Aléatoire)
+    RATING_DESC,        // Meilleures notes -> Moins bonnes
+    RATING_ASC          // Moins bonnes -> Meilleures notes
 }
 
 /**
@@ -55,5 +57,6 @@ enum class SortOrder {
 enum class SortCategory {
     TIME,
     SIZE,
-    TYPE
+    TYPE,
+    RATING
 }

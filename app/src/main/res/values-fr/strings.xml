@@ -82,9 +82,12 @@
     <string name="settings_sort_smallest">Plus petits d\'abord</string>
     <string name="settings_sort_videos">Vidéos d\'abord</string>
     <string name="settings_sort_photos">Photos d\'abord</string>
+    <string name="settings_sort_rating_high">Mieux notés d\'abord</string>
+    <string name="settings_sort_rating_low">Moins bien notés d\'abord</string>
     <string name="sort_category_time">Date</string>
     <string name="sort_category_size">Taille</string>
     <string name="sort_category_type">Type</string>
+    <string name="sort_category_rating">Note</string>
     <string name="settings_section_interaction">Interaction</string>
     <string name="settings_action_buttons_label">Boutons d\'action à l\'écran</string>
     <string name="settings_action_buttons_desc">Personnaliser la visibilité et la position des boutons superposés</string>
@@ -97,8 +100,10 @@
     <string name="settings_video_ignore">Jouer par dessus les autres sons</string>
     <string name="settings_tri_actions_label">Actions de tri affichées</string>
     <string name="settings_tri_favorite">Bouton Favori</string>
-    <string name="settings_auto_next_label">Avancer automatiquement</string>
+    <string name="settings_auto_next_label">Avance auto après favori</string>
     <string name="settings_auto_next_desc">Passer à la photo suivante et marquer automatiquement comme KEEP après avoir marqué en favori</string>
+    <string name="settings_auto_next_rating_label">Avance auto après notation</string>
+    <string name="settings_auto_next_rating_desc">Passer automatiquement à la photo suivante après avoir appliqué une note de 1 à 5 étoiles</string>
     <string name="settings_section_account">Compte</string>
     <string name="settings_pos_top_left">Haut-Gauche</string>
     <string name="settings_pos_top_right">Haut-Droite</string>
@@ -164,6 +169,9 @@
     <string name="swipe_reset_button">Réinitialiser l\'album</string>
     <string name="swipe_reset_confirm_title">Réinitialiser le tri ?</string>
     <string name="swipe_reset_confirm_msg">Cela supprimera définitivement toutes les décisions locales pour cet album. Les décisions déjà synchronisées (KEEP/DELETE) sur Immich ne seront PAS annulées sur le serveur, mais elles seront effacées de votre progression locale dans cette application.</string>
+    <string name="swipe_reset_rating_button">Réinitialiser les notes</string>
+    <string name="swipe_reset_rating_confirm_title">Réinitialiser les notes de l\'album ?</string>
+    <string name="swipe_reset_rating_confirm_msg">Cela effacera définitivement toutes les notes de 1 à 5 étoiles locales pour cet album. Cette action est irréversible localement.</string>
 
     <!-- Statistiques -->
     <string name="stats_popup_title">Statistiques d\'usage</string>

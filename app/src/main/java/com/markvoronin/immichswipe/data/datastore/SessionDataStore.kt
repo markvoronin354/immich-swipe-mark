@@ -34,6 +34,7 @@ class SessionDataStore(private val context: Context) {
         private val KEY_DEFAULT_LAYOUT_GRID = androidx.datastore.preferences.core.booleanPreferencesKey("default_layout_grid")
         private val KEY_SHOW_FAVORITE = androidx.datastore.preferences.core.booleanPreferencesKey("show_favorite")
         private val KEY_AUTO_NEXT_ON_FAV = androidx.datastore.preferences.core.booleanPreferencesKey("auto_next_on_fav")
+        private val KEY_AUTO_NEXT_ON_RATING = androidx.datastore.preferences.core.booleanPreferencesKey("auto_next_on_rating")
         private val KEY_INCLUDE_ARCHIVED = androidx.datastore.preferences.core.booleanPreferencesKey("include_archived")
         private val KEY_SORT_ORDER = stringPreferencesKey("sort_order")
         private val KEY_DEFAULT_CARD_DISPLAY_MODE = stringPreferencesKey("default_card_display_mode")
@@ -152,6 +153,9 @@ class SessionDataStore(private val context: Context) {
 
     fun isAutoNextOnFav(): Flow<Boolean> = context.dataStore.data.map { it[KEY_AUTO_NEXT_ON_FAV] ?: false }
     suspend fun saveAutoNextOnFav(autoNext: Boolean) { context.dataStore.edit { it[KEY_AUTO_NEXT_ON_FAV] = autoNext } }
+
+    fun isAutoNextOnRating(): Flow<Boolean> = context.dataStore.data.map { it[KEY_AUTO_NEXT_ON_RATING] ?: false }
+    suspend fun saveAutoNextOnRating(autoNext: Boolean) { context.dataStore.edit { it[KEY_AUTO_NEXT_ON_RATING] = autoNext } }
 
     fun isIncludeArchived(): Flow<Boolean> = context.dataStore.data.map { it[KEY_INCLUDE_ARCHIVED] ?: true }
     suspend fun saveIncludeArchived(include: Boolean) { context.dataStore.edit { it[KEY_INCLUDE_ARCHIVED] = include } }

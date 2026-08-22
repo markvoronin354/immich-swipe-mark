@@ -10,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
+import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -134,16 +135,35 @@ fun SwipeScreen(
     sessionKey: String,
     resetSignal: kotlinx.coroutines.flow.SharedFlow<Unit>,
     modifier: Modifier = Modifier,
-    userQuotaBytes: Long? = null
+    userQuotaBytes: Long? = null,
+    ratingModeSignal: kotlinx.coroutines.flow.SharedFlow<Unit>? = null,
+    ratingResetSignal: kotlinx.coroutines.flow.SharedFlow<Unit>? = null
 ) {
     val viewModel: SwipeViewModel = viewModel(
         key = "$sessionKey-${album.id}",
         factory = SwipeViewModelFactory(assetRepository, sessionRepository, swipeDecisionRepository, album, userQuotaBytes)
     )
     
+    var showRatingSelector by remember { mutableStateOf(false) }
+    var dragRating by remember { mutableIntStateOf(0) }
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+
     LaunchedEffect(resetSignal) {
         resetSignal.collect {
             viewModel.toggleResetConfirmation(visible = true)
+        }
+    }
+
+    LaunchedEffect(ratingModeSignal) {
+        ratingModeSignal?.collect {
+            viewModel.toggleRatingMode()
+        }
+    }
+
+    LaunchedEffect(ratingResetSignal) {
+        ratingResetSignal?.collect {
+            viewModel.toggleRatingResetConfirmation(visible = true)
         }
     }
 
@@ -381,6 +401,7 @@ fun SwipeScreen(
             isFavorite = { uiState.isFavorite(it) },
             isArchived = { uiState.isArchived(it) },
             isLocked = { uiState.isLocked(it) },
+            getRating = { uiState.getRating(it) },
             onAssetClick = { viewModel.onMoveToAsset(it) },
             isBulkMode = uiState.isBulkDeleteMode || uiState.isBulkKeepMode,
             bulkSelection = uiState.bulkSelection,
@@ -581,189 +602,320 @@ fun SwipeScreen(
                     )
                 }
 
-                IconButton(
-                    onClick = {
-                        if (!uiState.swapSummaryArchive) viewModel.toggleArchive()
-                        else viewModel.toggleSummary(true)
-                    },
-                    modifier = Modifier.size(if (uiState.showSwipeButtons) 36.dp else 44.dp)
-                ) {
-                    Icon(
-                        imageVector = if (!uiState.swapSummaryArchive) Icons.Default.Archive else Icons.Default.Assessment,
-                        contentDescription = if (!uiState.swapSummaryArchive) stringResource(R.string.swipe_archive) else stringResource(R.string.swipe_summary_title),
-                        tint = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.size(if (uiState.showSwipeButtons) 22.dp else 26.dp)
-                    )
-                }
-
-                if (uiState.showFavoriteButton) {
-                    val isFav = uiState.currentAsset?.let { uiState.isFavorite(it.id) } ?: false
+                if (uiState.isRatingMode) {
+                    val currentRating = uiState.currentAsset?.let { uiState.getRating(it.id) } ?: 0
+                    
+                    (1..5).forEach { star ->
+                        IconButton(
+                            onClick = { viewModel.setRating(star) },
+                            modifier = Modifier.size(if (uiState.showSwipeButtons) 34.dp else 40.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (star <= currentRating) Icons.Default.Star else Icons.Default.StarBorder,
+                                contentDescription = "$star Stars",
+                                tint = if (star <= currentRating) Color(0xFFFFD700) else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f),
+                                modifier = Modifier.size(if (uiState.showSwipeButtons) 24.dp else 28.dp)
+                            )
+                        }
+                    }
+                } else {
                     IconButton(
-                        onClick = { viewModel.toggleFavorite() },
+                        onClick = {
+                            if (!uiState.swapSummaryArchive) viewModel.toggleArchive()
+                            else viewModel.toggleSummary(true)
+                        },
                         modifier = Modifier.size(if (uiState.showSwipeButtons) 36.dp else 44.dp)
                     ) {
                         Icon(
-                            imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = stringResource(R.string.swipe_favorite),
-                            tint = if (isFav) Color.Red else MaterialTheme.colorScheme.onBackground,
+                            imageVector = if (!uiState.swapSummaryArchive) Icons.Default.Archive else Icons.Default.Assessment,
+                            contentDescription = if (!uiState.swapSummaryArchive) stringResource(R.string.swipe_archive) else stringResource(R.string.swipe_summary_title),
+                            tint = MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier.size(if (uiState.showSwipeButtons) 22.dp else 26.dp)
                         )
                     }
-                }
 
-                IconButton(
-                    onClick = { viewModel.toggleLock() },
-                    modifier = Modifier.size(if (uiState.showSwipeButtons) 36.dp else 44.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = stringResource(R.string.swipe_locked),
-                        tint = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.size(if (uiState.showSwipeButtons) 22.dp else 26.dp)
-                    )
-                }
+                    if (uiState.showFavoriteButton) {
+                        val isFav = uiState.currentAsset?.let { uiState.isFavorite(it.id) } ?: false
+                        val currentRating = uiState.currentAsset?.let { uiState.getRating(it.id) } ?: 0
+                        
+                        Box {
+                            IconButton(
+                                onClick = { viewModel.toggleFavorite() },
+                                modifier = Modifier
+                                    .size(if (uiState.showSwipeButtons) 36.dp else 44.dp)
+                                    .pointerInput(uiState.currentAsset?.id) {
+                                        detectDragGesturesAfterLongPress(
+                                            onDragStart = {
+                                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                                showRatingSelector = true
+                                                dragRating = currentRating
+                                            },
+                                            onDrag = { change, _ ->
+                                                change.consume()
+                                                val y = change.position.y
+                                                val starIndex = ((-y / with(density) { 40.dp.toPx() }).toInt()).coerceIn(-1, 5)
+                                                if (dragRating != starIndex) {
+                                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                                    dragRating = starIndex
+                                                }
+                                            },
+                                            onDragEnd = {
+                                                viewModel.setRating(dragRating)
+                                                showRatingSelector = false
+                                            },
+                                            onDragCancel = {
+                                                showRatingSelector = false
+                                            }
+                                        )
+                                    }
+                            ) {
+                                Icon(
+                                    imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = stringResource(R.string.swipe_favorite),
+                                    tint = if (isFav) Color.Red else MaterialTheme.colorScheme.onBackground,
+                                    modifier = Modifier.size(if (uiState.showSwipeButtons) 22.dp else 26.dp)
+                                )
+                            }
 
-                Box {
+                            if (showRatingSelector) {
+                                Popup(
+                                    alignment = Alignment.BottomCenter,
+                                    offset = with(density) { IntOffset(0, -64.dp.roundToPx()) },
+                                    properties = PopupProperties(clippingEnabled = false)
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(24.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
+                                        tonalElevation = 8.dp,
+                                        shadowElevation = 12.dp,
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(8.dp),
+                                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            (5 downTo 1).forEach { star ->
+                                                Icon(
+                                                    imageVector = if (star <= dragRating) Icons.Default.Star else Icons.Default.StarBorder,
+                                                    contentDescription = null,
+                                                    tint = if (star <= dragRating) Color(0xFFFFD700) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                                    modifier = Modifier
+                                                        .size(32.dp)
+                                                        .scale(if (star == dragRating) 1.2f else 1.0f)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if (currentRating > 0 && !showRatingSelector) {
+                                Surface(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .offset(x = 4.dp, y = (-4).dp)
+                                        .size(16.dp),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape,
+                                    shadowElevation = 2.dp
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(
+                                            text = currentRating.toString(),
+                                            color = Color.White,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            style = LocalTextStyle.current.copy(
+                                                lineHeight = 10.sp,
+                                                platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     IconButton(
-                        onClick = { showSortMenu = true },
+                        onClick = { viewModel.toggleLock() },
                         modifier = Modifier.size(if (uiState.showSwipeButtons) 36.dp else 44.dp)
                     ) {
-                        val icon = when (uiState.sortOrder) {
-                            SortOrder.SHUFFLED -> Icons.Default.Shuffle
-                            SortOrder.CHRONOLOGICAL_ASC -> Icons.Default.ArrowUpward
-                            SortOrder.CHRONOLOGICAL_DESC -> Icons.Default.ArrowDownward
-                            SortOrder.SIZE_DESC -> Icons.Default.ExpandMore
-                            SortOrder.SIZE_ASC -> Icons.Default.ExpandLess
-                            SortOrder.TYPE_VIDEO_FIRST, SortOrder.TYPE_VIDEO_FIRST_ASC, SortOrder.TYPE_VIDEO_FIRST_SHUFFLED -> Icons.Default.Videocam
-                            SortOrder.TYPE_PHOTO_FIRST, SortOrder.TYPE_PHOTO_FIRST_ASC, SortOrder.TYPE_PHOTO_FIRST_SHUFFLED -> Icons.Default.Image
-                        }
-
-                        val tint = if (uiState.sortOrder != SortOrder.CHRONOLOGICAL_DESC) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
-                        val baseSize = if (uiState.showSwipeButtons) 24.dp else 28.dp
-
                         Icon(
-                            imageVector = icon,
-                            contentDescription = stringResource(R.string.settings_sort_order_label),
-                            tint = tint,
-                            modifier = Modifier.size(baseSize)
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = stringResource(R.string.swipe_locked),
+                            tint = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.size(if (uiState.showSwipeButtons) 22.dp else 26.dp)
                         )
                     }
 
-                    if (showSortMenu) {
-                        Popup(
-                            alignment = Alignment.BottomCenter,
-                            offset = IntOffset(0, -110),
-                            onDismissRequest = { showSortMenu = false },
-                            properties = PopupProperties(focusable = true)
+                    Box {
+                        IconButton(
+                            onClick = { showSortMenu = true },
+                            modifier = Modifier.size(if (uiState.showSwipeButtons) 36.dp else 44.dp)
                         ) {
-                            Surface(
-                                modifier = Modifier.width(300.dp),
-                                shape = RoundedCornerShape(28.dp),
-                                color = MaterialTheme.colorScheme.surface,
-                                tonalElevation = 8.dp,
-                                shadowElevation = 12.dp,
-                                border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+                            val icon = when (uiState.sortOrder) {
+                                SortOrder.SHUFFLED -> Icons.Default.Shuffle
+                                SortOrder.CHRONOLOGICAL_ASC -> Icons.Default.ArrowUpward
+                                SortOrder.CHRONOLOGICAL_DESC -> Icons.Default.ArrowDownward
+                                SortOrder.SIZE_DESC -> Icons.Default.ExpandMore
+                                SortOrder.SIZE_ASC -> Icons.Default.ExpandLess
+                                SortOrder.TYPE_VIDEO_FIRST, SortOrder.TYPE_VIDEO_FIRST_ASC, SortOrder.TYPE_VIDEO_FIRST_SHUFFLED -> Icons.Default.Videocam
+                                SortOrder.TYPE_PHOTO_FIRST, SortOrder.TYPE_PHOTO_FIRST_ASC, SortOrder.TYPE_PHOTO_FIRST_SHUFFLED -> Icons.Default.Image
+                                SortOrder.RATING_DESC, SortOrder.RATING_ASC -> Icons.Default.Star
+                            }
+
+                            val tint = if (uiState.sortOrder != SortOrder.CHRONOLOGICAL_DESC) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+                            val baseSize = if (uiState.showSwipeButtons) 24.dp else 28.dp
+
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = stringResource(R.string.settings_sort_order_label),
+                                tint = tint,
+                                modifier = Modifier.size(baseSize)
+                            )
+                        }
+
+                        if (showSortMenu) {
+                            Popup(
+                                alignment = Alignment.BottomCenter,
+                                offset = IntOffset(0, -110),
+                                onDismissRequest = { showSortMenu = false },
+                                properties = PopupProperties(focusable = true)
                             ) {
-                                Column(modifier = Modifier.padding(vertical = 16.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        CategoryButton(
-                                            text = stringResource(R.string.sort_category_time),
-                                            selected = uiState.sortCategory == SortCategory.TIME,
-                                            onClick = { viewModel.setSortCategory(SortCategory.TIME) },
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        CategoryButton(
-                                            text = stringResource(R.string.sort_category_size),
-                                            selected = uiState.sortCategory == SortCategory.SIZE,
-                                            onClick = { viewModel.setSortCategory(SortCategory.SIZE) },
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        CategoryButton(
-                                            text = stringResource(R.string.sort_category_type),
-                                            selected = uiState.sortCategory == SortCategory.TYPE,
-                                            onClick = { viewModel.setSortCategory(SortCategory.TYPE) },
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                    }
-
-                                    Spacer(Modifier.height(16.dp))
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 0.5.dp)
-                                    Spacer(Modifier.height(8.dp))
-
-                                    when (uiState.sortCategory) {
-                                        SortCategory.TIME -> {
-                                            SortPopupItem(R.string.settings_sort_newest, Icons.Default.ArrowDownward, uiState.sortOrder == SortOrder.CHRONOLOGICAL_DESC) {
-                                                viewModel.setSortOrder(SortOrder.CHRONOLOGICAL_DESC)
-                                                showSortMenu = false
-                                            }
-                                            SortPopupItem(R.string.settings_sort_oldest, Icons.Default.ArrowUpward, uiState.sortOrder == SortOrder.CHRONOLOGICAL_ASC) {
-                                                viewModel.setSortOrder(SortOrder.CHRONOLOGICAL_ASC)
-                                                showSortMenu = false
-                                            }
-                                            SortPopupItem(R.string.settings_sort_shuffled, Icons.Default.Shuffle, uiState.sortOrder == SortOrder.SHUFFLED) {
-                                                viewModel.setSortOrder(SortOrder.SHUFFLED)
-                                                showSortMenu = false
-                                            }
+                                Surface(
+                                    modifier = Modifier.width(300.dp),
+                                    shape = RoundedCornerShape(28.dp),
+                                    color = MaterialTheme.colorScheme.surface,
+                                    tonalElevation = 8.dp,
+                                    shadowElevation = 12.dp,
+                                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+                                ) {
+                                    Column(modifier = Modifier.padding(vertical = 16.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            CategoryButton(
+                                                text = stringResource(R.string.sort_category_time),
+                                                selected = uiState.sortCategory == SortCategory.TIME,
+                                                onClick = { viewModel.setSortCategory(SortCategory.TIME) },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            CategoryButton(
+                                                text = stringResource(R.string.sort_category_size),
+                                                selected = uiState.sortCategory == SortCategory.SIZE,
+                                                onClick = { viewModel.setSortCategory(SortCategory.SIZE) },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            CategoryButton(
+                                                text = stringResource(R.string.sort_category_type),
+                                                selected = uiState.sortCategory == SortCategory.TYPE,
+                                                onClick = { viewModel.setSortCategory(SortCategory.TYPE) },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            CategoryButton(
+                                                text = stringResource(R.string.sort_category_rating),
+                                                selected = uiState.sortCategory == SortCategory.RATING,
+                                                onClick = { viewModel.setSortCategory(SortCategory.RATING) },
+                                                modifier = Modifier.weight(1f)
+                                            )
                                         }
-                                        SortCategory.SIZE -> {
-                                            SortPopupItem(R.string.settings_sort_biggest, Icons.Default.ExpandMore, uiState.sortOrder == SortOrder.SIZE_DESC) {
-                                                viewModel.setSortOrder(SortOrder.SIZE_DESC)
-                                                showSortMenu = false
-                                            }
-                                            SortPopupItem(R.string.settings_sort_smallest, Icons.Default.ExpandLess, uiState.sortOrder == SortOrder.SIZE_ASC) {
-                                                viewModel.setSortOrder(SortOrder.SIZE_ASC)
-                                                showSortMenu = false
-                                            }
-                                        }
-                                        SortCategory.TYPE -> {
-                                            val currentIsPhoto = uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST || 
-                                                                uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST_ASC || 
-                                                                uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST_SHUFFLED
 
-                                            SortPopupItem(R.string.settings_sort_videos, Icons.Default.Videocam, !currentIsPhoto) {
-                                                val subOrder = when(uiState.sortOrder) {
-                                                    SortOrder.TYPE_PHOTO_FIRST_ASC -> SortOrder.TYPE_VIDEO_FIRST_ASC
-                                                    SortOrder.TYPE_PHOTO_FIRST_SHUFFLED -> SortOrder.TYPE_VIDEO_FIRST_SHUFFLED
-                                                    else -> SortOrder.TYPE_VIDEO_FIRST
+                                        Spacer(Modifier.height(16.dp))
+                                        HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 0.5.dp)
+                                        Spacer(Modifier.height(8.dp))
+
+                                        when (uiState.sortCategory) {
+                                            SortCategory.TIME -> {
+                                                SortPopupItem(R.string.settings_sort_newest, Icons.Default.ArrowDownward, uiState.sortOrder == SortOrder.CHRONOLOGICAL_DESC) {
+                                                    viewModel.setSortOrder(SortOrder.CHRONOLOGICAL_DESC)
+                                                    showSortMenu = false
                                                 }
-                                                viewModel.setSortOrder(subOrder)
-                                            }
-                                            SortPopupItem(R.string.settings_sort_photos, Icons.Default.Image, currentIsPhoto) {
-                                                val subOrder = when(uiState.sortOrder) {
-                                                    SortOrder.TYPE_VIDEO_FIRST_ASC -> SortOrder.TYPE_PHOTO_FIRST_ASC
-                                                    SortOrder.TYPE_VIDEO_FIRST_SHUFFLED -> SortOrder.TYPE_PHOTO_FIRST_SHUFFLED
-                                                    else -> SortOrder.TYPE_PHOTO_FIRST
+                                                SortPopupItem(R.string.settings_sort_oldest, Icons.Default.ArrowUpward, uiState.sortOrder == SortOrder.CHRONOLOGICAL_ASC) {
+                                                    viewModel.setSortOrder(SortOrder.CHRONOLOGICAL_ASC)
+                                                    showSortMenu = false
                                                 }
-                                                viewModel.setSortOrder(subOrder)
+                                                SortPopupItem(R.string.settings_sort_shuffled, Icons.Default.Shuffle, uiState.sortOrder == SortOrder.SHUFFLED) {
+                                                    viewModel.setSortOrder(SortOrder.SHUFFLED)
+                                                    showSortMenu = false
+                                                }
                                             }
+                                            SortCategory.SIZE -> {
+                                                SortPopupItem(R.string.settings_sort_biggest, Icons.Default.ExpandMore, uiState.sortOrder == SortOrder.SIZE_DESC) {
+                                                    viewModel.setSortOrder(SortOrder.SIZE_DESC)
+                                                    showSortMenu = false
+                                                }
+                                                SortPopupItem(R.string.settings_sort_smallest, Icons.Default.ExpandLess, uiState.sortOrder == SortOrder.SIZE_ASC) {
+                                                    viewModel.setSortOrder(SortOrder.SIZE_ASC)
+                                                    showSortMenu = false
+                                                }
+                                            }
+                                            SortCategory.TYPE -> {
+                                                val currentIsPhoto = uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST || 
+                                                                    uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST_ASC || 
+                                                                    uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST_SHUFFLED
 
-                                            Spacer(Modifier.height(8.dp))
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp), thickness = 0.5.dp)
-                                            Spacer(Modifier.height(8.dp))
+                                                SortPopupItem(R.string.settings_sort_videos, Icons.Default.Videocam, !currentIsPhoto) {
+                                                    val subOrder = when(uiState.sortOrder) {
+                                                        SortOrder.TYPE_PHOTO_FIRST_ASC -> SortOrder.TYPE_VIDEO_FIRST_ASC
+                                                        SortOrder.TYPE_PHOTO_FIRST_SHUFFLED -> SortOrder.TYPE_VIDEO_FIRST_SHUFFLED
+                                                        else -> SortOrder.TYPE_VIDEO_FIRST
+                                                    }
+                                                    viewModel.setSortOrder(subOrder)
+                                                }
+                                                SortPopupItem(R.string.settings_sort_photos, Icons.Default.Image, currentIsPhoto) {
+                                                    val subOrder = when(uiState.sortOrder) {
+                                                        SortOrder.TYPE_VIDEO_FIRST_ASC -> SortOrder.TYPE_PHOTO_FIRST_ASC
+                                                        SortOrder.TYPE_VIDEO_FIRST_SHUFFLED -> SortOrder.TYPE_PHOTO_FIRST_SHUFFLED
+                                                        else -> SortOrder.TYPE_PHOTO_FIRST
+                                                    }
+                                                    viewModel.setSortOrder(subOrder)
+                                                }
 
-                                            SortPopupItem(
-                                                R.string.settings_sort_newest, 
-                                                Icons.Default.ArrowDownward, 
-                                                uiState.sortOrder == SortOrder.TYPE_VIDEO_FIRST || uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST
-                                            ) {
-                                                viewModel.setSortOrder(if (currentIsPhoto) SortOrder.TYPE_PHOTO_FIRST else SortOrder.TYPE_VIDEO_FIRST)
+                                                Spacer(Modifier.height(8.dp))
+                                                HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp), thickness = 0.5.dp)
+                                                Spacer(Modifier.height(8.dp))
+
+                                                SortPopupItem(
+                                                    R.string.settings_sort_newest, 
+                                                    Icons.Default.ArrowDownward, 
+                                                    uiState.sortOrder == SortOrder.TYPE_VIDEO_FIRST || uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST
+                                                ) {
+                                                    viewModel.setSortOrder(if (currentIsPhoto) SortOrder.TYPE_PHOTO_FIRST else SortOrder.TYPE_VIDEO_FIRST)
+                                                }
+                                                SortPopupItem(
+                                                    R.string.settings_sort_oldest, 
+                                                    Icons.Default.ArrowUpward, 
+                                                    uiState.sortOrder == SortOrder.TYPE_VIDEO_FIRST_ASC || uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST_ASC
+                                                ) {
+                                                    viewModel.setSortOrder(if (currentIsPhoto) SortOrder.TYPE_PHOTO_FIRST_ASC else SortOrder.TYPE_VIDEO_FIRST_ASC)
+                                                }
+                                                SortPopupItem(
+                                                    R.string.settings_sort_shuffled, 
+                                                    Icons.Default.Shuffle, 
+                                                    uiState.sortOrder == SortOrder.TYPE_VIDEO_FIRST_SHUFFLED || uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST_SHUFFLED
+                                                ) {
+                                                    viewModel.setSortOrder(if (currentIsPhoto) SortOrder.TYPE_PHOTO_FIRST_SHUFFLED else SortOrder.TYPE_VIDEO_FIRST_SHUFFLED)
+                                                }
                                             }
-                                            SortPopupItem(
-                                                R.string.settings_sort_oldest, 
-                                                Icons.Default.ArrowUpward, 
-                                                uiState.sortOrder == SortOrder.TYPE_VIDEO_FIRST_ASC || uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST_ASC
-                                            ) {
-                                                viewModel.setSortOrder(if (currentIsPhoto) SortOrder.TYPE_PHOTO_FIRST_ASC else SortOrder.TYPE_VIDEO_FIRST_ASC)
-                                            }
-                                            SortPopupItem(
-                                                R.string.settings_sort_shuffled, 
-                                                Icons.Default.Shuffle, 
-                                                uiState.sortOrder == SortOrder.TYPE_VIDEO_FIRST_SHUFFLED || uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST_SHUFFLED
-                                            ) {
-                                                viewModel.setSortOrder(if (currentIsPhoto) SortOrder.TYPE_PHOTO_FIRST_SHUFFLED else SortOrder.TYPE_VIDEO_FIRST_SHUFFLED)
+                                            SortCategory.RATING -> {
+                                                SortPopupItem(
+                                                    R.string.settings_sort_rating_high, 
+                                                    Icons.Default.Star, 
+                                                    uiState.sortOrder == SortOrder.RATING_DESC
+                                                ) {
+                                                    viewModel.setSortOrder(SortOrder.RATING_DESC)
+                                                    showSortMenu = false
+                                                }
+                                                SortPopupItem(
+                                                    R.string.settings_sort_rating_low, 
+                                                    Icons.Default.StarBorder, 
+                                                    uiState.sortOrder == SortOrder.RATING_ASC
+                                                ) {
+                                                    viewModel.setSortOrder(SortOrder.RATING_ASC)
+                                                    showSortMenu = false
+                                                }
                                             }
                                         }
                                     }
@@ -780,7 +932,7 @@ fun SwipeScreen(
 
                     FloatingActionButton(
                         onClick = { if (!uiState.isBulkKeepMode && !uiState.isBulkDeleteMode) viewModel.onSwipe(SwipeDecision.KEEP) },
-                        containerColor = if (uiState.isBulkKeepMode) MaterialGreen else MaterialGreen,
+                        containerColor = MaterialGreen,
                         contentColor = Color.White,
                         shape = CircleShape,
                         modifier = Modifier
@@ -871,7 +1023,9 @@ fun SwipeScreen(
             onDownload = { viewModel.downloadAsset(it) },
             shareButtonPosition = uiState.shareButtonPosition,
             showShareButton = false, // Share button hidden in fullscreen mode for consistency
-            onShare = { viewModel.shareAsset(it) }
+            onShare = { viewModel.shareAsset(it) },
+            currentRating = uiState.getRating(currentAsset.id),
+            onRatingSelected = { viewModel.setRating(it) }
         )
     }
 
@@ -894,6 +1048,27 @@ fun SwipeScreen(
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.toggleResetConfirmation(false) }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
+
+    if (uiState.showRatingResetConfirmation) {
+        AlertDialog(
+            onDismissRequest = { viewModel.toggleRatingResetConfirmation(false) },
+            title = { Text(stringResource(R.string.swipe_reset_rating_confirm_title)) },
+            text = { Text(stringResource(R.string.swipe_reset_rating_confirm_msg)) },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.resetAlbumRatings() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.swipe_reset_rating_button))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.toggleRatingResetConfirmation(false) }) {
                     Text(stringResource(R.string.common_cancel))
                 }
             }
@@ -1209,6 +1384,7 @@ fun AssetTimeline(
     isFavorite: (String) -> Boolean,
     isArchived: (String) -> Boolean,
     isLocked: (String) -> Boolean,
+    getRating: (String) -> Int,
     onAssetClick: (Int) -> Unit,
     isBulkMode: Boolean = false,
     bulkSelection: Set<String> = emptySet(),
@@ -1251,6 +1427,7 @@ fun AssetTimeline(
             val hasHeart = isFavorite(asset.id)
             val hasArchive = isArchived(asset.id)
             val hasLock = isLocked(asset.id)
+            val currentRating = getRating(asset.id)
             val isSelected = bulkSelection.contains(asset.id)
 
             Box(
@@ -1309,7 +1486,7 @@ fun AssetTimeline(
                     decision?.let { d ->
                         Box(
                             modifier = Modifier
-                                .size(16.dp)
+                                .size(14.dp)
                                 .clip(CircleShape)
                                 .background(
                                     when (d) {
@@ -1330,7 +1507,7 @@ fun AssetTimeline(
                                 },
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.size(10.dp)
+                                modifier = Modifier.size(9.dp)
                             )
                         }
                     }
@@ -1344,6 +1521,27 @@ fun AssetTimeline(
                     if (hasLock && decision != SwipeDecision.LOCK) {
                         TimelineMiniBadge(Icons.Default.Lock, Color.Black)
                     }
+                    if (currentRating > 0) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = CircleShape,
+                            modifier = Modifier.size(14.dp),
+                            shadowElevation = 1.dp
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = currentRating.toString(),
+                                    color = Color.White,
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    style = LocalTextStyle.current.copy(
+                                        lineHeight = 8.sp,
+                                        platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)
+                                    )
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1351,10 +1549,10 @@ fun AssetTimeline(
 }
 
 @Composable
-fun TimelineMiniBadge(icon: ImageVector, color: Color) {
+fun TimelineMiniBadge(icon: ImageVector, color: Color, size: Dp = 14.dp, iconSize: Dp = 9.dp) {
     Box(
         modifier = Modifier
-            .size(16.dp)
+            .size(size)
             .clip(CircleShape)
             .background(Color.White.copy(alpha = 0.8f)),
         contentAlignment = Alignment.Center
@@ -1363,7 +1561,7 @@ fun TimelineMiniBadge(icon: ImageVector, color: Color) {
             imageVector = icon,
             contentDescription = null,
             tint = color,
-            modifier = Modifier.size(10.dp)
+            modifier = Modifier.size(iconSize)
         )
     }
 }
@@ -2300,7 +2498,9 @@ fun FullscreenViewer(
     shareButtonPosition: IconPosition = IconPosition.TOP_RIGHT,
     showShareButton: Boolean = false,
     onDownload: (Asset) -> Unit = {},
-    onShare: (Asset) -> Unit = {}
+    onShare: (Asset) -> Unit = {},
+    currentRating: Int = 0,
+    onRatingSelected: (Int) -> Unit = {}
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -2310,6 +2510,10 @@ fun FullscreenViewer(
     var isHoldingByPress by remember { mutableStateOf(false) }
     var pausedByHoldState by remember { mutableStateOf(false) }
     var ignoreNextTap by remember { mutableStateOf(false) }
+
+    var showRatingSelector by remember { mutableStateOf(false) }
+    var dragRating by remember { mutableIntStateOf(0) }
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
 
     val swipeY = remember { Animatable(0f) }
     val swipeX = remember { Animatable(0f) }
@@ -2659,22 +2863,108 @@ fun FullscreenViewer(
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(bottom = (if (isLandscape) 20.dp else 106.dp) + controlsOffset)
-                            .graphicsLayer {
-                                scaleX = heartScale
-                                scaleY = heartScale
-                            }
-                            .background(Color.Black.copy(alpha = 0.3f), CircleShape)
-                            .clip(CircleShape)
-                            .clickable { onDoubleTap() }
-                            .padding(8.dp)
+                            .padding(bottom = (if (isLandscape) 20.dp else 106.dp) + controlsOffset),
+                        contentAlignment = Alignment.BottomCenter
                     ) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = null,
-                            tint = if (isFavorite) Color.Red else Color.White.copy(alpha = 0.7f),
-                            modifier = Modifier.size(24.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .graphicsLayer {
+                                    scaleX = heartScale
+                                    scaleY = heartScale
+                                }
+                                .background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                                .clip(CircleShape)
+                                .pointerInput(asset.id) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = {
+                                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                            showRatingSelector = true
+                                            dragRating = currentRating
+                                        },
+                                        onDrag = { change, _ ->
+                                            change.consume()
+                                            val y = change.position.y
+                                            val starIndex = ((-y / with(density) { 40.dp.toPx() }).toInt()).coerceIn(-1, 5)
+                                            if (dragRating != starIndex) {
+                                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                                dragRating = starIndex
+                                            }
+                                        },
+                                        onDragEnd = {
+                                            onRatingSelected(dragRating)
+                                            showRatingSelector = false
+                                        },
+                                        onDragCancel = { showRatingSelector = false }
+                                    )
+                                }
+                                .clickable { onDoubleTap() }
+                                .padding(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = null,
+                                tint = if (isFavorite) Color.Red else Color.White.copy(alpha = 0.7f),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        // Star Rating Selector Overlay (Popup for Fullscreen)
+                        if (showRatingSelector) {
+                            Popup(
+                                alignment = Alignment.BottomCenter,
+                                offset = with(density) { IntOffset(0, -64.dp.roundToPx()) },
+                                properties = PopupProperties(clippingEnabled = false)
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(24.dp),
+                                    color = Color.Black.copy(alpha = 0.7f),
+                                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        (5 downTo 1).forEach { star ->
+                                            Icon(
+                                                imageVector = if (star <= dragRating) Icons.Default.Star else Icons.Default.StarBorder,
+                                                contentDescription = null,
+                                                tint = if (star <= dragRating) Color(0xFFFFD700) else Color.White.copy(alpha = 0.3f),
+                                                modifier = Modifier
+                                                    .size(32.dp)
+                                                    .scale(if (star == dragRating) 1.2f else 1.0f)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Rating Badge on Fullscreen Heart
+                        if (currentRating > 0 && !showRatingSelector) {
+                            Surface(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 4.dp, y = (-4).dp)
+                                    .size(16.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = CircleShape,
+                                shadowElevation = 2.dp
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = currentRating.toString(),
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        style = LocalTextStyle.current.copy(
+                                            lineHeight = 10.sp,
+                                            platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)
+                                        )
+                                    )
+                                }
+                            }
+                        }
                     }
 
                     IconButton(
@@ -2942,7 +3232,11 @@ fun SummaryDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false),
         modifier = Modifier.fillMaxWidth(0.95f),
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically, 
+                horizontalArrangement = Arrangement.SpaceBetween, 
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
                     text = stringResource(R.string.swipe_summary_title),
                     style = MaterialTheme.typography.headlineSmall,
@@ -2964,29 +3258,35 @@ fun SummaryDialog(
 
                 Spacer(Modifier.height(20.dp))
 
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    val stats = listOf(
-                        Triple(stringResource(R.string.swipe_keep), Triple(uiState.keptCount, uiState.keptSize, MaterialGreen), Icons.Default.Check),
-                        Triple(stringResource(R.string.swipe_delete), Triple(uiState.deletedCount, uiState.deletedSize, MaterialRed), Icons.Default.Delete),
-                        Triple(stringResource(R.string.swipe_archive), Triple(uiState.archiveCount, uiState.archiveSize, MaterialTheme.colorScheme.primary), Icons.Default.Archive),
-                        Triple(stringResource(R.string.swipe_locked), Triple(uiState.lockedCount, uiState.lockedSize, MaterialTheme.colorScheme.outline), Icons.Default.Lock),
-                        Triple(stringResource(R.string.swipe_remaining), Triple(uiState.remainingCount, uiState.remainingSize, MaterialTheme.colorScheme.outlineVariant), Icons.Default.Pending)
-                    )
+                val stats = mutableListOf(
+                    Triple(stringResource(R.string.swipe_keep), Triple(uiState.keptCount, uiState.keptSize, MaterialGreen), Icons.Default.Check),
+                    Triple(stringResource(R.string.swipe_delete), Triple(uiState.deletedCount, uiState.deletedSize, MaterialRed), Icons.Default.Delete),
+                    Triple(stringResource(R.string.swipe_archive), Triple(uiState.archiveCount, uiState.archiveSize, MaterialTheme.colorScheme.primary), Icons.Default.Archive),
+                    Triple(stringResource(R.string.swipe_locked), Triple(uiState.lockedCount, uiState.lockedSize, MaterialTheme.colorScheme.outline), Icons.Default.Lock),
+                    Triple(stringResource(R.string.swipe_remaining), Triple(uiState.remainingCount, uiState.remainingSize, MaterialTheme.colorScheme.outlineVariant), Icons.Default.Pending)
+                )
+                
+                if (uiState.localRatings.isNotEmpty()) {
+                    stats.add(0, Triple("Ratings", Triple(uiState.localRatings.size, 0L, Color(0xFFFFD700)), Icons.Default.Star))
+                }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        for (i in 0 until 2) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                val left = stats[i * 2]
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val rowCount = (stats.size + 1) / 2
+                    for (i in 0 until rowCount) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            val left = stats[i * 2]
+                            StatSummaryBox(
+                                label = left.first,
+                                count = left.second.first,
+                                size = left.second.second,
+                                color = left.second.third,
+                                icon = left.third,
+                                isEstimated = left.first == stringResource(R.string.swipe_remaining) && uiState.isRemainingEstimated,
+                                modifier = Modifier.weight(1f)
+                            )
+                            
+                            if (i * 2 + 1 < stats.size) {
                                 val right = stats[i * 2 + 1]
-                                StatSummaryBox(
-                                    label = left.first,
-                                    count = left.second.first,
-                                    size = left.second.second,
-                                    color = left.second.third,
-                                    icon = left.third,
-                                    isEstimated = left.first == stringResource(R.string.swipe_remaining) && uiState.isRemainingEstimated,
-                                    modifier = Modifier.weight(1f)
-                                )
                                 StatSummaryBox(
                                     label = right.first,
                                     count = right.second.first,
@@ -2996,18 +3296,10 @@ fun SummaryDialog(
                                     isEstimated = right.first == stringResource(R.string.swipe_remaining) && uiState.isRemainingEstimated,
                                     modifier = Modifier.weight(1f)
                                 )
+                            } else {
+                                Spacer(Modifier.weight(1f))
                             }
                         }
-                        val last = stats.last()
-                        StatSummaryBox(
-                            label = last.first,
-                            count = last.second.first,
-                            size = last.second.second,
-                            color = last.second.third,
-                            icon = last.third,
-                            isEstimated = last.first == stringResource(R.string.swipe_remaining) && uiState.isRemainingEstimated,
-                            modifier = Modifier.fillMaxWidth()
-                        )
                     }
                 }
 
@@ -3040,8 +3332,7 @@ fun SummaryDialog(
                                 DeletedAssetThumbnail(
                                     asset = asset,
                                     uiState = uiState,
-                                    onUndo = { onUndoDecision(asset.id) },
-                                    modifier = Modifier.animateItem()
+                                    onUndo = { onUndoDecision(asset.id) }
                                 )
                             }
                         }
@@ -3072,7 +3363,7 @@ fun SummaryDialog(
             }
         },
         confirmButton = {
-            val hasChanges = uiState.processedCount > 0 || uiState.localFavorites.isNotEmpty()
+            val hasChanges = uiState.processedCount > 0 || uiState.localFavorites.isNotEmpty() || uiState.localRatings.isNotEmpty()
 
             Button(
                 onClick = onApply,
@@ -3184,9 +3475,31 @@ fun DeletedAssetThumbnail(
                 .padding(4.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            if (hasHeart) TimelineMiniBadge(Icons.Default.Favorite, Color.Red)
-            if (hasArchive) TimelineMiniBadge(Icons.Default.Archive, Color.Black)
-            if (hasLock) TimelineMiniBadge(Icons.Default.Lock, Color.Black)
+            if (hasHeart) TimelineMiniBadge(Icons.Default.Favorite, Color.Red, size = 12.dp, iconSize = 8.dp)
+            if (hasArchive) TimelineMiniBadge(Icons.Default.Archive, Color.Black, size = 12.dp, iconSize = 8.dp)
+            if (hasLock) TimelineMiniBadge(Icons.Default.Lock, Color.Black, size = 12.dp, iconSize = 8.dp)
+            
+            val rating = uiState.getRating(asset.id)
+            if (rating > 0) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = CircleShape,
+                    modifier = Modifier.size(12.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = rating.toString(),
+                            color = Color.White,
+                            fontSize = 7.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            style = LocalTextStyle.current.copy(
+                                lineHeight = 7.sp,
+                                platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)
+                            )
+                        )
+                    }
+                }
+            }
         }
 
         Surface(

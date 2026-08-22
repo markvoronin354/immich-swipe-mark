@@ -398,9 +398,27 @@ class HomeViewModel(
     private val _resetRequestSignal = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val resetRequestSignal = _resetRequestSignal.asSharedFlow()
 
+    private val _ratingModeRequestSignal = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val ratingModeRequestSignal = _ratingModeRequestSignal.asSharedFlow()
+
+    private val _ratingResetRequestSignal = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val ratingResetRequestSignal = _ratingResetRequestSignal.asSharedFlow()
+
     fun requestReset() {
         viewModelScope.launch {
             _resetRequestSignal.emit(Unit)
+        }
+    }
+
+    fun requestToggleRatingMode() {
+        viewModelScope.launch {
+            _ratingModeRequestSignal.emit(Unit)
+        }
+    }
+
+    fun requestRatingReset() {
+        viewModelScope.launch {
+            _ratingResetRequestSignal.emit(Unit)
         }
     }
 

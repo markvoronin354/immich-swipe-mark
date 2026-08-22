@@ -81,9 +81,12 @@
     <string name="settings_sort_smallest">Smallest first</string>
     <string name="settings_sort_videos">Videos first</string>
     <string name="settings_sort_photos">Photos first</string>
+    <string name="settings_sort_rating_high">Highest rated first</string>
+    <string name="settings_sort_rating_low">Lowest rated first</string>
     <string name="sort_category_time">Date</string>
     <string name="sort_category_size">Size</string>
     <string name="sort_category_type">Type</string>
+    <string name="sort_category_rating">Rating</string>
     <string name="settings_section_interaction">Interaction</string>
     <string name="settings_action_buttons_label">On-screen action buttons</string>
     <string name="settings_action_buttons_desc">Customize visibility and position of overlay buttons</string>
@@ -96,8 +99,10 @@
     <string name="settings_video_ignore">Play over other sounds</string>
     <string name="settings_tri_actions_label">Displayed sorting actions</string>
     <string name="settings_tri_favorite">Favorite button</string>
-    <string name="settings_auto_next_label">Auto-advance</string>
+    <string name="settings_auto_next_label">Auto-advance after favorite</string>
     <string name="settings_auto_next_desc">Move to the next photo and automatically mark as KEEP after marking as favorite</string>
+    <string name="settings_auto_next_rating_label">Auto-advance after rating</string>
+    <string name="settings_auto_next_rating_desc">Automatically move to the next photo after applying a 1-5 star rating</string>
     <string name="settings_section_account">Account</string>
     <string name="settings_pos_top_left">Top-Left</string>
     <string name="settings_pos_top_right">Top-Right</string>
@@ -163,6 +168,9 @@
     <string name="swipe_reset_button">Reset album sorting</string>
     <string name="swipe_reset_confirm_title">Reset Album Sorting?</string>
     <string name="swipe_reset_confirm_msg">This will permanently delete all local decisions for this album. Previously synced decisions (KEEP/DELETE) on Immich will NOT be undone on the server, but they will be cleared from your local progress in this app.</string>
+    <string name="swipe_reset_rating_button">Reset album ratings</string>
+    <string name="swipe_reset_rating_confirm_title">Reset Album Ratings?</string>
+    <string name="swipe_reset_rating_confirm_msg">This will permanently clear all local 1-5 star ratings for this album. This action cannot be undone locally.</string>
 
     <!-- Statistics -->
     <string name="stats_popup_title">Usage Statistics</string>

@@ -120,6 +120,8 @@ class AssetRepository(
                     val others = allAssets.filter { it.type != "IMAGE" }.shuffled(random)
                     photos + others
                 }
+                SortOrder.RATING_DESC -> allAssets.sortedByDescending { it.rating }
+                SortOrder.RATING_ASC -> allAssets.sortedBy { it.rating }
                 else -> allAssets // Ne devrait pas arriver
             }
 
@@ -338,6 +340,7 @@ class AssetRepository(
     suspend fun updateAssets(
         assetIds: List<String>,
         isFavorite: Boolean? = null,
+        rating: Int? = null,
         visibility: String? = null
     ) {
         if (assetIds.isNotEmpty()) {
@@ -345,6 +348,7 @@ class AssetRepository(
                 UpdateAssetsRequest(
                     ids = assetIds,
                     isFavorite = isFavorite,
+                    rating = rating,
                     visibility = visibility
                 )
             )

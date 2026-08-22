@@ -81,9 +81,12 @@
     <string name="settings_sort_smallest">Más pequeños primero</string>
     <string name="settings_sort_videos">Vídeos primero</string>
     <string name="settings_sort_photos">Fotos primero</string>
+    <string name="settings_sort_rating_high">Mejor valorados primero</string>
+    <string name="settings_sort_rating_low">Peor valorados primero</string>
     <string name="sort_category_time">Fecha</string>
     <string name="sort_category_size">Tamaño</string>
     <string name="sort_category_type">Tipo</string>
+    <string name="sort_category_rating">Valoración</string>
     <string name="settings_section_interaction">Interacción</string>
     <string name="settings_action_buttons_label">Botones de acción en pantalla</string>
     <string name="settings_action_buttons_desc">Personalizar la visibilidad y posición de los botones superpuestos</string>
@@ -96,8 +99,10 @@
     <string name="settings_video_ignore">Reproducir sobre otros sonidos</string>
     <string name="settings_tri_actions_label">Acciones de ordenación mostradas</string>
     <string name="settings_tri_favorite">Botón Favorito</string>
-    <string name="settings_auto_next_label">Avanzar automáticamente</string>
+    <string name="settings_auto_next_label">Avance auto tras favorito</string>
     <string name="settings_auto_next_desc">Pasar a la siguiente foto y marcar automáticamente como CONSERVAR después de marcar como favorito</string>
+    <string name="settings_auto_next_rating_label">Avance auto tras calificar</string>
+    <string name="settings_auto_next_rating_desc">Pasar automáticamente a la siguiente foto después de aplicar una calificación de 1 a 5 estrellas</string>
     <string name="settings_section_account">Cuenta</string>
     <string name="settings_pos_top_left">Arriba a la izquierda</string>
     <string name="settings_pos_top_right">Arriba a la derecha</string>
@@ -163,6 +168,9 @@
     <string name="swipe_reset_button">Reiniciar álbum</string>
     <string name="swipe_reset_confirm_title">¿Reiniciar ordenación?</string>
     <string name="swipe_reset_confirm_msg">Esto eliminará permanentemente todas las decisiones locales de este álbum. Las decisiones ya sincronizadas (KEEP/DELETE) en Immich NO se desharán en el servidor, pero se borrarán de tu progreso local en esta aplicación.</string>
+    <string name="swipe_reset_rating_button">Reiniciar calificaciones</string>
+    <string name="swipe_reset_rating_confirm_title">¿Reiniciar calificaciones del álbum?</string>
+    <string name="swipe_reset_rating_confirm_msg">Esto eliminará permanentemente todas las calificaciones locales de 1 a 5 estrellas para este álbum. Esta acción no se puede deshacer localmente.</string>
 
     <!-- Estadísticas -->
     <string name="stats_popup_title">Estadísticas de uso</string>

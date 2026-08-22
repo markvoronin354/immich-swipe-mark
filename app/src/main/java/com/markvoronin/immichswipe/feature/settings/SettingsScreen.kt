@@ -398,6 +398,21 @@ fun SettingsScreen(
                                     color = MaterialTheme.colorScheme.outline,
                                     modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)
                                 )
+                                
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp), thickness = 0.3.dp)
+
+                                SettingsToggleItemSmall(
+                                    title = stringResource(R.string.settings_auto_next_rating_label),
+                                    checked = uiState.autoNextOnRating,
+                                    onCheckedChange = { viewModel.setAutoNextOnRating(it) },
+                                    icon = Icons.AutoMirrored.Filled.Forward
+                                )
+                                Text(
+                                    text = stringResource(R.string.settings_auto_next_rating_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.outline,
+                                    modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)
+                                )
                             }
                         }
 

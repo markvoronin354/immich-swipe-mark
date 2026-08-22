@@ -39,6 +39,7 @@ data class SettingsUiState(
     val isDefaultLayoutGrid: Boolean = false,
     val showFavoriteButton: Boolean = true,
     val autoNextOnFav: Boolean = false,
+    val autoNextOnRating: Boolean = false,
     val includeArchived: Boolean = false,
     val sortOrder: SortOrder = SortOrder.CHRONOLOGICAL_DESC,
     val showLogsDialog: Boolean = false,

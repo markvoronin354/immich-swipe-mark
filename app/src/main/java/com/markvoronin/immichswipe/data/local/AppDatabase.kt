@@ -21,7 +21,7 @@ import com.markvoronin.immichswipe.data.local.entity.UserAccountEntity
  */
 @Database(
     entities = [SwipeDecisionEntity::class, SyncHistoryEntity::class, AlbumAssetEntity::class, UserAccountEntity::class],
-    version = 10,
+    version = 12,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -30,6 +30,56 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userAccountDao(): UserAccountDao
 
     companion object {
+        /**
+         * Migration ROOM de la version 11 vers la version 12.
+         * - Ajoute la colonne 'isFavorite' à 'swipe_decisions'.
+         * - Rend la colonne 'decision' nullable (TEXT).
+         */
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                AppLogger.i("Database", "Exécution Migration 11 -> 12 (isFavorite + decision nullable)")
+                // 1. Ajouter isFavorite
+                db.execSQL("ALTER TABLE swipe_decisions ADD COLUMN isFavorite INTEGER DEFAULT NULL")
+                
+                // 2. Pour rendre 'decision' nullable, on doit recréer la table car SQLite ALTER TABLE est limité
+                db.execSQL("""
+                    CREATE TABLE swipe_decisions_new (
+                        assetId TEXT NOT NULL,
+                        albumId TEXT NOT NULL,
+                        userId TEXT NOT NULL,
+                        decision TEXT,
+                        fileSize INTEGER,
+                        rating INTEGER,
+                        isFavorite INTEGER,
+                        createdAt INTEGER NOT NULL,
+                        isSynced INTEGER NOT NULL,
+                        wasSyncedSkip INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(assetId, userId)
+                    )
+                """.trimIndent())
+
+                db.execSQL("""
+                    INSERT INTO swipe_decisions_new (assetId, albumId, userId, decision, fileSize, rating, isFavorite, createdAt, isSynced, wasSyncedSkip)
+                    SELECT assetId, albumId, userId, decision, fileSize, rating, isFavorite, createdAt, isSynced, wasSyncedSkip
+                    FROM swipe_decisions
+                """.trimIndent())
+
+                db.execSQL("DROP TABLE swipe_decisions")
+                db.execSQL("ALTER TABLE swipe_decisions_new RENAME TO swipe_decisions")
+            }
+        }
+
+        /**
+         * Migration ROOM de la version 10 vers la version 11.
+         * - Ajoute la colonne 'rating' à 'swipe_decisions'.
+         */
+        private val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                AppLogger.i("Database", "Exécution Migration 10 -> 11 (Ajout rating)")
+                db.execSQL("ALTER TABLE swipe_decisions ADD COLUMN rating INTEGER DEFAULT NULL")
+            }
+        }
+
         /**
          * Migration ROOM de la version 9 vers la version 10.
          * - Modifie la table 'album_assets' pour inclure 'userId' dans la clé primaire.
@@ -222,7 +272,7 @@ abstract class AppDatabase : RoomDatabase() {
                                 "immich_swipe_database"
                             )
                     // On enregistre nos scripts de migration
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                     .fallbackToDestructiveMigration(false)
                 .build()
                 INSTANCE = instance
