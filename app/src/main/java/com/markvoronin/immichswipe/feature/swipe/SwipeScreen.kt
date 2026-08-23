@@ -149,6 +149,11 @@ fun SwipeScreen(
 
     LaunchedEffect(album.id) {
         viewModel.retryLoading()
+        viewModel.resetToFirstUnprocessed()
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.resetToFirstUnprocessed()
     }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -1562,14 +1567,20 @@ fun SwipeCard(
                 }
                 .pointerInput(isNext) {
                     if (isNext) return@pointerInput
+                    var dragStartY = 0f
+                    var dragStartX = 0f
                     detectDragGestures(
-                        onDragStart = { dragDirection = 0 },
+                        onDragStart = { 
+                            dragDirection = 0
+                            dragStartY = offsetY.value
+                            dragStartX = offsetX.value
+                        },
                         onDragEnd = {
                             scope.launch {
                                 val currentX = offsetX.value
                                 val currentY = offsetY.value
 
-                                if (dragDirection == 1) { // Process horizontal swipe
+                                if (dragDirection == 1) { // Horizontal swipe
                                     if (currentX > 250) {
                                         offsetX.animateTo(1500f, tween(150))
                                         onSwipe(SwipeDecision.KEEP)
@@ -1579,24 +1590,36 @@ fun SwipeCard(
                                     } else {
                                         offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     }
-                                } else if (dragDirection == 2) { // Process vertical (metadata)
-                                    if (currentY <= -metadataHeightPx * 0.3f) {
+                                } else if (dragDirection == 2) { // Vertical metadata
+                                    // Snap based on final position
+                                    if (currentY <= -metadataHeightPx * 0.4f) {
                                         offsetY.animateTo(-metadataHeightPx, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     } else {
                                         offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     }
+                                } else {
+                                    // Small movement, reset both
+                                    offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    offsetY.animateTo(dragStartY, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                 }
                                 dragDirection = 0
                             }
                         },
                         onDrag = { change, dragAmount ->
                             change.consume()
-
+                            
                             if (dragDirection == 0) {
-                                if (abs(dragAmount.x) > abs(dragAmount.y)) {
-                                    dragDirection = 1 // Horizontal lock
-                                } else if (abs(dragAmount.y) > abs(dragAmount.x)) {
-                                    dragDirection = 2 // Vertical lock
+                                val accumulatedDX = abs(offsetX.value - dragStartX)
+                                val accumulatedDY = abs(offsetY.value - dragStartY)
+                                
+                                // Decision threshold: 20 pixels of movement
+                                if (accumulatedDX > 20 || accumulatedDY > 20) {
+                                    // If panel is already open, strictly lock to vertical drag to allow closing it
+                                    if (dragStartY < -metadataHeightPx * 0.5f && accumulatedDY > 5) {
+                                        dragDirection = 2
+                                    } else {
+                                        dragDirection = if (accumulatedDX > accumulatedDY) 1 else 2
+                                    }
                                 }
                             }
 
@@ -1604,6 +1627,10 @@ fun SwipeCard(
                                 if (dragDirection == 1) {
                                     offsetX.snapTo(offsetX.value + dragAmount.x)
                                 } else if (dragDirection == 2) {
+                                    offsetY.snapTo((offsetY.value + dragAmount.y).coerceIn(-metadataHeightPx, 0f))
+                                } else {
+                                    // Track both until locked
+                                    offsetX.snapTo(offsetX.value + dragAmount.x)
                                     offsetY.snapTo((offsetY.value + dragAmount.y).coerceIn(-metadataHeightPx, 0f))
                                 }
                             }
@@ -1818,6 +1845,21 @@ fun SwipeCard(
                 }
 
                 if (!isNext) {
+                    // Tap-to-close area above the panel
+                    if (offsetY.value < -10f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .pointerInput(Unit) {
+                                    detectTapGestures {
+                                        scope.launch { 
+                                            offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) 
+                                        }
+                                    }
+                                }
+                        )
+                    }
+
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -1837,7 +1879,8 @@ fun SwipeCard(
                             onDragEnd = {
                                 scope.launch {
                                     val currentY = offsetY.value
-                                    if (currentY <= -metadataHeightPx * 0.3f) {
+                                    // Snap based on position
+                                    if (currentY <= -metadataHeightPx * 0.4f) {
                                         offsetY.animateTo(-metadataHeightPx, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     } else {
                                         offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))

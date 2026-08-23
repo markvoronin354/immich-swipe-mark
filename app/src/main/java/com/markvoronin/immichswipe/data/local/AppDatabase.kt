@@ -21,7 +21,7 @@ import com.markvoronin.immichswipe.data.local.entity.UserAccountEntity
  */
 @Database(
     entities = [SwipeDecisionEntity::class, SyncHistoryEntity::class, AlbumAssetEntity::class, UserAccountEntity::class],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -30,6 +30,18 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userAccountDao(): UserAccountDao
 
     companion object {
+        private val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                AppLogger.i("Database", "Exécution Migration 10 -> 11 (Ajout métadonnées à album_assets)")
+                db.execSQL("ALTER TABLE album_assets ADD COLUMN type TEXT")
+                db.execSQL("ALTER TABLE album_assets ADD COLUMN fileCreatedAt TEXT")
+                db.execSQL("ALTER TABLE album_assets ADD COLUMN originalFileName TEXT")
+                db.execSQL("ALTER TABLE album_assets ADD COLUMN fileSizeInBytes INTEGER")
+                db.execSQL("ALTER TABLE album_assets ADD COLUMN imageWidth INTEGER")
+                db.execSQL("ALTER TABLE album_assets ADD COLUMN imageHeight INTEGER")
+            }
+        }
+
         /**
          * Migration ROOM de la version 9 vers la version 10.
          * - Modifie la table 'album_assets' pour inclure 'userId' dans la clé primaire.
@@ -222,7 +234,7 @@ abstract class AppDatabase : RoomDatabase() {
                                 "immich_swipe_database"
                             )
                     // On enregistre nos scripts de migration
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                     .fallbackToDestructiveMigration(false)
                 .build()
                 INSTANCE = instance

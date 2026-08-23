@@ -16,5 +16,11 @@ import androidx.room.Index
 data class AlbumAssetEntity(
     val albumId: String,
     val assetId: String,
-    val userId: String
+    val userId: String,
+    val type: String? = null,
+    val fileCreatedAt: String? = null,
+    val originalFileName: String? = null,
+    val fileSizeInBytes: Long? = null,
+    val imageWidth: Int? = null,
+    val imageHeight: Int? = null
 )

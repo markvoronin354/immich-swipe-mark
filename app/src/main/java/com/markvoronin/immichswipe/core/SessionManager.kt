@@ -50,6 +50,8 @@ object SessionManager {
     private val _connectionStatus = MutableStateFlow(ConnectionStatus())
     val connectionStatus = _connectionStatus.asStateFlow()
 
+    val globalShuffleSeed = System.currentTimeMillis()
+
     fun updateStatus(level: ConnectionLevel, type: DiagStatus, statusCode: Int? = null, rawMessage: String? = null) {
         _connectionStatus.value = ConnectionStatus(level, type, statusCode, rawMessage)
     }

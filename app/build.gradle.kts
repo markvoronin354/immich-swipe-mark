@@ -16,8 +16,8 @@ android {
         applicationId = "com.markvoronin.immichswipe"
         minSdk = 26
         targetSdk = 36
-        versionCode = 17
-        versionName = "2.5.4"
+        versionCode = 18
+        versionName = "2.5.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -31,7 +31,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -87,4 +88,16 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
+
+    // Baseline Profile
+    // \"baselineProfile\"(project(\":app\"))
+    androidTestImplementation(libs.benchmark.macro.junit4)
+    androidTestImplementation(libs.uiautomator)
 }
+
+// baselineProfile {
+//     // Defines the packages to be tested when generating profiles.
+//     filter {
+//         include("com.markvoronin.immichswipe.**")
+//     }
+// }
