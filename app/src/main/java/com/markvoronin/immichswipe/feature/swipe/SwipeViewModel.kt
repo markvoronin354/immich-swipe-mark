@@ -145,6 +145,7 @@ class SwipeViewModel(
                             shuffleSeed = SessionManager.globalShuffleSeed
                         ).collect { batch ->
                             allAssetsFoundFlow.value = batch.assets
+                            _uiState.update { it.copy(remoteTotalCount = batch.total) }
                             if (batch.assets.isNotEmpty()) {
                                 isAssetsLoadingFlow.value = false
                             }
@@ -412,13 +413,56 @@ class SwipeViewModel(
     fun applyChanges() {
         viewModelScope.launch {
             val config = sessionRepository.sessionConfig.first() ?: return@launch
+            val currentState = _uiState.value
             _uiState.update { it.copy(isSyncing = true) }
             try {
-                val decisions = _uiState.value.decisions
-                val toDelete = decisions.filter { it.value == SwipeDecision.DELETE }.keys.toList()
-                if (toDelete.isNotEmpty()) assetRepository.deleteAssets(toDelete)
-                swipeDecisionRepository.markAsSynced(decisions.keys.toList(), config.userId)
-                _uiState.update { it.copy(isSyncing = false, showSummary = false, showSuccessAnimation = true) }
+                val currentDecisions = currentState.decisions
+                val toDelete = currentDecisions.filter { it.value == SwipeDecision.DELETE }.keys.toList()
+                val allSwipedIds = currentDecisions.keys.toList()
+                
+                // 1. Delete on server (and local cache via AssetRepository)
+                if (toDelete.isNotEmpty()) {
+                    assetRepository.deleteAssets(toDelete)
+                    // Also delete these decisions from local DB as they are no longer relevant
+                    swipeDecisionRepository.removeDecisions(toDelete, config.userId)
+                }
+                
+                // 2. Mark remaining decisions as synced in DB (KEPT, ARCHIVE, LOCK)
+                val toMarkSynced = allSwipedIds.filter { it !in toDelete }
+                if (toMarkSynced.isNotEmpty()) {
+                    swipeDecisionRepository.markAsSynced(toMarkSynced, config.userId)
+                }
+                
+                // 3. Save sync history
+                swipeDecisionRepository.saveSyncHistory(
+                    userId = config.userId,
+                    deletedCount = currentState.deletedCount,
+                    bytesSaved = currentState.deletedSize,
+                    keptCount = currentState.keptCount,
+                    archivedCount = currentState.archiveCount,
+                    lockedCount = currentState.lockedCount
+                )
+
+                // 4. Update local work pile to remove deleted assets permanently for this session
+                if (toDelete.isNotEmpty()) {
+                    val updatedWorkPile = allAssetsFoundFlow.value.filter { it.id !in toDelete }
+                    masterWorkPile = updatedWorkPile
+                    allAssetsFoundFlow.value = updatedWorkPile
+                    
+                    // Update the total count to reflect deletions
+                    _uiState.update { it.copy(remoteTotalCount = (it.remoteTotalCount - toDelete.size).coerceAtLeast(0)) }
+                }
+
+                // 5. Success state
+                _uiState.update { it.copy(
+                    isSyncing = false, 
+                    showSummary = false, 
+                    showSuccessAnimation = true,
+                    // Remove deleted assets from current UI decisions too
+                    decisions = it.decisions.filterKeys { id -> id !in toDelete },
+                    history = emptyList() // Reset history for undo after sync
+                ) }
+
                 delay(2000)
                 _uiState.update { it.copy(showSuccessAnimation = false) }
             } catch (e: Exception) {

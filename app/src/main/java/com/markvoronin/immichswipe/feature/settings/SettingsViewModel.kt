@@ -311,11 +311,6 @@ class SettingsViewModel(
         }
     }
 
-    fun setTrashLocalDeletion(trash: Boolean) {
-        viewModelScope.launch {
-            sessionRepository.saveTrashLocalDeletion(trash)
-        }
-    }
 
     fun setTapToSwipeEnabled(enabled: Boolean) {
         viewModelScope.launch {

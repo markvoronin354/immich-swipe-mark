@@ -175,7 +175,6 @@ class SessionDataStore(private val context: Context) {
     suspend fun saveSyncLocalDeletion(sync: Boolean) { context.dataStore.edit { it[KEY_SYNC_LOCAL_DELETION] = sync } }
 
     fun isTrashLocalDeletion(): Flow<Boolean> = context.dataStore.data.map { it[KEY_TRASH_LOCAL_DELETION] ?: true }
-    suspend fun saveTrashLocalDeletion(trash: Boolean) { context.dataStore.edit { it[KEY_TRASH_LOCAL_DELETION] = trash } }
 
     fun isTapToSwipeEnabled(): Flow<Boolean> = context.dataStore.data.map { it[KEY_TAP_TO_SWIPE] ?: false }
     suspend fun saveTapToSwipeEnabled(enabled: Boolean) { context.dataStore.edit { it[KEY_TAP_TO_SWIPE] = enabled } }

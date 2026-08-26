@@ -26,6 +26,9 @@
     <!-- Home Screen -->
     <string name="home_search_placeholder">Search an album…</string>
     <string name="home_no_results">No albums match your search</string>
+    <string name="home_global_reset_button">Reset all sorting</string>
+    <string name="home_global_reset_confirm_title">Reset All Progress?</string>
+    <string name="home_global_reset_confirm_msg">This will permanently delete ALL local sorting decisions for ALL albums and collections for this account.\n\nDecisions already synced to Immich (deleted or archived) will NOT be affected.\n\nDo you want to continue?</string>
     <string name="home_error_title">Oops! An error occurred</string>
     <string name="home_retry_button">Retry</string>
     <string name="home_status_in_progress">In progress</string>
@@ -116,8 +119,6 @@
     <string name="settings_swap_summary_archive_desc">Replace the Archive button with a Summary button in the sorting bar</string>
     <string name="settings_sync_local_deletion_label">Sync deletion with device</string>
     <string name="settings_sync_local_deletion_desc">When you delete a photo from Immich, also attempt to delete the local file from your device storage to prevent re-uploading.</string>
-    <string name="settings_trash_local_deletion_label">Move to Trash instead of Delete</string>
-    <string name="settings_trash_local_deletion_desc">If supported by your system, files will be moved to the trash bin for 30 days instead of being permanently erased.</string>
     <string name="swipe_toggle_display">Toggle display mode</string>
 
     <!-- Swipe Screen -->

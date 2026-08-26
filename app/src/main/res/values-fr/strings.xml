@@ -27,6 +27,9 @@
     <!-- Écran d'Accueil -->
     <string name="home_search_placeholder">Rechercher un album…</string>
     <string name="home_no_results">Aucun album ne correspond à votre recherche</string>
+    <string name="home_global_reset_button">Réinitialiser tout le tri</string>
+    <string name="home_global_reset_confirm_title">Réinitialiser toute la progression ?</string>
+    <string name="home_global_reset_confirm_msg">Cela supprimera définitivement TOUTES vos décisions de tri locales pour TOUS les albums et collections de ce compte.\n\nLes décisions déjà synchronisées sur Immich (supprimées ou archivées) ne seront PAS affectées.\n\nVoulez-vous continuer ?</string>
     <string name="home_error_title">Oups ! Une erreur est survenue</string>
     <string name="home_retry_button">Réessayer</string>
     <string name="home_status_in_progress">En cours</string>
@@ -117,8 +120,6 @@
     <string name="settings_swap_summary_archive_desc">Remplace le bouton Archiver par un bouton Résumé dans la barre de tri</string>
     <string name="settings_sync_local_deletion_label">Sycnhro. suppression locale</string>
     <string name="settings_sync_local_deletion_desc">Lorsque vous supprimez une photo d\'Immich, tente également de supprimer le fichier local de votre téléphone pour éviter qu\'il ne soit re-sauvegardé.</string>
-    <string name="settings_trash_local_deletion_label">Mettre à la corbeille au lieu de supprimer</string>
-    <string name="settings_trash_local_deletion_desc">Si supporté par le système, les fichiers seront mis dans la corbeille pendant 30 jours au lieu d\'être effacés définitivement.</string>
     <string name="swipe_toggle_display">Changer le mode d\'affichage</string>
 
     <!-- Écran Swipe -->

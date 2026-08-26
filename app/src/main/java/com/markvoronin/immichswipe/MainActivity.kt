@@ -140,7 +140,9 @@ class MainActivity : ComponentActivity() {
                                                     albumRepository, 
                                                     swipeDecisionRepository,
                                                     assetRepository,
-                                                    accountRepository
+                                                    accountRepository,
+                                                    activeUserId,
+                                                    api
                                                 )
                                             ),
                                             assetRepository = assetRepository,

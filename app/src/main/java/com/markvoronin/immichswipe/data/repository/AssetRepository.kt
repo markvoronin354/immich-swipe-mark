@@ -220,6 +220,7 @@ class AssetRepository(
     suspend fun deleteAssets(assetIds: List<String>) {
         if (assetIds.isNotEmpty()) {
             api.deleteAssets(DeleteAssetsRequest(ids = assetIds, force = false))
+            albumAssetDao?.deleteAssets(assetIds)
         }
     }
 

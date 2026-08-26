@@ -230,7 +230,6 @@ class SessionRepository(context: Context) {
     suspend fun saveSwapSummaryArchive(swap: Boolean) { dataStore.saveSwapSummaryArchive(swap) }
     suspend fun saveBackupWarningShown(shown: Boolean) { dataStore.saveBackupWarningShown(shown) }
     suspend fun saveSyncLocalDeletion(sync: Boolean) { dataStore.saveSyncLocalDeletion(sync) }
-    suspend fun saveTrashLocalDeletion(trash: Boolean) { dataStore.saveTrashLocalDeletion(trash) }
     suspend fun saveTapToSwipeEnabled(enabled: Boolean) { dataStore.saveTapToSwipeEnabled(enabled) }
     suspend fun saveSortOrder(order: SortOrder) { dataStore.saveSortOrder(order.name) }
 

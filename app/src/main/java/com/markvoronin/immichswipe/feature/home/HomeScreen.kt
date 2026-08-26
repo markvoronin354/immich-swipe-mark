@@ -130,11 +130,12 @@ fun HomeScreen(
                                 )
                             }
 
-                            // Bouton pour basculer le layout
-                            IconButton(onClick = { viewModel.toggleLayoutMode() }) {
+                            // Bouton pour réinitialiser tout le tri
+                            IconButton(onClick = { viewModel.toggleGlobalResetConfirmation(true) }) {
                                 Icon(
-                                    imageVector = if (uiState.isGridView) Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
-                                    contentDescription = stringResource(R.string.settings_layout_label)
+                                    imageVector = Icons.Default.RestartAlt,
+                                    contentDescription = stringResource(R.string.home_global_reset_button),
+                                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
                                 )
                             }
                         } else if (uiState.currentTab == HomeTab.SWIPE) {
@@ -476,6 +477,39 @@ fun HomeScreen(
         StatsPopup(
             stats = uiState.stats,
             onClose = { viewModel.toggleStatsPopup(visible = false) }
+        )
+    }
+
+    // Confirmation de réinitialisation globale
+    if (uiState.showGlobalResetConfirmation) {
+        AlertDialog(
+            onDismissRequest = { viewModel.toggleGlobalResetConfirmation(false) },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.RestartAlt,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(stringResource(R.string.home_global_reset_confirm_title))
+                }
+            },
+            text = { Text(stringResource(R.string.home_global_reset_confirm_msg)) },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.resetAllDecisions() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.common_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.toggleGlobalResetConfirmation(false) }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+            shape = RoundedCornerShape(24.dp)
         )
     }
 }

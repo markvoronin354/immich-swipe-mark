@@ -26,6 +26,9 @@
     <!-- Pantalla de inicio -->
     <string name="home_search_placeholder">Buscar un álbum…</string>
     <string name="home_no_results">Ningún álbum coincide con tu búsqueda</string>
+    <string name="home_global_reset_button">Restablecer todo el tri</string>
+    <string name="home_global_reset_confirm_title">¿Restablecer todo el progreso?</string>
+    <string name="home_global_reset_confirm_msg">Esto eliminará de forma permanente TODAS las decisiones de clasificación locales para TODOS los álbumes y colecciones de esta cuenta.\n\nLas decisiones ya sincronizadas con Immich (eliminadas o archivadas) NO se verán afectadas.\n\n¿Desea continuar?</string>
     <string name="home_error_title">¡Vaya! Se ha producido un error</string>
     <string name="home_retry_button">Reintentar</string>
     <string name="home_status_in_progress">En curso</string>
@@ -116,8 +119,6 @@
     <string name="settings_swap_summary_archive_desc">Reemplaza el botón Archivar por un botón Resumen en la barra de clasificación</string>
     <string name="settings_sync_local_deletion_label">Sincronizar eliminación local</string>
     <string name="settings_sync_local_deletion_desc">Cuando eliminas una foto de Immich, también intenta eliminar el archivo local de tu dispositivo para evitar que se vuelva a subir.</string>
-    <string name="settings_trash_local_deletion_label">Mover a la papelera en lugar de eliminar</string>
-    <string name="settings_trash_local_deletion_desc">Si su sistema lo admite, los archivos se moverán a la papelera durante 30 días en lugar de borrarse permanentemente.</string>
     <string name="swipe_toggle_display">Cambiar modo de visualización</string>
 
     <!-- Pantalla de swipe -->

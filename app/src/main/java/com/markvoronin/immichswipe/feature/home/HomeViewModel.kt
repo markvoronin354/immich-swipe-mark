@@ -6,12 +6,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markvoronin.immichswipe.data.repository.UserRepository
 import com.markvoronin.immichswipe.data.repository.AlbumRepository
+import com.markvoronin.immichswipe.data.api.ImmichApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -36,13 +38,11 @@ class HomeViewModel(
     private val swipeDecisionRepository: SwipeDecisionRepository,
     private val assetRepository: AssetRepository,
     private val accountRepository: AccountRepository,
+    private val activeUserId: String,
+    private val api: ImmichApi
 ) : ViewModel() {
     
-    private val userRepository by lazy { 
-        UserRepository(
-            SessionManager.api ?: throw IllegalStateException("Session not initialized"),
-        )
-    }
+    private val userRepository = UserRepository(api)
     
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -91,80 +91,69 @@ class HomeViewModel(
 
         // Observe les décisions locales pour mettre à jour les barres de progression
         viewModelScope.launch {
-            sessionRepository.sessionConfig.collect { config ->
-                config?.let { cfg ->
-                    combine(
-                        swipeDecisionRepository.getGlobalUniqueTreatedCount(cfg.userId),
-                        swipeDecisionRepository.getGlobalUnsyncedCount(cfg.userId),
-                        swipeDecisionRepository.getAllAlbumDecisionCounts(cfg.userId)
-                    ) { globalTreatedCount, globalUnsyncedCount, albumStats ->
-                        val treatedMap = albumStats.associateBy { it.albumId }.mapValues { it.value.totalCount }.toMutableMap()
-                        val unsyncedMap = albumStats.associateBy { it.albumId }.mapValues { it.value.unsyncedCount }.toMutableMap()
-                        
-                        // Injection du compte global pour "Tous les médias"
-                        treatedMap[Album.VIRTUAL_ALL_ID] = globalTreatedCount
-                        unsyncedMap[Album.VIRTUAL_ALL_ID] = globalUnsyncedCount
-                        
-                        _uiState.update { 
-                            it.copy(
-                                albumTreatedCounts = treatedMap,
-                                albumUnsyncedChanges = unsyncedMap
-                            )
-                        }
-                    }.collect {}
+            combine(
+                swipeDecisionRepository.getGlobalUniqueTreatedCount(activeUserId),
+                swipeDecisionRepository.getGlobalUnsyncedCount(activeUserId),
+                swipeDecisionRepository.getAllAlbumDecisionCounts(activeUserId)
+            ) { globalTreatedCount, globalUnsyncedCount, albumStats ->
+                val treatedMap = albumStats.associateBy { it.albumId }.mapValues { it.value.totalCount }.toMutableMap()
+                val unsyncedMap = albumStats.associateBy { it.albumId }.mapValues { it.value.unsyncedCount }.toMutableMap()
+                
+                // Injection du compte global pour "Tous les médias"
+                treatedMap[Album.VIRTUAL_ALL_ID] = globalTreatedCount
+                unsyncedMap[Album.VIRTUAL_ALL_ID] = globalUnsyncedCount
+                
+                _uiState.update { 
+                    it.copy(
+                        albumTreatedCounts = treatedMap,
+                        albumUnsyncedChanges = unsyncedMap
+                    )
                 }
-            }
+            }.collect {}
         }
 
         // Observe les statistiques globales (Historique + Albums)
         viewModelScope.launch {
-            sessionRepository.sessionConfig.collect { config ->
-                if (config == null) return@collect
+            combine(
+                swipeDecisionRepository.getSyncHistory(activeUserId),
+                swipeDecisionRepository.getUnsyncedDecisionCounts(activeUserId),
+                _uiState.map { it.albums }.distinctUntilChanged(),
+                _uiState.map { it.albumTreatedCounts }.distinctUntilChanged()
+            ) { history, unsyncedCounts, albums, treatedCounts ->
+                val now = System.currentTimeMillis()
+                val oneWeekAgo = now - (7 * 24 * 60 * 60 * 1000L)
+                
+                val weeklyHistory = history.filter { it.timestamp >= oneWeekAgo }
 
-                combine(
-                    swipeDecisionRepository.getSyncHistory(config.userId),
-                    swipeDecisionRepository.getUnsyncedDecisionCounts(config.userId),
-                    _uiState.map { it.albums },
-                    _uiState.map { it.albumTreatedCounts }
-                ) { history, unsyncedCounts, albums, treatedCounts ->
-                    val now = System.currentTimeMillis()
-                    val oneWeekAgo = now - (7 * 24 * 60 * 60 * 1000L)
-                    
-                    val weeklyHistory = history.filter { it.timestamp >= oneWeekAgo }
+                // STATS GLOBALES (Cumul Historique + Décisions locales non synchronisées)
+                val totalDeleted = history.sumOf { it.deletedCount }
+                val totalBytes = history.sumOf { it.bytesSaved }
+                val totalLocked = history.sumOf { it.lockedCount }
+                
+                val totalKept = history.sumOf { it.keptCount } + unsyncedCounts.keptCount
+                val totalArchived = history.sumOf { it.archivedCount } + unsyncedCounts.archivedCount
+                
+                val weeklyDeleted = weeklyHistory.sumOf { it.deletedCount }
+                val weeklyBytes = weeklyHistory.sumOf { it.bytesSaved }
 
-                    // STATS GLOBALES (Cumul Historique + Décisions locales non synchronisées)
-                    // On reprend le cumul de tout ce qui a été fait par le passé
-                    val totalDeleted = history.sumOf { it.deletedCount }
-                    val totalBytes = history.sumOf { it.bytesSaved }
-                    val totalLocked = history.sumOf { it.lockedCount }
-                    
-                    // Pour KEEP et ARCHIVE, on fait : (Somme de l'historique) + (Nouveaux swipes pas encore synchronisés)
-                    val totalKept = history.sumOf { it.keptCount } + unsyncedCounts.keptCount
-                    val totalArchived = history.sumOf { it.archivedCount } + unsyncedCounts.archivedCount
-                    
-                    // Stats hebdomadaires (basées sur l'activité réelle enregistrée)
-                    val weeklyDeleted = weeklyHistory.sumOf { it.deletedCount }
-                    val weeklyBytes = weeklyHistory.sumOf { it.bytesSaved }
-
-                    val completedCount = albums.count { album ->
-                        val treated = treatedCounts[album.id] ?: 0
-                        (treated >= album.assetCount) && (album.assetCount > 0)
-                    }
-
-                    StatsUiData(
-                        totalDeleted = totalDeleted,
-                        totalBytesSaved = totalBytes,
-                        totalKept = totalKept,
-                        totalArchived = totalArchived,
-                        totalLocked = totalLocked,
-                        totalAlbums = albums.size,
-                        completedAlbums = completedCount,
-                        weeklyDeleted = weeklyDeleted,
-                        weeklyBytesSaved = weeklyBytes
-                    )
-                }.collect { newStats ->
-                    _uiState.update { it.copy(stats = newStats) }
+                val completedCount = albums.count { album ->
+                    val treated = treatedCounts[album.id] ?: 0
+                    (treated >= album.assetCount) && (album.assetCount > 0)
                 }
+
+                StatsUiData(
+                    totalDeleted = totalDeleted,
+                    totalBytesSaved = totalBytes,
+                    totalKept = totalKept,
+                    totalArchived = totalArchived,
+                    totalLocked = totalLocked,
+                    totalAlbums = albums.size,
+                    completedAlbums = completedCount,
+                    weeklyDeleted = weeklyDeleted,
+                    weeklyBytesSaved = weeklyBytes
+                )
+            }.collect { newStats ->
+                _uiState.update { it.copy(stats = newStats) }
             }
         }
 
@@ -401,6 +390,19 @@ class HomeViewModel(
     fun requestReset() {
         viewModelScope.launch {
             _resetRequestSignal.emit(Unit)
+        }
+    }
+
+    fun toggleGlobalResetConfirmation(visible: Boolean) {
+        _uiState.update { it.copy(showGlobalResetConfirmation = visible) }
+    }
+
+    fun resetAllDecisions() {
+        viewModelScope.launch {
+            swipeDecisionRepository.clearUserData(activeUserId)
+            toggleGlobalResetConfirmation(false)
+            // Recharger les données pour mettre à jour les barres de progression
+            refreshAlbums()
         }
     }
 

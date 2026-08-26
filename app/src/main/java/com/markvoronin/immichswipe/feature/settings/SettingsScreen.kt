@@ -474,34 +474,6 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.outline,
                             modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)
                         )
-
-                        AnimatedVisibility(
-                            visible = uiState.syncLocalDeletion,
-                            enter = fadeIn() + expandVertically(),
-                            exit = fadeOut() + shrinkVertically()
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .padding(start = 32.dp, end = 8.dp, bottom = 8.dp)
-                                    .background(
-                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                        RoundedCornerShape(12.dp)
-                                    )
-                            ) {
-                                SettingsToggleItemSmall(
-                                    title = stringResource(R.string.settings_trash_local_deletion_label),
-                                    checked = uiState.trashLocalDeletion,
-                                    onCheckedChange = { viewModel.setTrashLocalDeletion(it) },
-                                    icon = Icons.Default.DeleteSweep
-                                )
-                                Text(
-                                    text = stringResource(R.string.settings_trash_local_deletion_desc),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.outline,
-                                    modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)
-                                )
-                            }
-                        }
                     }
 
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)

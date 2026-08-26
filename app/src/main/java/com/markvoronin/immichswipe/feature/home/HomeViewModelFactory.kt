@@ -13,13 +13,23 @@ class HomeViewModelFactory(
     private val albumRepository: AlbumRepository,
     private val swipeDecisionRepository: SwipeDecisionRepository,
     private val assetRepository: AssetRepository,
-    private val accountRepository: AccountRepository
+    private val accountRepository: AccountRepository,
+    private val activeUserId: String,
+    private val api: com.markvoronin.immichswipe.data.api.ImmichApi
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return HomeViewModel(sessionRepository, albumRepository, swipeDecisionRepository, assetRepository, accountRepository) as T
+            return HomeViewModel(
+                sessionRepository, 
+                albumRepository, 
+                swipeDecisionRepository, 
+                assetRepository, 
+                accountRepository,
+                activeUserId,
+                api
+            ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

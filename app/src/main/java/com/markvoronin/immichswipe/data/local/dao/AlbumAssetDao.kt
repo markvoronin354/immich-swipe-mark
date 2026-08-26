@@ -23,6 +23,9 @@ interface AlbumAssetDao {
     @Query("DELETE FROM album_assets WHERE albumId = :albumId AND userId = :userId AND assetId IN (:assetIds)")
     suspend fun deleteAlbumAssets(albumId: String, userId: String, assetIds: List<String>)
 
+    @Query("DELETE FROM album_assets WHERE assetId IN (:assetIds)")
+    suspend fun deleteAssets(assetIds: List<String>)
+
     @Query("SELECT COUNT(*) FROM album_assets WHERE albumId = :albumId AND userId = :userId")
     suspend fun getAssetCountForAlbum(albumId: String, userId: String): Int
 
