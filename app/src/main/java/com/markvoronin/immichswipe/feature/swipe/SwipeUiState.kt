@@ -91,9 +91,9 @@ data class SwipeUiState(
     // Statistiques de tri basées sur les décisions locales non synchronisées.
     // 'assets' représente la pile de travail (non synchronisée).
     // 'decisions' contient les actions déjà effectuées sur cette pile.
-    val totalCount: Int get() = assets.size
+    val totalCount: Int get() = remoteTotalCount
     val processedCount: Int get() = decisions.size
-    val remainingCount: Int get() = totalCount - processedCount
+    val remainingCount: Int get() = (totalCount - processedCount).coerceAtLeast(0)
 
     val keptCount: Int get() = decisions.values.count { it == SwipeDecision.KEEP }
     val allKeptCount: Int get() = decisions.values.count { it == SwipeDecision.KEEP || it == SwipeDecision.ARCHIVE || it == SwipeDecision.LOCK }
@@ -140,12 +140,19 @@ data class SwipeUiState(
             return (userQuotaBytes - processedSize).coerceAtLeast(0L)
         }
 
-        val unprocessed = assets.filter { !decisions.containsKey(it.id) }
+        val unprocessedInPile = assets.filter { !decisions.containsKey(it.id) }
         val avg = averageKnownSize
-        return unprocessed.sumOf { asset ->
+        
+        val sizeInPile = unprocessedInPile.sumOf { asset ->
             val size = getEffectiveSize(asset.id)
             if (size > 0) size else avg
         }
+        
+        // Estimate size for assets not yet loaded in the work pile
+        val nonLoadedCount = (remoteTotalCount - assets.size).coerceAtLeast(0)
+        val estimatedNonLoadedSize = nonLoadedCount * avg
+        
+        return sizeInPile + estimatedNonLoadedSize
     }
 
     /**
@@ -155,7 +162,9 @@ data class SwipeUiState(
         if (albumId == com.markvoronin.immichswipe.domain.model.Album.VIRTUAL_ALL_ID && userQuotaBytes != null && userQuotaBytes > 0 && !includeArchived) {
             return false // On se base sur une valeur réelle du serveur
         }
-        return assets.any { !decisions.containsKey(it.id) && (assetSizes[it.id] ?: 0L) == 0L }
+        val hasIncompletePile = assets.any { !decisions.containsKey(it.id) && (assetSizes[it.id] ?: 0L) == 0L }
+        val hasNonLoadedAssets = remoteTotalCount > assets.size
+        return hasIncompletePile || hasNonLoadedAssets
     }
 
     // Progression (0.0f à 1.0f)

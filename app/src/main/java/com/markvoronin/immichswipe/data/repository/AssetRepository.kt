@@ -77,29 +77,39 @@ class AssetRepository(
             else -> SearchAssetsRequest(albumIds = listOf(albumId), visibility = visibility, withExif = needsExif, order = "desc")
         }
 
-        // 2. Fetch first page to get the total and check if we need a full sync
+        // 2. Fetch statistics to get the TRUE total (Search metadata total can be capped or inaccurate on some versions)
+        val statsResp = try {
+            api.getSearchStatistics(baseRequest)
+        } catch (e: Exception) {
+            AppLogger.e("AssetRepo", "Error fetching stats: ${e.message}")
+            null
+        }
+        
+        val totalFromServer = statsResp?.total ?: 0
+
+        // 3. Fetch first page to check if we need a full sync
         val firstPageResp = try {
             api.searchAssets(baseRequest.copy(page = 1, size = 1000))
         } catch (e: Exception) {
             AppLogger.e("AssetRepo", "Error fetching first page: ${e.message}")
-            if (mappedLocal.isEmpty()) send(AssetBatch(emptyList(), 0, isLocalCache = false, isSyncing = false))
+            if (mappedLocal.isEmpty()) send(AssetBatch(emptyList(), totalFromServer, isLocalCache = false, isSyncing = false))
             return@channelFlow
         }
 
-        val totalFromServer = firstPageResp.assets.total
-        val firstPageItems = firstPageResp.assets.items
+        // Use the higher of the two totals if they differ
+        val effectiveTotal = maxOf(totalFromServer, firstPageResp.assets.total)
         
         // If the cache is already complete, we can stop here or sync quietly
-        val isCacheComplete = cachedEntities.size >= totalFromServer && totalFromServer > 0
+        val isCacheComplete = cachedEntities.size >= effectiveTotal && effectiveTotal > 0
         
         if (isCacheComplete) {
             // Check if Page 1 matches. if not, maybe some items are new.
             // For now, let's just finish and be fast.
-            send(AssetBatch(mappedLocal, totalFromServer, isLocalCache = true, isSyncing = false))
+            send(AssetBatch(mappedLocal, effectiveTotal, isLocalCache = true, isSyncing = false))
             return@channelFlow
         }
 
-        // 3. Background Sync (only if cache is incomplete)
+        // 4. Background Sync (only if cache is incomplete)
         val allFetchedAssets = mappedLocal.toMutableList()
         val fetchedIds = cachedEntities.map { it.assetId }.toMutableSet()
         
@@ -134,7 +144,7 @@ class AssetRepository(
                     }
                     
                     // Progressive emission
-                    send(AssetBatch(allFetchedAssets.toList(), totalFromServer, isLocalCache = false, isSyncing = resp.assets.nextPage != null))
+                    send(AssetBatch(allFetchedAssets.toList(), effectiveTotal, isLocalCache = false, isSyncing = resp.assets.nextPage != null))
                 }
                 nextPage = resp.assets.nextPage
                 if (allFetchedAssets.size > 500000) break
@@ -145,7 +155,10 @@ class AssetRepository(
         }
 
         // Final emission
-        send(AssetBatch(allFetchedAssets.toList(), totalFromServer, isLocalCache = false, isSyncing = false))
+        if (allFetchedAssets.size < effectiveTotal) {
+            AppLogger.w("AssetRepo", "Sync finished but only fetched ${allFetchedAssets.size} / $effectiveTotal. Server might be hiding some items.")
+        }
+        send(AssetBatch(allFetchedAssets.toList(), effectiveTotal, isLocalCache = false, isSyncing = false))
     }
 
     fun applySort(allAssets: List<Asset>, sortOrder: SortOrder, shuffleSeed: Long?): List<Asset> {

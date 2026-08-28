@@ -41,7 +41,8 @@ class SwipeViewModel(
     private val _uiState = MutableStateFlow(SwipeUiState(
         albumName = album.albumName,
         albumId = album.id,
-        userQuotaBytes = userQuotaBytes
+        userQuotaBytes = userQuotaBytes,
+        remoteTotalCount = album.assetCount
     ))
     val uiState: StateFlow<SwipeUiState> = _uiState.asStateFlow()
 
@@ -145,7 +146,13 @@ class SwipeViewModel(
                             shuffleSeed = SessionManager.globalShuffleSeed
                         ).collect { batch ->
                             allAssetsFoundFlow.value = batch.assets
-                            _uiState.update { it.copy(remoteTotalCount = batch.total) }
+                            
+                            // Only update the total if it's from the server or if it's higher than current
+                            // This prevents local cache emissions from temporarily resetting the count to 1000
+                            if (!batch.isLocalCache || batch.total > _uiState.value.remoteTotalCount) {
+                                _uiState.update { it.copy(remoteTotalCount = batch.total) }
+                            }
+                            
                             if (batch.assets.isNotEmpty()) {
                                 isAssetsLoadingFlow.value = false
                             }
