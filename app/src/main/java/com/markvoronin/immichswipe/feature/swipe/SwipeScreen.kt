@@ -399,9 +399,9 @@ fun SwipeScreen(
                 .padding(horizontal = 8.dp, vertical = 4.dp),
             contentAlignment = Alignment.Center
         ) {
-            if (uiState.isLoading) {
+            if (uiState.isLoading && uiState.assets.isEmpty()) {
                 CircularProgressIndicator()
-            } else if (uiState.error != null) {
+            } else if (uiState.error != null && uiState.assets.isEmpty()) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = uiState.error!!,
@@ -495,6 +495,43 @@ fun SwipeScreen(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
+                    }
+                }
+            }
+
+            if ((uiState.isFetchingAssets || uiState.isLoading) && uiState.assets.isNotEmpty()) {
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = true,
+                    enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { -it },
+                    exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { -it },
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 12.dp)
+                        .zIndex(10f)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
+                        tonalElevation = 6.dp,
+                        shadowElevation = 6.dp
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = stringResource(R.string.swipe_fetching_assets),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
             }
@@ -3372,10 +3409,11 @@ fun ZoomableBox(
                             if (zoomChange != 1f || panChange != Offset.Zero) {
                                 val oldScale = if (resetOnRelease) animatedScale.value else scale
                                 val newScale = (oldScale * zoomChange).coerceIn(0.7f, 5f)
+                                val effectiveZoomChange = if (oldScale > 0.0001f) newScale / oldScale else 1f
                                 
                                 val oldOffset = if (resetOnRelease) animatedOffset.value else offset
-                                // Correct formula for zooming around centroid with default Center origin
-                                val newOffset = (centroid - size.toSize().center) * (1f - zoomChange) + (oldOffset * zoomChange) + panChange
+                                // Correct formula for zooming around centroid with default Center origin using actual scale ratio
+                                val newOffset = (centroid - size.toSize().center) * (1f - effectiveZoomChange) + (oldOffset * effectiveZoomChange) + panChange
 
                                 if (resetOnRelease) {
                                     scope.launch {

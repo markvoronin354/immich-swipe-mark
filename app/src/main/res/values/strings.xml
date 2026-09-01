@@ -142,6 +142,7 @@
     <string name="swipe_metadata_size">Size</string>
     <string name="swipe_metadata_resolution">Resolution</string>
     <string name="swipe_loading">Loading…</string>
+    <string name="swipe_fetching_assets">Fetching assets…</string>
     <string name="swipe_syncing">Syncing…</string>
     <string name="swipe_sync_changes">Sync changes</string>
     <string name="swipe_congratulations">Congratulations! Album sorted.</string>

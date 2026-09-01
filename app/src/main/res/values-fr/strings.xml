@@ -143,6 +143,7 @@
     <string name="swipe_metadata_size">Taille</string>
     <string name="swipe_metadata_resolution">Résolution</string>
     <string name="swipe_loading">Chargement…</string>
+    <string name="swipe_fetching_assets">Chargement des médias…</string>
     <string name="swipe_syncing">Synchronisation…</string>
     <string name="swipe_sync_changes">Synchroniser les changements</string>
     <string name="swipe_congratulations">Félicitations ! Album trié.</string>

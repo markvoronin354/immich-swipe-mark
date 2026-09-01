@@ -18,6 +18,7 @@ enum class SwipeDecision {
  */
 data class SwipeUiState(
     val isLoading: Boolean = false,
+    val isFetchingAssets: Boolean = false,
     val isSyncing: Boolean = false,
     val showSuccessAnimation: Boolean = false,
     val showSummary: Boolean = false,

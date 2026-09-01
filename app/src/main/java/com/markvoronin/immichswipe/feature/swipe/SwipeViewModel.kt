@@ -49,6 +49,7 @@ class SwipeViewModel(
     private var masterWorkPile: List<Asset> = emptyList()
     private val allAssetsFoundFlow = MutableStateFlow<List<Asset>>(emptyList())
     private val isAssetsLoadingFlow = MutableStateFlow(true)
+    private val isFetchingAssetsFlow = MutableStateFlow(true)
     private var assetsJob: Job? = null
     private var sortingJob: Job? = null
     
@@ -133,9 +134,10 @@ class SwipeViewModel(
                 val config = sessionRepository.sessionConfig.first() ?: return@launch
                 
                 if (allAssetsFoundFlow.value.isEmpty()) {
-                    _uiState.update { it.copy(isLoading = true) }
+                    _uiState.update { it.copy(isLoading = true, isFetchingAssets = true) }
                 }
                 isAssetsLoadingFlow.value = true
+                isFetchingAssetsFlow.value = true
 
                 launch {
                     try {
@@ -156,17 +158,21 @@ class SwipeViewModel(
                             if (batch.assets.isNotEmpty()) {
                                 isAssetsLoadingFlow.value = false
                             }
+
+                            isFetchingAssetsFlow.value = batch.isSyncing
                         }
                     } finally {
                         isAssetsLoadingFlow.value = false
+                        isFetchingAssetsFlow.value = false
                     }
                 }
 
                 combine(
                     swipeDecisionRepository.getDecisionsForAlbum(album.id, config.userId),
                     allAssetsFoundFlow,
-                    isAssetsLoadingFlow
-                ) { localDecisions, allAssetsFound, isFetching ->
+                    isAssetsLoadingFlow,
+                    isFetchingAssetsFlow
+                ) { localDecisions, allAssetsFound, isInitialLoading, isFetching ->
                     val decisionMap = localDecisions.associate { entity ->
                         val d = try { SwipeDecision.valueOf(entity.decision) } catch (_: Exception) { SwipeDecision.KEEP }
                         entity.assetId to d
@@ -187,13 +193,14 @@ class SwipeViewModel(
                         overrideDecisions = decisionMap,
                         overrideSizes = sizeMap,
                         overrideHistory = derivedHistory,
-                        overrideIsLoading = isFetching && allAssetsFound.isEmpty()
+                        overrideIsLoading = isInitialLoading && allAssetsFound.isEmpty(),
+                        overrideIsFetchingAssets = isFetching || (isInitialLoading && allAssetsFound.isEmpty())
                     )
                 }.collect {}
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 AppLogger.e("Swipe", "Error loading album", e)
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update { it.copy(isLoading = false, isFetchingAssets = false, error = e.message) }
             }
         }
     }
@@ -203,7 +210,8 @@ class SwipeViewModel(
         overrideDecisions: Map<String, SwipeDecision>? = null,
         overrideSizes: Map<String, Long>? = null,
         overrideHistory: List<String>? = null,
-        overrideIsLoading: Boolean? = null
+        overrideIsLoading: Boolean? = null,
+        overrideIsFetchingAssets: Boolean? = null
     ) {
         val decisions = overrideDecisions ?: _uiState.value.decisions
         val assetSizes = overrideSizes ?: _uiState.value.assetSizes
@@ -242,7 +250,8 @@ class SwipeViewModel(
                     decisions = decisions,
                     assetSizes = assetSizes,
                     history = history,
-                    isLoading = overrideIsLoading ?: state.isLoading
+                    isLoading = overrideIsLoading ?: state.isLoading,
+                    isFetchingAssets = overrideIsFetchingAssets ?: state.isFetchingAssets
                 )
             }
             
