@@ -891,8 +891,14 @@ fun SwipeScreen(
 
     if (uiState.isFullscreenMode && uiState.currentAsset != null) {
         val currentAsset = uiState.currentAsset!!
+        val nextUnprocessedIndex = viewModel.getNextUnprocessedIndex()
+        val nextAsset = if (nextUnprocessedIndex != -1 && nextUnprocessedIndex < uiState.assets.size) {
+            uiState.assets[nextUnprocessedIndex]
+        } else null
+
         FullscreenViewer(
             asset = currentAsset,
+            nextAsset = nextAsset,
             isFavorite = uiState.isFavorite(currentAsset.id),
             playbackBehavior = uiState.playbackBehavior,
             muteButtonPosition = uiState.muteButtonPosition,
@@ -2375,6 +2381,7 @@ fun SharedVideoPlayer(
 @Composable
 fun FullscreenViewer(
     asset: Asset,
+    nextAsset: Asset? = null,
     isFavorite: Boolean,
     playbackBehavior: PlaybackBehavior,
     muteButtonPosition: IconPosition,
@@ -2560,46 +2567,86 @@ fun FullscreenViewer(
             }
         }
 
+        val fadeAlpha = (1f - (swipeY.value / 1000f)).coerceIn(0f, 1f)
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = (1f - (swipeY.value / 1000f)).coerceIn(0f, 1f)))
-                .pointerInput(Unit) {
-                    detectDragGestures(
-                        onDragEnd = {
-                            scope.launch {
-                                val currentX = swipeX.value
-                                val currentY = swipeY.value
+                .background(Color.Black.copy(alpha = fadeAlpha))
+        ) {
+            if (nextAsset != null) {
+                val swipeProgress = (abs(swipeX.value) / 500f).coerceIn(0f, 1f)
+                val nextScale = 0.85f + (0.15f * swipeProgress)
+                val nextAlpha = (0.6f + (0.4f * swipeProgress)) * fadeAlpha
 
-                                if (currentY > 120 && abs(currentX) < 100) {
-                                    onClose()
-                                } else if (currentX > 250) {
-                                    swipeX.animateTo(2000f, tween(200))
-                                    currentOnSwipe(SwipeDecision.KEEP)
-                                } else if (currentX < -250) {
-                                    swipeX.animateTo(-2000f, tween(200))
-                                    currentOnSwipe(SwipeDecision.DELETE)
-                                } else {
-                                    launch { swipeY.animateTo(0f) }
-                                    launch { swipeX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
-                                }
-                            }
+                val nextPhotoRequest = remember(nextAsset.id, baseUrl, apiKey) {
+                    ImageRequest.Builder(context)
+                        .data("$baseUrl/api/assets/${nextAsset.id}/thumbnail?format=WEBP&size=preview")
+                        .addHeader("x-api-key", apiKey)
+                        .crossfade(true)
+                        .precision(coil.size.Precision.INEXACT)
+                        .build()
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = nextScale
+                            scaleY = nextScale
+                            alpha = nextAlpha
                         },
-                        onDrag = { change, dragAmount ->
-                            change.consume()
-                            scope.launch {
-                                swipeY.snapTo((swipeY.value + dragAmount.y).coerceAtLeast(0f))
-                                swipeX.snapTo(swipeX.value + dragAmount.x)
-                            }
-                        }
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = nextPhotoRequest,
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
-                .offset { IntOffset(swipeX.value.roundToInt(), swipeY.value.roundToInt()) }
-                .graphicsLayer {
-                    rotationZ = swipeX.value / 60f
-                },
-            contentAlignment = Alignment.Center
-        ) {
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectDragGestures(
+                            onDragEnd = {
+                                scope.launch {
+                                    val currentX = swipeX.value
+                                    val currentY = swipeY.value
+
+                                    if (currentY > 120 && abs(currentX) < 100) {
+                                        onClose()
+                                    } else if (currentX > 250) {
+                                        swipeX.animateTo(2000f, tween(200))
+                                        currentOnSwipe(SwipeDecision.KEEP)
+                                    } else if (currentX < -250) {
+                                        swipeX.animateTo(-2000f, tween(200))
+                                        currentOnSwipe(SwipeDecision.DELETE)
+                                    } else {
+                                        launch { swipeY.animateTo(0f) }
+                                        launch { swipeX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                    }
+                                }
+                            },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                scope.launch {
+                                    swipeY.snapTo((swipeY.value + dragAmount.y).coerceAtLeast(0f))
+                                    swipeX.snapTo(swipeX.value + dragAmount.x)
+                                }
+                            }
+                        )
+                    }
+                    .offset { IntOffset(swipeX.value.roundToInt(), swipeY.value.roundToInt()) }
+                    .graphicsLayer {
+                        rotationZ = swipeX.value / 60f
+                    }
+                    .background(Color.Black.copy(alpha = fadeAlpha)),
+                contentAlignment = Alignment.Center
+            ) {
             ZoomableBox(
                 modifier = Modifier.fillMaxSize(),
                 resetOnRelease = false,
@@ -2909,6 +2956,7 @@ fun FullscreenViewer(
             }
         }
     }
+}
 }
 
 @Composable
