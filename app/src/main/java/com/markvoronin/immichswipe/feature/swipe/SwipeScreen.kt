@@ -1642,6 +1642,22 @@ fun SwipeCard(
                                 dragDirection = 0
                             }
                         },
+                        onDragCancel = {
+                            scope.launch {
+                                val currentY = offsetY.value
+                                if (dragDirection == 2 || currentY < -10f) {
+                                    if (currentY <= -metadataHeightPx * 0.4f) {
+                                        offsetY.animateTo(-metadataHeightPx, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    } else {
+                                        offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    }
+                                } else {
+                                    offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    offsetY.animateTo(dragStartY, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                }
+                                dragDirection = 0
+                            }
+                        },
                         onDrag = { change, dragAmount ->
                             change.consume()
                             
@@ -1651,8 +1667,8 @@ fun SwipeCard(
                                 
                                 // Decision threshold: 20 pixels of movement
                                 if (accumulatedDX > 20 || accumulatedDY > 20) {
-                                    // If panel is already open, strictly lock to vertical drag to allow closing it
-                                    if (dragStartY < -metadataHeightPx * 0.5f && accumulatedDY > 5) {
+                                    // If panel is open or moving (dragStartY < -10f), strictly lock to vertical drag
+                                    if (dragStartY < -10f && accumulatedDY > 5) {
                                         dragDirection = 2
                                     } else {
                                         dragDirection = if (accumulatedDX > accumulatedDY) 1 else 2
@@ -1684,7 +1700,9 @@ fun SwipeCard(
                             modifier = Modifier.fillMaxSize(),
                             resetOnRelease = true,
                             onTap = { offset, size ->
-                                if (!ignoreNextTap) {
+                                if (offsetY.value < -20f) {
+                                    scope.launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                } else if (!ignoreNextTap) {
                                     val width = size.width.toFloat()
                                     if (tapToSwipeEnabled) {
                                         when {
@@ -1711,7 +1729,10 @@ fun SwipeCard(
                                 }
                                 if (wasReleased == true) {
                                     // Fast tap detected
-                                    if (tapToSwipeEnabled) {
+                                    if (offsetY.value < -20f) {
+                                        scope.launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                        ignoreNextTap = true
+                                    } else if (tapToSwipeEnabled) {
                                         val width = size.width.toFloat()
                                         when {
                                             offset.x < width / 3 -> {
@@ -1800,7 +1821,9 @@ fun SwipeCard(
                         aspectRatio = asset.exifInfo?.let { it.imageWidth?.toFloat()?.div(it.imageHeight?.toFloat() ?: 1f) },
                         isFillMode = cardDisplayMode == CardDisplayMode.FILL,
                         onTap = { offset, size ->
-                            if (!ignoreNextTap) {
+                            if (offsetY.value < -20f) {
+                                scope.launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                            } else if (!ignoreNextTap) {
                                 val width = size.width.toFloat()
                                 if (tapToSwipeEnabled) {
                                     when {
@@ -1821,7 +1844,10 @@ fun SwipeCard(
                             }
                             if (wasReleased == true) {
                                 // Fast tap detected
-                                if (tapToSwipeEnabled) {
+                                if (offsetY.value < -20f) {
+                                    scope.launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                    ignoreNextTap = true
+                                } else if (tapToSwipeEnabled) {
                                     val width = size.width.toFloat()
                                     when {
                                         offset.x < width / 3 -> {
@@ -1882,21 +1908,6 @@ fun SwipeCard(
                 }
 
                 if (!isNext) {
-                    // Tap-to-close area above the panel
-                    if (offsetY.value < -10f) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .pointerInput(Unit) {
-                                    detectTapGestures {
-                                        scope.launch { 
-                                            offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) 
-                                        }
-                                    }
-                                }
-                        )
-                    }
-
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -1923,7 +1934,9 @@ fun SwipeCard(
                                         offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     }
                                 }
-                            }
+                            },
+                            offsetYValue = offsetY.value,
+                            maxHeightPx = metadataHeightPx
                         )
                     }
                 }
@@ -2927,18 +2940,28 @@ fun MetadataPanel(
     asset: Asset,
     onClose: () -> Unit,
     onDrag: (Float) -> Unit = {},
-    onDragEnd: () -> Unit = {}
+    onDragEnd: () -> Unit = {},
+    offsetYValue: Float = 0f,
+    maxHeightPx: Float = 0f
 ) {
     val scrollState = rememberScrollState()
 
+    LaunchedEffect(offsetYValue) {
+        if (offsetYValue == 0f) {
+            scrollState.scrollTo(0)
+        }
+    }
+
     // Connection to pass downward drags to the parent when at the top of the scroll
-    val nestedScrollConnection = remember(scrollState) {
+    val nestedScrollConnection = remember(scrollState, offsetYValue, maxHeightPx) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                // If dragging DOWN (available.y > 0) and we are NOT at the top of the scroll,
-                // we let the Column handle it normally.
-                // If dragging DOWN and we ARE at the top, we consume it to move the panel.
+                // If dragging DOWN (available.y > 0) and at top of scroll, consume to move panel down
+                // If dragging UP (available.y < 0) and at top of scroll when panel is not fully expanded, consume to move panel up
                 if (available.y > 0 && scrollState.value == 0) {
+                    onDrag(available.y)
+                    return Offset(0f, available.y)
+                } else if (available.y < 0 && scrollState.value == 0 && maxHeightPx > 0f && offsetYValue > -maxHeightPx + 1f) {
                     onDrag(available.y)
                     return Offset(0f, available.y)
                 }
