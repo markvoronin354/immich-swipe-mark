@@ -7,6 +7,7 @@ data class DuplicatesUiState(
     val clusters: List<DuplicateClusterUiModel> = emptyList(),
     val decisions: Map<String, DuplicateDecision> = emptyMap(), // assetId -> Decision
     val isSyncing: Boolean = false,
+    val showDeleteConfirmation: Boolean = false,
     val error: String? = null
 )
 
@@ -17,5 +18,6 @@ data class DuplicateClusterUiModel(
 
 enum class DuplicateDecision {
     KEEP,
-    DELETE
+    DELETE,
+    NONE
 }

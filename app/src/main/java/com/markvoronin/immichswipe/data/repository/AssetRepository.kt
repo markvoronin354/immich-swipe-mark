@@ -143,19 +143,21 @@ class AssetRepository(
                         
                         // Persistence in background
                         launch(Dispatchers.IO) {
-                            albumAssetDao.insertAlbumAssets(newItems.map { asset ->
-                                AlbumAssetEntity(
-                                    albumId = albumId,
-                                    assetId = asset.id,
-                                    userId = userId,
-                                    type = asset.type,
-                                    fileCreatedAt = asset.fileCreatedAt,
-                                    originalFileName = asset.originalFileName,
-                                    fileSizeInBytes = asset.exifInfo?.fileSizeInBytes,
-                                    imageWidth = asset.exifInfo?.imageWidth,
-                                    imageHeight = asset.exifInfo?.imageHeight
-                                )
-                            })
+                            newItems.chunked(500).forEach { chunk ->
+                                albumAssetDao.insertAlbumAssets(chunk.map { asset ->
+                                    AlbumAssetEntity(
+                                        albumId = albumId,
+                                        assetId = asset.id,
+                                        userId = userId,
+                                        type = asset.type,
+                                        fileCreatedAt = asset.fileCreatedAt,
+                                        originalFileName = asset.originalFileName,
+                                        fileSizeInBytes = asset.exifInfo?.fileSizeInBytes,
+                                        imageWidth = asset.exifInfo?.imageWidth,
+                                        imageHeight = asset.exifInfo?.imageHeight
+                                    )
+                                })
+                            }
                         }
                     }
                     
@@ -249,7 +251,9 @@ class AssetRepository(
     suspend fun deleteAssets(assetIds: List<String>) {
         if (assetIds.isNotEmpty()) {
             api.deleteAssets(DeleteAssetsRequest(ids = assetIds, force = false))
-            albumAssetDao?.deleteAssets(assetIds)
+            assetIds.chunked(500).forEach { chunk ->
+                albumAssetDao?.deleteAssets(chunk)
+            }
         }
     }
 

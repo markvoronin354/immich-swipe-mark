@@ -608,7 +608,7 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(Modifier.height(140.dp))
+            Spacer(Modifier.height(88.dp))
         }
 
     // Dialogue des LOGS

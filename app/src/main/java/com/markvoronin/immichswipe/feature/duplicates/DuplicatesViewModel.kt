@@ -62,10 +62,11 @@ class DuplicatesViewModel(
     private fun generateDefaultDecisions(clusters: List<DuplicateClusterUiModel>): Map<String, DuplicateDecision> {
         val map = mutableMapOf<String, DuplicateDecision>()
         clusters.forEach { cluster ->
-            // Sort by filesize or creation date if desired, but for now just use order returned by server.
-            // First item = Keep. Others = Delete.
-            cluster.assets.forEachIndexed { index, asset ->
-                map[asset.id] = if (index == 0) DuplicateDecision.KEEP else DuplicateDecision.DELETE
+            // Default to 'Keep Largest' (highest file size = KEEP, others = DELETE)
+            val sorted = cluster.assets.sortedByDescending { it.exifInfo?.fileSizeInBytes ?: 0L }
+            val toKeep = sorted.firstOrNull()
+            cluster.assets.forEach { asset ->
+                map[asset.id] = if (asset.id == toKeep?.id) DuplicateDecision.KEEP else DuplicateDecision.DELETE
             }
         }
         return map
@@ -73,11 +74,21 @@ class DuplicatesViewModel(
 
     fun toggleDecision(assetId: String) {
         _uiState.update { state ->
-            val current = state.decisions[assetId] ?: DuplicateDecision.KEEP
-            val next = if (current == DuplicateDecision.KEEP) DuplicateDecision.DELETE else DuplicateDecision.KEEP
+            val current = state.decisions[assetId] ?: DuplicateDecision.NONE
+            val next = when (current) {
+                DuplicateDecision.NONE -> DuplicateDecision.KEEP
+                DuplicateDecision.KEEP -> DuplicateDecision.DELETE
+                DuplicateDecision.DELETE -> DuplicateDecision.NONE
+            }
             state.copy(
                 decisions = state.decisions.toMutableMap().apply { put(assetId, next) }
             )
+        }
+    }
+
+    fun clearAllDecisions() {
+        _uiState.update { state ->
+            state.copy(decisions = emptyMap())
         }
     }
     
@@ -114,6 +125,10 @@ class DuplicatesViewModel(
         }
     }
     
+    fun toggleDeleteConfirmation(show: Boolean) {
+        _uiState.update { it.copy(showDeleteConfirmation = show) }
+    }
+
     fun dismissError() {
         _uiState.update { it.copy(error = null) }
     }

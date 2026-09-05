@@ -1,49 +1,63 @@
 package com.markvoronin.immichswipe.feature.duplicates
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.foundation.gestures.calculatePan
-import androidx.compose.foundation.gestures.calculateZoom
-import androidx.compose.foundation.gestures.forEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.ui.input.pointer.positionChange
-
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.zIndex
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.ui.theme.VirtualGold
+import kotlinx.coroutines.launch
+import java.util.Locale
 
-import kotlinx.coroutines.flow.SharedFlow
+data class ZoomData(
+    val asset: Asset,
+    val decision: DuplicateDecision,
+    val initialBounds: Rect,
+    val scale: Float,
+    val offset: Offset,
+    val isGestureActive: Boolean
+)
 
 @Composable
 fun DuplicatesScreen(
@@ -51,9 +65,15 @@ fun DuplicatesScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var activeZoomData by remember { mutableStateOf<ZoomData?>(null) }
+    var rootWindowOffset by remember { mutableStateOf(Offset.Zero) }
 
     Box(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
+            .onGloballyPositioned { coords ->
+                rootWindowOffset = coords.positionInWindow()
+            }
     ) {
         if (uiState.isLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -90,8 +110,8 @@ fun DuplicatesScreen(
                     )
                     val deleteCount = uiState.decisions.count { it.value == DuplicateDecision.DELETE }
                     Button(
-                        onClick = { viewModel.syncDeletions() },
-                        enabled = !uiState.isSyncing && deleteCount > 0,
+                        onClick = { viewModel.toggleDeleteConfirmation(true) },
+                        enabled = (!uiState.isSyncing) && (deleteCount > 0),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                     ) {
                         if (uiState.isSyncing) {
@@ -110,37 +130,46 @@ fun DuplicatesScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     OutlinedButton(
                         onClick = { viewModel.autoSelect(keepLargest = true) },
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Keep Largest", fontSize = 12.sp)
+                        Text("Keep Largest", fontSize = 11.sp, maxLines = 1, softWrap = false)
                     }
                     OutlinedButton(
                         onClick = { viewModel.autoSelect(keepLargest = false) },
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Keep Smallest", fontSize = 12.sp)
+                        Text("Keep Smallest", fontSize = 11.sp, maxLines = 1, softWrap = false)
+                    }
+                    OutlinedButton(
+                        onClick = { viewModel.clearAllDecisions() },
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Clear All", fontSize = 11.sp, maxLines = 1, softWrap = false)
                     }
                 }
 
                 LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 120.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(uiState.clusters, key = { it.clusterId }) { cluster ->
-                        var isCardZoomed by remember { mutableStateOf(false) }
-                        Box(modifier = Modifier.fillMaxWidth().zIndex(if (isCardZoomed) 1f else 0f)) {
-                            DuplicateClusterCard(
-                                cluster = cluster,
-                                decisions = uiState.decisions,
-                                onDecisionToggle = { assetId -> viewModel.toggleDecision(assetId) },
-                                onZoomChange = { isZoomed -> isCardZoomed = isZoomed }
-                            )
-                        }
+                        DuplicateClusterCard(
+                            cluster = cluster,
+                            decisions = uiState.decisions,
+                            activeZoomAssetId = activeZoomData?.asset?.id,
+                            onDecisionToggle = { assetId -> viewModel.toggleDecision(assetId) },
+                            onZoomStateUpdate = { zoomData ->
+                                activeZoomData = zoomData
+                            }
+                        )
                     }
                 }
             }
@@ -167,6 +196,63 @@ fun DuplicatesScreen(
                 }
             }
         }
+
+        if (uiState.showDeleteConfirmation) {
+            val deleteCount = uiState.decisions.count { it.value == DuplicateDecision.DELETE }
+            AlertDialog(
+                onDismissRequest = { viewModel.toggleDeleteConfirmation(false) },
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                },
+                title = {
+                    Text(
+                        text = "Delete $deleteCount photo${if (deleteCount > 1) "s" else ""}?",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Text("These duplicate photos will be moved to the trash on your Immich server.")
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.toggleDeleteConfirmation(false)
+                            viewModel.syncDeletions()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { viewModel.toggleDeleteConfirmation(false) }
+                    ) {
+                        Text("Cancel")
+                    }
+                },
+                shape = RoundedCornerShape(24.dp)
+            )
+        }
+
+        val activeAssetId = activeZoomData?.asset?.id
+        val currentDecision = if (activeAssetId != null) {
+            uiState.decisions[activeAssetId] ?: activeZoomData?.decision ?: DuplicateDecision.NONE
+        } else {
+            DuplicateDecision.NONE
+        }
+
+        // Instagram-style full screen pop-out overlay
+        InstagramZoomOverlay(
+            zoomData = activeZoomData,
+            decision = currentDecision,
+            rootWindowOffset = rootWindowOffset,
+            onDismiss = { activeZoomData = null }
+        )
     }
 }
 
@@ -174,8 +260,9 @@ fun DuplicatesScreen(
 fun DuplicateClusterCard(
     cluster: DuplicateClusterUiModel,
     decisions: Map<String, DuplicateDecision>,
+    activeZoomAssetId: String?,
     onDecisionToggle: (String) -> Unit,
-    onZoomChange: (Boolean) -> Unit = {}
+    onZoomStateUpdate: (ZoomData?) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -188,24 +275,42 @@ fun DuplicateClusterCard(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                cluster.assets.forEach { asset ->
-                    var isItemZoomed by remember { mutableStateOf(false) }
-                    val decision = decisions[asset.id] ?: DuplicateDecision.KEEP
-                    DuplicateAssetItem(
-                        asset = asset,
-                        decision = decision,
-                        modifier = Modifier.weight(1f).zIndex(if (isItemZoomed) 1f else 0f),
-                        onToggle = { onDecisionToggle(asset.id) },
-                        onZoomStateChange = { isZoomed -> 
-                            isItemZoomed = isZoomed
-                            onZoomChange(isZoomed) 
-                        } 
-                    )
+
+            if (cluster.assets.size <= 2) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    cluster.assets.forEach { asset ->
+                        val decision = decisions[asset.id] ?: DuplicateDecision.NONE
+                        val isBeingZoomed = activeZoomAssetId == asset.id
+                        DuplicateAssetItem(
+                            asset = asset,
+                            decision = decision,
+                            isBeingZoomed = isBeingZoomed,
+                            modifier = Modifier.weight(1f),
+                            onToggle = { onDecisionToggle(asset.id) },
+                            onZoomStateUpdate = onZoomStateUpdate
+                        )
+                    }
+                }
+            } else {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(cluster.assets, key = { it.id }) { asset ->
+                        val decision = decisions[asset.id] ?: DuplicateDecision.NONE
+                        val isBeingZoomed = activeZoomAssetId == asset.id
+                        DuplicateAssetItem(
+                            asset = asset,
+                            decision = decision,
+                            isBeingZoomed = isBeingZoomed,
+                            modifier = Modifier.width(135.dp),
+                            onToggle = { onDecisionToggle(asset.id) },
+                            onZoomStateUpdate = onZoomStateUpdate
+                        )
+                    }
                 }
             }
         }
@@ -216,84 +321,136 @@ fun DuplicateClusterCard(
 fun DuplicateAssetItem(
     asset: Asset,
     decision: DuplicateDecision,
+    isBeingZoomed: Boolean,
     modifier: Modifier = Modifier,
     onToggle: () -> Unit,
-    onZoomStateChange: (Boolean) -> Unit = {}
+    onZoomStateUpdate: (ZoomData?) -> Unit
 ) {
     val context = LocalContext.current
     val baseUrl = remember { SessionManager.getBaseUrl()?.removeSuffix("/") }
     val apiKey = remember { SessionManager.getApiKey() ?: "" }
 
-    val isDelete = decision == DuplicateDecision.DELETE
-    val borderColor = if (isDelete) MaterialTheme.colorScheme.error else Color(0xFF4CAF50)
-    
-    var scale by remember { mutableStateOf(1f) }
-    var offsetX by remember { mutableStateOf(0f) }
-    var offsetY by remember { mutableStateOf(0f) }
+    val currentDecision by rememberUpdatedState(decision)
+    val currentOnToggle by rememberUpdatedState(onToggle)
+    val currentOnZoomStateUpdate by rememberUpdatedState(onZoomStateUpdate)
 
-    val zIndexModifier = if (scale > 1f) Modifier.zIndex(1f) else Modifier
-    Column(modifier = modifier.then(zIndexModifier), horizontalAlignment = Alignment.CenterHorizontally) {
+    val borderColor = when (decision) {
+        DuplicateDecision.DELETE -> MaterialTheme.colorScheme.error
+        DuplicateDecision.KEEP -> Color(0xFF4CAF50)
+        DuplicateDecision.NONE -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+    }
+
+    var itemBounds by remember { mutableStateOf<Rect?>(null) }
+    val currentItemBounds by rememberUpdatedState(itemBounds)
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Box(
             modifier = Modifier
                 .aspectRatio(0.75f)
+                .onGloballyPositioned { coords ->
+                    itemBounds = coords.boundsInWindow()
+                }
+                .graphicsLayer {
+                    alpha = if (isBeingZoomed) 0f else 1f
+                }
                 .clip(RoundedCornerShape(8.dp))
                 .border(3.dp, borderColor, RoundedCornerShape(8.dp))
                 .pointerInput(Unit) {
                     detectTapGestures(
-                        onTap = { onToggle() }
+                        onTap = { currentOnToggle() }
                     )
                 }
-                .pointerInput(Unit) {
-                    forEachGesture {
-                        awaitPointerEventScope {
-                            awaitFirstDown()
-                            do {
-                                val event = awaitPointerEvent()
-                                val pointers = event.changes
-                                
-                                if (pointers.size >= 2 || scale > 1f) {
-                                    val zoom = event.calculateZoom()
-                                    val pan = event.calculatePan()
-                                    
-                                    val oldScale = scale
-                                    scale = (scale * zoom).coerceIn(1f, 3f)
-                                    
-                                    if (oldScale == 1f && scale > 1f) {
-                                        onZoomStateChange(true)
-                                    } else if (scale == 1f && oldScale > 1f) {
-                                        onZoomStateChange(false)
+                .pointerInput(asset.id) {
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false)
+                        var currentScale = 1f
+                        var currentOffset = Offset.Zero
+                        var activeZooming = false
+                        var lastPressedCount = 0
+
+                        do {
+                            val event = awaitPointerEvent()
+                            val pressedPointers = event.changes.filter { it.pressed }
+                            val pressedCount = pressedPointers.size
+
+                            if (pressedCount >= 2) {
+                                if (!activeZooming) {
+                                    activeZooming = true
+                                }
+                            }
+
+                            if (activeZooming) {
+                                if (pressedCount >= 1) {
+                                    // Calculate zoom and pan only if finger count didn't change this frame
+                                    if (pressedCount == lastPressedCount) {
+                                        val zoom = if (pressedCount >= 2) event.calculateZoom() else 1f
+                                        val pan = event.calculatePan()
+
+                                        currentScale = (currentScale * zoom).coerceIn(1f, 5f)
+                                        currentOffset += pan
                                     }
-                                    
-                                    val maxOffset = (scale - 1f) * size.width / 2
-                                    offsetX = (offsetX + pan.x * scale).coerceIn(-maxOffset, maxOffset)
-                                    offsetY = (offsetY + pan.y * scale).coerceIn(-maxOffset, maxOffset)
-                                    
-                                    if (scale == 1f) {
-                                        offsetX = 0f
-                                        offsetY = 0f
+
+                                    lastPressedCount = pressedCount
+
+                                    currentItemBounds?.let { bounds ->
+                                        currentOnZoomStateUpdate(
+                                            ZoomData(
+                                                asset = asset,
+                                                decision = currentDecision,
+                                                initialBounds = bounds,
+                                                scale = currentScale,
+                                                offset = currentOffset,
+                                                isGestureActive = true
+                                            )
+                                        )
                                     }
-                                    
-                                    pointers.forEach { 
-                                        if (it.positionChange() != androidx.compose.ui.geometry.Offset.Zero) {
+
+                                    event.changes.forEach {
+                                        if (it.positionChange() != Offset.Zero) {
                                             it.consume()
                                         }
                                     }
+                                } else {
+                                    // pressedCount == 0 (all fingers lifted)
+                                    activeZooming = false
+                                    lastPressedCount = 0
+                                    currentItemBounds?.let { bounds ->
+                                        currentOnZoomStateUpdate(
+                                            ZoomData(
+                                                asset = asset,
+                                                decision = currentDecision,
+                                                initialBounds = bounds,
+                                                scale = currentScale,
+                                                offset = currentOffset,
+                                                isGestureActive = false
+                                            )
+                                        )
+                                    }
                                 }
-                            } while (event.changes.any { it.pressed })
-                            
-                            scale = 1f
-                            offsetX = 0f
-                            offsetY = 0f
-                            onZoomStateChange(false)
+                            } else {
+                                lastPressedCount = pressedCount
+                            }
+                        } while (event.changes.any { it.pressed })
+
+                        if (activeZooming) {
+                            currentItemBounds?.let { bounds ->
+                                currentOnZoomStateUpdate(
+                                    ZoomData(
+                                        asset = asset,
+                                        decision = currentDecision,
+                                        initialBounds = bounds,
+                                        scale = currentScale,
+                                        offset = currentOffset,
+                                        isGestureActive = false
+                                    )
+                                )
+                            }
                         }
                     }
                 }
-                .graphicsLayer(
-                    scaleX = scale,
-                    scaleY = scale,
-                    translationX = offsetX,
-                    translationY = offsetY
-                )
         ) {
             val imageRequest = remember(asset.id, baseUrl, apiKey) {
                 ImageRequest.Builder(context)
@@ -302,43 +459,185 @@ fun DuplicateAssetItem(
                     .crossfade(true)
                     .build()
             }
-            
+
             AsyncImage(
                 model = imageRequest,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
-            
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(if (isDelete) Color.Black.copy(alpha = 0.4f) else Color.Transparent)
-            ) {
-                Icon(
-                    imageVector = if (isDelete) Icons.Default.Delete else Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = if (isDelete) MaterialTheme.colorScheme.error else Color(0xFF4CAF50),
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .size(32.dp)
-                        .background(Color.White, shape = androidx.compose.foundation.shape.CircleShape)
-                )
+
+            if (decision != DuplicateDecision.NONE) {
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        imageVector = if (decision == DuplicateDecision.DELETE) Icons.Default.Delete else Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = if (decision == DuplicateDecision.DELETE) MaterialTheme.colorScheme.error else Color(0xFF4CAF50),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .size(32.dp)
+                            .background(Color.White, shape = CircleShape)
+                    )
+                }
             }
         }
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         val sizeStr = asset.exifInfo?.fileSizeInBytes?.let { formatSizeStr(it) } ?: "Unknown size"
         Text(text = sizeStr, style = MaterialTheme.typography.bodySmall)
+
+        val decisionText = when (decision) {
+            DuplicateDecision.DELETE -> "DELETE"
+            DuplicateDecision.KEEP -> "KEEP"
+            DuplicateDecision.NONE -> "-"
+        }
+
         Text(
-            text = if (isDelete) "DELETE" else "KEEP",
+            text = decisionText,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
-            color = borderColor,
+            color = if (decision == DuplicateDecision.NONE) MaterialTheme.colorScheme.outline else borderColor,
             modifier = Modifier.padding(top = 4.dp)
         )
+    }
+}
+
+@Composable
+fun InstagramZoomOverlay(
+    zoomData: ZoomData?,
+    decision: DuplicateDecision,
+    rootWindowOffset: Offset,
+    onDismiss: () -> Unit
+) {
+    if (zoomData == null) return
+
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val baseUrl = remember { SessionManager.getBaseUrl()?.removeSuffix("/") }
+    val apiKey = remember { SessionManager.getApiKey() ?: "" }
+
+    val scaleAnim = remember { Animatable(zoomData.scale) }
+    val offsetXAnim = remember { Animatable(zoomData.offset.x) }
+    val offsetYAnim = remember { Animatable(zoomData.offset.y) }
+
+    LaunchedEffect(zoomData.scale, zoomData.offset, zoomData.isGestureActive) {
+        if (zoomData.isGestureActive) {
+            scaleAnim.snapTo(zoomData.scale)
+            offsetXAnim.snapTo(zoomData.offset.x)
+            offsetYAnim.snapTo(zoomData.offset.y)
+        } else {
+            launch {
+                scaleAnim.animateTo(
+                    targetValue = 1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    )
+                )
+            }
+            launch {
+                offsetXAnim.animateTo(
+                    targetValue = 0f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    )
+                )
+            }
+            launch {
+                offsetYAnim.animateTo(
+                    targetValue = 0f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    )
+                )
+                onDismiss()
+            }
+        }
+    }
+
+    val currentScale = scaleAnim.value.coerceAtLeast(1f)
+    val inverseScale = 1f / currentScale
+    val badgeAlpha = (1f - (currentScale - 1f) * 1.5f).coerceIn(0f, 1f)
+    val backdropAlpha = ((currentScale - 1f) / 1.5f).coerceIn(0f, 0.7f)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(1000f)
+            .background(Color.Black.copy(alpha = backdropAlpha))
+    ) {
+        val bounds = zoomData.initialBounds
+        val leftPx = bounds.left - rootWindowOffset.x
+        val topPx = bounds.top - rootWindowOffset.y
+
+        val widthDp = with(density) { bounds.width.toDp() }
+        val heightDp = with(density) { bounds.height.toDp() }
+        val leftDp = with(density) { leftPx.toDp() }
+        val topDp = with(density) { topPx.toDp() }
+
+        val borderColor = when (decision) {
+            DuplicateDecision.DELETE -> MaterialTheme.colorScheme.error
+            DuplicateDecision.KEEP -> Color(0xFF4CAF50)
+            DuplicateDecision.NONE -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+        }
+
+        Box(
+            modifier = Modifier
+                .offset(x = leftDp, y = topDp)
+                .size(width = widthDp, height = heightDp)
+                .graphicsLayer {
+                    scaleX = currentScale
+                    scaleY = currentScale
+                    translationX = offsetXAnim.value
+                    translationY = offsetYAnim.value
+                }
+                .clip(RoundedCornerShape(8.dp))
+                .border(3.dp, borderColor, RoundedCornerShape(8.dp))
+        ) {
+            val imageRequest = remember(zoomData.asset.id, baseUrl, apiKey) {
+                ImageRequest.Builder(context)
+                    .data("$baseUrl/api/assets/${zoomData.asset.id}/thumbnail?format=WEBP&size=preview")
+                    .addHeader("x-api-key", apiKey)
+                    .crossfade(true)
+                    .build()
+            }
+
+            AsyncImage(
+                model = imageRequest,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            if (decision != DuplicateDecision.NONE) {
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        imageVector = if (decision == DuplicateDecision.DELETE) Icons.Default.Delete else Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = if (decision == DuplicateDecision.DELETE) MaterialTheme.colorScheme.error else Color(0xFF4CAF50),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .graphicsLayer {
+                                scaleX = inverseScale
+                                scaleY = inverseScale
+                                transformOrigin = TransformOrigin(1f, 0f)
+                                alpha = badgeAlpha
+                            }
+                            .size(32.dp)
+                            .background(Color.White, shape = CircleShape)
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -347,8 +646,8 @@ fun formatSizeStr(bytes: Long): String {
     val mb = kb / 1024.0
     val gb = mb / 1024.0
     return when {
-        gb >= 1.0 -> String.format("%.2f GB", gb)
-        mb >= 1.0 -> String.format("%.2f MB", mb)
-        else -> String.format("%.0f KB", kb)
+        gb >= 1.0 -> String.format(Locale.getDefault(), "%.2f GB", gb)
+        mb >= 1.0 -> String.format(Locale.getDefault(), "%.2f MB", mb)
+        else -> String.format(Locale.getDefault(), "%.0f KB", kb)
     }
 }

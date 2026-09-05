@@ -59,7 +59,9 @@ class SwipeDecisionRepository(
      */
     suspend fun markAsSynced(assetIds: List<String>, userId: String) {
         if (assetIds.isNotEmpty()) {
-            swipeDecisionDao.markAsSynced(assetIds, userId)
+            assetIds.chunked(500).forEach { chunk ->
+                swipeDecisionDao.markAsSynced(chunk, userId)
+            }
         }
     }
 
@@ -83,7 +85,11 @@ class SwipeDecisionRepository(
      * Supprime plusieurs décisions d'un coup.
      */
     suspend fun removeDecisions(assetIds: List<String>, userId: String) {
-        swipeDecisionDao.deleteDecisions(assetIds, userId)
+        if (assetIds.isNotEmpty()) {
+            assetIds.chunked(500).forEach { chunk ->
+                swipeDecisionDao.deleteDecisions(chunk, userId)
+            }
+        }
     }
 
     /**

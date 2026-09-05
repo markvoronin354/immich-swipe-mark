@@ -308,6 +308,7 @@ fun HomeScreen(
                         HomeTab.SWIPE -> {
                             if (uiState.selectedAlbum?.id == Album.VIRTUAL_DUPLICATES_ID) {
                                 val duplicatesViewModel: com.markvoronin.immichswipe.feature.duplicates.DuplicatesViewModel = viewModel(
+                                    key = "duplicates-$sessionKey",
                                     factory = com.markvoronin.immichswipe.feature.duplicates.DuplicatesViewModelFactory(
                                         api = com.markvoronin.immichswipe.data.api.RetrofitFactory.create(
                                             com.markvoronin.immichswipe.core.SessionConfig(
@@ -337,6 +338,7 @@ fun HomeScreen(
                         }
                         HomeTab.SETTINGS -> {
                             val settingsViewModel: SettingsViewModel = viewModel(
+                                key = "settings-$sessionKey",
                                 factory = SettingsViewModelFactory(
                                     viewModel.getSessionRepository(),
                                     swipeDecisionRepository

@@ -398,15 +398,22 @@ class SwipeViewModel(
 
     fun resetAlbumDecisions() {
         viewModelScope.launch {
-            val config = sessionRepository.sessionConfig.first() ?: return@launch
-            val ids = _uiState.value.assets.map { it.id }
-            swipeDecisionRepository.removeDecisions(ids, config.userId)
-            _uiState.update { it.copy(
-                showResetConfirmation = false, 
-                history = emptyList(), 
-                decisions = emptyMap(),
-                currentIndex = 0
-            ) }
+            try {
+                val config = sessionRepository.sessionConfig.first() ?: return@launch
+                val ids = _uiState.value.assets.map { it.id }
+                if (ids.isNotEmpty()) {
+                    swipeDecisionRepository.removeDecisions(ids, config.userId)
+                }
+                _uiState.update { it.copy(
+                    showResetConfirmation = false, 
+                    history = emptyList(), 
+                    decisions = emptyMap(),
+                    currentIndex = 0
+                ) }
+            } catch (e: Exception) {
+                AppLogger.e("SwipeViewModel", "Error resetting album decisions", e)
+                _uiState.update { it.copy(showResetConfirmation = false) }
+            }
         }
     }
 
