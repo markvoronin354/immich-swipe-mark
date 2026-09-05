@@ -6,13 +6,18 @@ data class DuplicatesUiState(
     val isLoading: Boolean = true,
     val clusters: List<DuplicateClusterUiModel> = emptyList(),
     val decisions: Map<String, DuplicateDecision> = emptyMap(), // assetId -> Decision
+    val favorites: Map<String, Boolean> = emptyMap(), // assetId -> isFavorite
     val isSyncing: Boolean = false,
     val showDeleteConfirmation: Boolean = false,
     val error: String? = null
-)
+) {
+    fun isFavorite(asset: Asset): Boolean {
+        return favorites[asset.id] ?: asset.isFavorite
+    }
+}
 
 data class DuplicateClusterUiModel(
-    val clusterId: String, // We'll generate a UUID or use the first asset's ID as the cluster ID
+    val clusterId: String,
     val assets: List<Asset>
 )
 

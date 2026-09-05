@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.data.api.ImmichApi
+import com.markvoronin.immichswipe.data.api.UpdateAssetsRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -59,17 +60,9 @@ class DuplicatesViewModel(
         }
     }
 
-    private fun generateDefaultDecisions(clusters: List<DuplicateClusterUiModel>): Map<String, DuplicateDecision> {
-        val map = mutableMapOf<String, DuplicateDecision>()
-        clusters.forEach { cluster ->
-            // Default to 'Keep Largest' (highest file size = KEEP, others = DELETE)
-            val sorted = cluster.assets.sortedByDescending { it.exifInfo?.fileSizeInBytes ?: 0L }
-            val toKeep = sorted.firstOrNull()
-            cluster.assets.forEach { asset ->
-                map[asset.id] = if (asset.id == toKeep?.id) DuplicateDecision.KEEP else DuplicateDecision.DELETE
-            }
-        }
-        return map
+    private fun generateDefaultDecisions(@Suppress("UNUSED_PARAMETER") clusters: List<DuplicateClusterUiModel>): Map<String, DuplicateDecision> {
+        // Default mode: All assets unselected (clean slate)
+        return emptyMap()
     }
 
     fun toggleDecision(assetId: String) {
@@ -89,6 +82,35 @@ class DuplicatesViewModel(
     fun clearAllDecisions() {
         _uiState.update { state ->
             state.copy(decisions = emptyMap())
+        }
+    }
+
+    fun toggleFavorite(asset: Asset) {
+        viewModelScope.launch {
+            val currentFav = _uiState.value.isFavorite(asset)
+            val newFav = !currentFav
+
+            _uiState.update { state ->
+                state.copy(
+                    favorites = state.favorites.toMutableMap().apply { put(asset.id, newFav) }
+                )
+            }
+
+            try {
+                api.updateAssets(
+                    UpdateAssetsRequest(
+                        ids = listOf(asset.id),
+                        isFavorite = newFav
+                    )
+                )
+            } catch (e: Exception) {
+                AppLogger.e("Duplicates", "Failed to update favorite status", e)
+                _uiState.update { state ->
+                    state.copy(
+                        favorites = state.favorites.toMutableMap().apply { put(asset.id, currentFav) }
+                    )
+                }
+            }
         }
     }
     
