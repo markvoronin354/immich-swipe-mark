@@ -46,6 +46,8 @@
     <string name="home_virtual_all_assets_desc">Collection of all assets in your library (depending on your access rights)</string>
     <string name="home_virtual_orphans">Orphans</string>
     <string name="home_virtual_orphans_desc">Collection of assets that are not in any album</string>
+    <string name="home_virtual_duplicates">Duplicates</string>
+    <string name="home_virtual_duplicates_desc">Exact and near-exact duplicate photos found by Immich server</string>
     <string name="home_user_fallback">User</string>
 
     <!-- Profile Popup & Diag -->

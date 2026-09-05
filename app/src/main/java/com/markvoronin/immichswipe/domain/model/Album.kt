@@ -13,5 +13,6 @@ data class Album(
     companion object {
         const val VIRTUAL_ALL_ID = "virtual_all_assets"
         const val VIRTUAL_ORPHANS_ID = "virtual_orphans"
+        const val VIRTUAL_DUPLICATES_ID = "virtual_duplicates"
     }
 }

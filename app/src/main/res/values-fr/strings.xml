@@ -47,6 +47,8 @@
     <string name="home_virtual_all_assets_desc">Collection de l\'ensemble de votre bibliothèque (dépendant de vos droits d\'accès)</string>
     <string name="home_virtual_orphans">Orphelins</string>
     <string name="home_virtual_orphans_desc">Collection des médias qui ne sont dans aucun album</string>
+    <string name="home_virtual_duplicates">Doublons</string>
+    <string name="home_virtual_duplicates_desc">Photos exactement ou presque identiques trouvées par le serveur Immich</string>
     <string name="home_user_fallback">Utilisateur</string>
 
     <!-- Popup Profil & Diagnostic -->

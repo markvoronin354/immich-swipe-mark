@@ -18,6 +18,9 @@ interface ImmichApi {
     @GET("api/albums")
     suspend fun getAlbums(): List<Album>
 
+    @GET("api/duplicates")
+    suspend fun getDuplicates(): List<DuplicateCluster>
+
     // Nouveau Endpoint à utiliser à partir de la version v3 du serveur Immich
     @POST("api/search/metadata")
     suspend fun searchAssets(@Body request: SearchAssetsRequest): SearchResponse
@@ -88,4 +91,11 @@ data class SearchAssetResult(
     val items: List<Asset>,
     val total: Int,
     val nextPage: String? = null
+)
+
+/**
+ * Représente un groupe d'assets dupliqués renvoyés par Immich.
+ */
+data class DuplicateCluster(
+    val assets: List<Asset>
 )

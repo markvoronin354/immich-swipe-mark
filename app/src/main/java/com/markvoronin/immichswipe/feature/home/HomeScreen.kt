@@ -89,10 +89,13 @@ fun HomeScreen(
     val virtualAllDesc = stringResource(R.string.home_virtual_all_assets_desc)
     val virtualOrphansName = stringResource(R.string.home_virtual_orphans)
     val virtualOrphansDesc = stringResource(R.string.home_virtual_orphans_desc)
+    val virtualDuplicatesName = stringResource(R.string.home_virtual_duplicates)
+    val virtualDuplicatesDesc = stringResource(R.string.home_virtual_duplicates_desc)
 
-    LaunchedEffect(virtualAllName, virtualAllDesc, virtualOrphansName, virtualOrphansDesc) {
+    LaunchedEffect(virtualAllName, virtualAllDesc, virtualOrphansName, virtualOrphansDesc, virtualDuplicatesName, virtualDuplicatesDesc) {
         viewModel.updateVirtualNames(Album.VIRTUAL_ALL_ID, virtualAllName, virtualAllDesc)
         viewModel.updateVirtualNames(Album.VIRTUAL_ORPHANS_ID, virtualOrphansName, virtualOrphansDesc)
+        viewModel.updateVirtualNames(Album.VIRTUAL_DUPLICATES_ID, virtualDuplicatesName, virtualDuplicatesDesc)
     }
 
     // Gestion du retour physique/gestuel du téléphone
@@ -138,7 +141,7 @@ fun HomeScreen(
                                     tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
                                 )
                             }
-                        } else if (uiState.currentTab == HomeTab.SWIPE) {
+                        } else if (uiState.currentTab == HomeTab.SWIPE && uiState.selectedAlbum?.id != Album.VIRTUAL_DUPLICATES_ID) {
                             // Bouton Reset (Nouveau)
                             IconButton(onClick = { viewModel.requestReset() }) {
                                 Icon(
@@ -303,7 +306,22 @@ fun HomeScreen(
                             }
                         }
                         HomeTab.SWIPE -> {
-                            if (uiState.selectedAlbum != null) {
+                            if (uiState.selectedAlbum?.id == Album.VIRTUAL_DUPLICATES_ID) {
+                                val duplicatesViewModel: com.markvoronin.immichswipe.feature.duplicates.DuplicatesViewModel = viewModel(
+                                    factory = com.markvoronin.immichswipe.feature.duplicates.DuplicatesViewModelFactory(
+                                        api = com.markvoronin.immichswipe.data.api.RetrofitFactory.create(
+                                            com.markvoronin.immichswipe.core.SessionConfig(
+                                                SessionManager.getBaseUrl() ?: "", 
+                                                SessionManager.getApiKey() ?: "",
+                                                uiState.user?.id ?: ""
+                                            )
+                                        )
+                                    )
+                                )
+                                com.markvoronin.immichswipe.feature.duplicates.DuplicatesScreen(
+                                    viewModel = duplicatesViewModel
+                                )
+                            } else if (uiState.selectedAlbum != null) {
                                 SwipeScreen(
                                     album = uiState.selectedAlbum!!,
                                     assetRepository = assetRepository,
@@ -1654,6 +1672,11 @@ private fun getVirtualCollectionStyle(albumId: String): Triple<androidx.compose.
         Album.VIRTUAL_ORPHANS_ID -> Triple(
             Icons.Default.Extension,
             Brush.linearGradient(listOf(Color(0xFF84fab0), Color(0xFF8fd3f4))),
+            Color.White
+        )
+        Album.VIRTUAL_DUPLICATES_ID -> Triple(
+            Icons.Default.ContentCopy,
+            Brush.linearGradient(listOf(Color(0xFFff758c), Color(0xFFff7eb3))),
             Color.White
         )
         else -> Triple(

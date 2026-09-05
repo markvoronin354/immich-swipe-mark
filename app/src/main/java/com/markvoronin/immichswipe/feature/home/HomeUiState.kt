@@ -38,7 +38,8 @@ data class HomeUiState(
     val searchQuery: String = "", // Texte de recherche pour filtrer les albums
     val connectionStatus: ConnectionStatus = ConnectionStatus(),
     val allAssetsCount: Int = 0, // Nombre total de médias
-    val orphansCount: Int = 0, // Nombre de médias orphelins (sans album)
+    val orphansCount: Int = 0,
+    val duplicatesCount: Int = 0, // Nombre de médias orphelins (sans album)
     val includeArchived: Boolean = false, // Inclure ou non les archives externes
     val sortOrder: SortOrder = SortOrder.CHRONOLOGICAL_DESC, // Ordre de tri
     val virtualNames: Map<String, String> = emptyMap(), // Noms localisés des albums virtuels
@@ -84,6 +85,17 @@ data class HomeUiState(
                 ))
             }
 
+            // 4. Duplicates
+            if (duplicatesCount > 0) {
+                virtuals.add(Album(
+                    id = Album.VIRTUAL_DUPLICATES_ID,
+                    albumName = virtualNames[Album.VIRTUAL_DUPLICATES_ID] ?: "Duplicates",
+                    description = virtualDescriptions[Album.VIRTUAL_DUPLICATES_ID],
+                    assetCount = duplicatesCount,
+                    albumThumbnailAssetId = null
+                ))
+            }
+
             val baseList = virtuals + albums
 
             return if (searchQuery.isBlank()) {
@@ -106,7 +118,8 @@ data class HomeUiState(
             val filtered = filteredAlbums
             return filtered.groupBy { album ->
                 if (album.id == Album.VIRTUAL_ALL_ID || 
-                    album.id == Album.VIRTUAL_ORPHANS_ID) {
+                    album.id == Album.VIRTUAL_ORPHANS_ID ||
+                    album.id == Album.VIRTUAL_DUPLICATES_ID) {
                     return@groupBy AlbumStatus.VIRTUAL
                 }
                 

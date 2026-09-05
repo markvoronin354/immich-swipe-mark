@@ -71,6 +71,22 @@ class AssetRepository(
         val needsExif = true
         val visibility = if (includeArchived) null else "timeline"
         
+        if (albumId == Album.VIRTUAL_DUPLICATES_ID) {
+            // Handle duplicates endpoint differently as it returns clusters
+            try {
+                val duplicates = api.getDuplicates()
+                // Flatten the clusters into a single list
+                val flatAssets = duplicates.flatMap { it.assets }
+                
+                // For duplicates, we don't cache them in the DB yet, just return them directly
+                send(AssetBatch(flatAssets, flatAssets.size, isLocalCache = false, isSyncing = false))
+            } catch (e: Exception) {
+                AppLogger.e("AssetRepo", "Error fetching duplicates: ${e.message}")
+                send(AssetBatch(emptyList(), 0, isLocalCache = false, isSyncing = false))
+            }
+            return@channelFlow
+        }
+
         val baseRequest = when (albumId) {
             Album.VIRTUAL_ALL_ID -> SearchAssetsRequest(visibility = visibility, withExif = needsExif, order = "desc")
             Album.VIRTUAL_ORPHANS_ID -> SearchAssetsRequest(isNotInAlbum = true, visibility = visibility, withExif = needsExif, order = "desc")
@@ -252,4 +268,13 @@ class AssetRepository(
             )
         }
     }
+    suspend fun getDuplicatesCount(): Int {
+        return try {
+            val clusters = api.getDuplicates()
+            clusters.sumOf { it.assets.size }
+        } catch (_: Exception) {
+            0
+        }
+    }
+
 }

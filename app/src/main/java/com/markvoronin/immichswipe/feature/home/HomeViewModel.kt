@@ -103,6 +103,10 @@ class HomeViewModel(
                 treatedMap[Album.VIRTUAL_ALL_ID] = globalTreatedCount
                 unsyncedMap[Album.VIRTUAL_ALL_ID] = globalUnsyncedCount
                 
+                // For Duplicates, the total depends on the fetched clusters.
+                // We'll leave treatedCount at 0 or query it if needed.
+                // It will be managed normally by SwipeDecisionRepository if we let it.
+                
                 _uiState.update { 
                     it.copy(
                         albumTreatedCounts = treatedMap,
@@ -189,6 +193,7 @@ class HomeViewModel(
                     // Stats globales en parallèle
                     val allCountDeferred = async { assetRepository.getTotalAssetCount(includeArchived) }
                     val orphansCountDeferred = async { assetRepository.getOrphansCount(includeArchived) }
+                    val duplicatesCountDeferred = async { assetRepository.getDuplicatesCount() }
 
                     // Albums : on récupère la liste brute immédiatement
                     val rawAlbums = albumRepository.getAlbumsRaw()
@@ -200,6 +205,7 @@ class HomeViewModel(
                             albums = rawAlbums,
                             allAssetsCount = allCountDeferred.await(),
                             orphansCount = orphansCountDeferred.await(),
+                            duplicatesCount = duplicatesCountDeferred.await(),
                             isLoading = false, // On peut déjà afficher la liste !
                             error = null
                         )
@@ -235,6 +241,7 @@ class HomeViewModel(
                 coroutineScope {
                     val allCountDeferred = async { assetRepository.getTotalAssetCount(includeArchived) }
                     val orphansCountDeferred = async { assetRepository.getOrphansCount(includeArchived) }
+                    val duplicatesCountDeferred = async { assetRepository.getDuplicatesCount() }
 
                     // Liste brute immédiate
                     val rawAlbums = albumRepository.getAlbumsRaw()
@@ -243,7 +250,8 @@ class HomeViewModel(
                         it.copy(
                             albums = rawAlbums,
                             allAssetsCount = allCountDeferred.await(),
-                            orphansCount = orphansCountDeferred.await()
+                            orphansCount = orphansCountDeferred.await(),
+                            duplicatesCount = duplicatesCountDeferred.await()
                         )
                     }
 
