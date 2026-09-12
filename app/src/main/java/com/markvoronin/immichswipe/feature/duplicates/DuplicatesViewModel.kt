@@ -32,11 +32,14 @@ class DuplicatesViewModel(
                 // Fetch clusters directly from Immich API
                 val duplicateClusters = api.getDuplicates()
                 
-                // Map to UI model and assign a unique ID to each cluster
+                // Map to UI model and assign a unique ID to each cluster (sorted largest to smallest)
                 val mappedClusters = duplicateClusters.map { cluster ->
                     DuplicateClusterUiModel(
                         clusterId = UUID.randomUUID().toString(),
-                        assets = cluster.assets
+                        assets = cluster.assets.sortedWith(
+                            compareByDescending<Asset> { it.exifInfo?.fileSizeInBytes ?: 0L }
+                                .thenByDescending { (it.exifInfo?.imageWidth ?: 0) * (it.exifInfo?.imageHeight ?: 0) }
+                        )
                     )
                 }
                 
@@ -166,7 +169,10 @@ class DuplicatesViewModel(
             val newDecisions = state.decisions.toMutableMap()
             state.clusters.forEach { cluster ->
                 val sorted = if (keepLargest) {
-                    cluster.assets.sortedByDescending { it.exifInfo?.fileSizeInBytes ?: 0L }
+                    cluster.assets.sortedWith(
+                        compareByDescending<Asset> { it.exifInfo?.fileSizeInBytes ?: 0L }
+                            .thenByDescending { (it.exifInfo?.imageWidth ?: 0) * (it.exifInfo?.imageHeight ?: 0) }
+                    )
                 } else {
                     // Items with 0L size (unknown) should probably go to the bottom of "smallest"
                     cluster.assets.sortedWith(compareBy<Asset> { if ((it.exifInfo?.fileSizeInBytes ?: 0L) == 0L) Long.MAX_VALUE else it.exifInfo!!.fileSizeInBytes }.thenBy { it.fileCreatedAt })

@@ -75,8 +75,13 @@ class AssetRepository(
             // Handle duplicates endpoint differently as it returns clusters
             try {
                 val duplicates = api.getDuplicates()
-                // Flatten the clusters into a single list
-                val flatAssets = duplicates.flatMap { it.assets }
+                // Flatten the clusters into a single list with assets sorted largest to smallest per cluster
+                val flatAssets = duplicates.flatMap { cluster ->
+                    cluster.assets.sortedWith(
+                        compareByDescending<Asset> { it.exifInfo?.fileSizeInBytes ?: 0L }
+                            .thenByDescending { (it.exifInfo?.imageWidth ?: 0) * (it.exifInfo?.imageHeight ?: 0) }
+                    )
+                }
                 
                 // For duplicates, we don't cache them in the DB yet, just return them directly
                 send(AssetBatch(flatAssets, flatAssets.size, isLocalCache = false, isSyncing = false))
