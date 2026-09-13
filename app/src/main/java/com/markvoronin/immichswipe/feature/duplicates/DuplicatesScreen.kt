@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
@@ -76,7 +77,9 @@ import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.core.cache.VideoCache
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.ui.theme.VirtualGold
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 import java.util.Locale
 import kotlin.math.abs
 
@@ -725,6 +728,12 @@ fun DuplicateVideoPlayer(
 
     var isVideoReady by remember(asset.id) { mutableStateOf(false) }
     var isMuted by remember(asset.id) { mutableStateOf(false) }
+    var isPlaying by remember(asset.id) { mutableStateOf(true) }
+
+    var currentTime by remember(asset.id) { mutableLongStateOf(0L) }
+    var duration by remember(asset.id) { mutableLongStateOf(0L) }
+    var isScrubbing by remember(asset.id) { mutableStateOf(false) }
+    var scrubValue by remember(asset.id) { mutableLongStateOf(0L) }
 
     val exoPlayer = remember(asset.id) {
         val loadControl = DefaultLoadControl.Builder()
@@ -753,6 +762,16 @@ fun DuplicateVideoPlayer(
             }
     }
 
+    LaunchedEffect(exoPlayer, asset.id) {
+        while (true) {
+            if (!isScrubbing) {
+                currentTime = exoPlayer.currentPosition
+                duration = exoPlayer.duration.coerceAtLeast(0L)
+            }
+            delay(200.milliseconds)
+        }
+    }
+
     DisposableEffect(exoPlayer, asset.id) {
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
@@ -760,8 +779,9 @@ fun DuplicateVideoPlayer(
                     isVideoReady = true
                 }
             }
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                if (isPlaying) {
+            override fun onIsPlayingChanged(playing: Boolean) {
+                isPlaying = playing
+                if (playing) {
                     isVideoReady = true
                 }
             }
@@ -774,7 +794,15 @@ fun DuplicateVideoPlayer(
         }
     }
 
-    Box(modifier = modifier) {
+    Box(
+        modifier = modifier.clickable {
+            if (exoPlayer.isPlaying) {
+                exoPlayer.pause()
+            } else {
+                exoPlayer.play()
+            }
+        }
+    ) {
         // Thumbnail placeholder while video is loading
         AsyncImage(
             model = ImageRequest.Builder(context)
@@ -816,24 +844,103 @@ fun DuplicateVideoPlayer(
                 }
         )
 
-        // Mute / Unmute Button
-        IconButton(
-            onClick = {
-                isMuted = !isMuted
-                exoPlayer.volume = if (isMuted) 0f else 1f
-            },
+        // Bottom Video Control Bar with Seekbar / Slider, Timestamp & Mute Toggle
+        Column(
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                .size(40.dp)
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
-                contentDescription = if (isMuted) "Unmute" else "Mute",
-                tint = Color.White,
-                modifier = Modifier.size(22.dp)
-            )
+            // Timestamp indicator
+            if (duration > 0) {
+                val timeToDisplay = if (isScrubbing) scrubValue else currentTime
+                Surface(
+                    color = Color.Black.copy(alpha = 0.6f),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = "${formatMediaTime(timeToDisplay)} / ${formatMediaTime(duration)}",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
+            // Controls Row: Play/Pause button + Seekbar Slider + Mute button
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Play / Pause Button
+                IconButton(
+                    onClick = {
+                        if (exoPlayer.isPlaying) {
+                            exoPlayer.pause()
+                        } else {
+                            exoPlayer.play()
+                        }
+                    },
+                    modifier = Modifier
+                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        .size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Seekbar / Slider
+                Slider(
+                    value = (if (isScrubbing) scrubValue else currentTime).toFloat(),
+                    onValueChange = {
+                        isScrubbing = true
+                        scrubValue = it.toLong()
+                        exoPlayer.seekTo(scrubValue)
+                    },
+                    onValueChangeFinished = {
+                        isScrubbing = false
+                        exoPlayer.seekTo(scrubValue)
+                    },
+                    valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.24f)
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(24.dp)
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Mute / Unmute Button
+                IconButton(
+                    onClick = {
+                        isMuted = !isMuted
+                        exoPlayer.volume = if (isMuted) 0f else 1f
+                    },
+                    modifier = Modifier
+                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        .size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                        contentDescription = if (isMuted) "Unmute" else "Mute",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -1353,5 +1460,17 @@ fun formatSizeStr(bytes: Long): String {
         gb >= 1.0 -> String.format(Locale.getDefault(), "%.2f GB", gb)
         mb >= 1.0 -> String.format(Locale.getDefault(), "%.2f MB", mb)
         else -> String.format(Locale.getDefault(), "%.0f KB", kb)
+    }
+}
+
+private fun formatMediaTime(ms: Long): String {
+    val totalSeconds = (ms / 1000).toInt()
+    val minutes = (totalSeconds / 60) % 60
+    val hours = totalSeconds / 3600
+    val seconds = totalSeconds % 60
+    return if (hours > 0) {
+        String.format(Locale.US, "%d:%02d:%02d", hours, minutes, seconds)
+    } else {
+        String.format(Locale.US, "%d:%02d", minutes, seconds)
     }
 }
