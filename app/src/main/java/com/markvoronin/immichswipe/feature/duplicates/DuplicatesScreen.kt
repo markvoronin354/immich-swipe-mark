@@ -1,5 +1,7 @@
 package com.markvoronin.immichswipe.feature.duplicates
 
+import android.view.LayoutInflater
+import androidx.annotation.OptIn
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -17,8 +19,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -29,6 +31,9 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,22 +49,36 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.SessionManager
+import com.markvoronin.immichswipe.core.cache.VideoCache
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.ui.theme.VirtualGold
 import kotlinx.coroutines.launch
 import java.util.Locale
+import kotlin.math.abs
 
 data class ZoomData(
     val asset: Asset,
@@ -502,6 +521,23 @@ fun DuplicateAssetItem(
                 modifier = Modifier.fillMaxSize()
             )
 
+            if (asset.type == "VIDEO") {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(6.dp)
+                        .background(Color.Black.copy(alpha = 0.5f), shape = CircleShape)
+                        .padding(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Video",
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
             if (decision != DuplicateDecision.NONE) {
                 Box(
                     modifier = Modifier.fillMaxSize()
@@ -676,6 +712,132 @@ fun InstagramZoomOverlay(
     }
 }
 
+@OptIn(UnstableApi::class)
+@Composable
+fun DuplicateVideoPlayer(
+    asset: Asset,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Fit
+) {
+    val context = LocalContext.current
+    val baseUrl = remember { SessionManager.getBaseUrl()?.removeSuffix("/") }
+    val apiKey = remember { SessionManager.getApiKey() ?: "" }
+
+    var isVideoReady by remember(asset.id) { mutableStateOf(false) }
+    var isMuted by remember(asset.id) { mutableStateOf(false) }
+
+    val exoPlayer = remember(asset.id) {
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(15_000, 50_000, 500, 1_000)
+            .setPrioritizeTimeOverSizeThresholds(true)
+            .build()
+
+        ExoPlayer.Builder(context)
+            .setLoadControl(loadControl)
+            .setAudioAttributes(AudioAttributes.DEFAULT, true)
+            .build().apply {
+                repeatMode = Player.REPEAT_MODE_ONE
+                val videoUrl = "$baseUrl/api/assets/${asset.id}/video/playback"
+                val dataSourceFactory = VideoCache.getCacheDataSourceFactory(context, apiKey)
+                val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
+                    .createMediaSource(
+                        MediaItem.Builder()
+                            .setUri(videoUrl)
+                            .setMediaId(asset.id)
+                            .setCustomCacheKey(asset.id)
+                            .build()
+                    )
+                setMediaSource(mediaSource)
+                prepare()
+                playWhenReady = true
+            }
+    }
+
+    DisposableEffect(exoPlayer, asset.id) {
+        val listener = object : Player.Listener {
+            override fun onPlaybackStateChanged(state: Int) {
+                if (state == Player.STATE_READY) {
+                    isVideoReady = true
+                }
+            }
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                if (isPlaying) {
+                    isVideoReady = true
+                }
+            }
+        }
+        exoPlayer.addListener(listener)
+        onDispose {
+            exoPlayer.removeListener(listener)
+            exoPlayer.stop()
+            exoPlayer.release()
+        }
+    }
+
+    Box(modifier = modifier) {
+        // Thumbnail placeholder while video is loading
+        AsyncImage(
+            model = ImageRequest.Builder(context)
+                .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                .addHeader("x-api-key", apiKey)
+                .crossfade(true)
+                .build(),
+            contentDescription = null,
+            contentScale = contentScale,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Video Surface
+        AndroidView(
+            factory = { ctx ->
+                val view = LayoutInflater.from(ctx).inflate(R.layout.view_player_texture, null) as PlayerView
+                view.useController = false
+                view.resizeMode = if (contentScale == ContentScale.Crop) {
+                    AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                } else {
+                    AspectRatioFrameLayout.RESIZE_MODE_FIT
+                }
+                view.player = exoPlayer
+                view
+            },
+            update = { view ->
+                if (view.player != exoPlayer) {
+                    view.player = exoPlayer
+                }
+                exoPlayer.volume = if (isMuted) 0f else 1f
+            },
+            onRelease = { view ->
+                view.player = null
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    alpha = if (isVideoReady) 1f else 0f
+                }
+        )
+
+        // Mute / Unmute Button
+        IconButton(
+            onClick = {
+                isMuted = !isMuted
+                exoPlayer.volume = if (isMuted) 0f else 1f
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                .size(40.dp)
+        ) {
+            Icon(
+                imageVector = if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                contentDescription = if (isMuted) "Unmute" else "Mute",
+                tint = Color.White,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+    }
+}
+
 @Composable
 fun FullScreenPreviewModal(
     previewData: FullScreenPreviewData?,
@@ -691,16 +853,66 @@ fun FullScreenPreviewModal(
     if (assets.isEmpty()) return
 
     val context = LocalContext.current
+    val density = LocalDensity.current
     val baseUrl = remember { SessionManager.getBaseUrl()?.removeSuffix("/") }
     val apiKey = remember { SessionManager.getApiKey() ?: "" }
 
     val currentOnDecisionToggle by rememberUpdatedState(onDecisionToggle)
     val currentOnFavoriteToggle by rememberUpdatedState(onFavoriteToggle)
 
-    val pagerState = rememberPagerState(
-        initialPage = previewData.initialIndex.coerceIn(0, assets.size - 1),
-        pageCount = { assets.size }
-    )
+    var selectedIndex by remember { mutableIntStateOf(previewData.initialIndex.coerceIn(0, assets.size - 1)) }
+    val carouselState = rememberLazyListState()
+
+    var carouselWidthPx by remember { mutableIntStateOf(0) }
+    val itemWidthDp = 54.dp
+    val itemWidthPx = with(density) { itemWidthDp.roundToPx() }
+
+    val sidePaddingDp = if (carouselWidthPx > 0) {
+        val paddingPx = ((carouselWidthPx - itemWidthPx) / 2).coerceAtLeast(0)
+        with(density) { paddingPx.toDp() }
+    } else {
+        16.dp
+    }
+
+    // 1. Keep selectedIndex synchronized with whichever thumbnail is closest to the carousel center
+    LaunchedEffect(carouselState) {
+        snapshotFlow {
+            // Read firstVisibleItemIndex and firstVisibleItemScrollOffset to trigger snapshot observation on every scroll pixel
+            @Suppress("UNUSED_EXPRESSION")
+            carouselState.firstVisibleItemIndex
+            @Suppress("UNUSED_EXPRESSION")
+            carouselState.firstVisibleItemScrollOffset
+
+            val layoutInfo = carouselState.layoutInfo
+            val contentStart = layoutInfo.beforeContentPadding
+            val viewportCenter = layoutInfo.viewportSize.width / 2
+
+            if (layoutInfo.viewportSize.width > 0) {
+                layoutInfo.visibleItemsInfo.minByOrNull { item ->
+                    val itemCenter = contentStart + item.offset + item.size / 2
+                    abs(itemCenter - viewportCenter)
+                }?.index
+            } else null
+        }.collect { closestIndex ->
+            if (closestIndex != null && closestIndex != selectedIndex) {
+                selectedIndex = closestIndex
+            }
+        }
+    }
+
+    // 2. Center thumbnail in carousel when selectedIndex changes (from tapping thumbnail or swiping main photo)
+    LaunchedEffect(selectedIndex, carouselWidthPx) {
+        if (carouselWidthPx > 0 && !carouselState.isScrollInProgress) {
+            carouselState.animateScrollToItem(selectedIndex, 0)
+        }
+    }
+
+    // 3. Snap selected thumbnail to exact center line when carousel finishes scrolling
+    LaunchedEffect(carouselState.isScrollInProgress) {
+        if (!carouselState.isScrollInProgress && carouselWidthPx > 0) {
+            carouselState.animateScrollToItem(selectedIndex, 0)
+        }
+    }
 
     var dismissOffsetY by remember { mutableFloatStateOf(0f) }
     var isDraggingDismiss by remember { mutableStateOf(false) }
@@ -750,126 +962,14 @@ fun FullScreenPreviewModal(
                     )
                 }
         ) {
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
                         translationY = currentDismissOffsetY
                     }
             ) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
-                    userScrollEnabled = true
-                ) { page ->
-                    val asset = assets[page]
-                    var scale by remember { mutableFloatStateOf(1f) }
-                    var panX by remember { mutableFloatStateOf(0f) }
-                    var panY by remember { mutableFloatStateOf(0f) }
-
-                    val animScale by animateFloatAsState(
-                        targetValue = scale,
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
-                        label = "PageScale"
-                    )
-                    val animPanX by animateFloatAsState(
-                        targetValue = panX,
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
-                        label = "PagePanX"
-                    )
-                    val animPanY by animateFloatAsState(
-                        targetValue = panY,
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
-                        label = "PagePanY"
-                    )
-
-                    val fullImageRequest = remember(asset.id, baseUrl, apiKey) {
-                        ImageRequest.Builder(context)
-                            .data("$baseUrl/api/assets/${asset.id}/original")
-                            .addHeader("x-api-key", apiKey)
-                            .crossfade(true)
-                            .build()
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .pointerInput(asset.id) {
-                                detectTapGestures(
-                                    onTap = {
-                                        currentOnDecisionToggle(asset.id)
-                                    },
-                                    onDoubleTap = {
-                                        if (scale > 1.05f) {
-                                            scale = 1f
-                                            panX = 0f
-                                            panY = 0f
-                                        } else {
-                                            scale = 3f
-                                            panX = 0f
-                                            panY = 0f
-                                        }
-                                    }
-                                )
-                            }
-                            .pointerInput(Unit) {
-                                awaitEachGesture {
-                                    awaitFirstDown(requireUnconsumed = false)
-                                    var lastPressedCount = 0
-
-                                    do {
-                                        val event = awaitPointerEvent()
-                                        val pressedPointers = event.changes.filter { it.pressed }
-                                        val pressedCount = pressedPointers.size
-
-                                        if (pressedCount >= 2) {
-                                            if (pressedCount == lastPressedCount) {
-                                                val zoom = event.calculateZoom()
-                                                val pan = event.calculatePan()
-
-                                                scale = (scale * zoom).coerceIn(1f, 5f)
-                                                if (scale > 1.05f) {
-                                                    panX += pan.x
-                                                    panY += pan.y
-                                                } else {
-                                                    panX = 0f
-                                                    panY = 0f
-                                                }
-                                            }
-                                            lastPressedCount = pressedCount
-                                            event.changes.forEach { it.consume() }
-                                        } else if (pressedCount == 1 && scale > 1.05f) {
-                                            if (pressedCount == lastPressedCount) {
-                                                val pan = event.calculatePan()
-                                                panX += pan.x
-                                                panY += pan.y
-                                                event.changes.forEach { it.consume() }
-                                            }
-                                            lastPressedCount = pressedCount
-                                        } else {
-                                            lastPressedCount = pressedCount
-                                        }
-                                    } while (event.changes.any { it.pressed })
-                                }
-                            }
-                    ) {
-                        AsyncImage(
-                            model = fullImageRequest,
-                            contentDescription = null,
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .graphicsLayer {
-                                    scaleX = animScale
-                                    scaleY = animScale
-                                    translationX = animPanX
-                                    translationY = animPanY
-                                }
-                        )
-                    }
-                }
-
-                val currentAsset = assets.getOrNull(pagerState.currentPage) ?: assets.first()
+                val currentAsset = assets.getOrNull(selectedIndex) ?: assets.first()
                 val currentDecision = decisions[currentAsset.id] ?: DuplicateDecision.NONE
                 val currentIsFav = isFavorite(currentAsset)
 
@@ -878,14 +978,14 @@ fun FullScreenPreviewModal(
                     modifier = Modifier
                         .fillMaxWidth()
                         .statusBarsPadding()
-                        .padding(16.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         val sizeStr = currentAsset.exifInfo?.fileSizeInBytes?.let { formatSizeStr(it) } ?: ""
                         Text(
-                            text = "${currentAsset.originalFileName ?: "Photo"} (${pagerState.currentPage + 1}/${assets.size})",
+                            text = "${currentAsset.originalFileName ?: "Photo"} (${selectedIndex + 1}/${assets.size})",
                             style = MaterialTheme.typography.titleMedium,
                             color = Color.White,
                             fontWeight = FontWeight.Bold
@@ -951,25 +1051,294 @@ fun FullScreenPreviewModal(
                     }
                 }
 
-                // Down-swipe hint at bottom
+                // Middle area: Static, stable photo viewer with no sliding transition animations
+                var scale by remember { mutableFloatStateOf(1f) }
+                var panX by remember { mutableFloatStateOf(0f) }
+                var panY by remember { mutableFloatStateOf(0f) }
+
+                val animScale by animateFloatAsState(
+                    targetValue = scale,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
+                    label = "PageScale"
+                )
+                val animPanX by animateFloatAsState(
+                    targetValue = panX,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
+                    label = "PagePanX"
+                )
+                val animPanY by animateFloatAsState(
+                    targetValue = panY,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
+                    label = "PagePanY"
+                )
+
+                val imageRequest = remember(currentAsset.id, baseUrl, apiKey) {
+                    ImageRequest.Builder(context)
+                        .data("$baseUrl/api/assets/${currentAsset.id}/thumbnail?format=WEBP&size=preview")
+                        .addHeader("x-api-key", apiKey)
+                        .crossfade(false)
+                        .build()
+                }
+
+                if (currentAsset.type == "VIDEO") {
+                    DuplicateVideoPlayer(
+                        asset = currentAsset,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .pointerInput(currentAsset.id) {
+                                detectTapGestures(
+                                    onTap = {
+                                        currentOnDecisionToggle(currentAsset.id)
+                                    },
+                                    onDoubleTap = {
+                                        if (scale > 1.05f) {
+                                            scale = 1f
+                                            panX = 0f
+                                            panY = 0f
+                                        } else {
+                                            scale = 3f
+                                            panX = 0f
+                                            panY = 0f
+                                        }
+                                    }
+                                )
+                            }
+                            .pointerInput(currentAsset.id) {
+                                awaitEachGesture {
+                                    awaitFirstDown(requireUnconsumed = false)
+                                    var lastPressedCount = 0
+                                    var totalHorizontalSwipe = 0f
+                                    var hasSwipedAsset = false
+
+                                    do {
+                                        val event = awaitPointerEvent()
+                                        val pressedPointers = event.changes.filter { it.pressed }
+                                        val pressedCount = pressedPointers.size
+
+                                        if (pressedCount >= 2) {
+                                            if (pressedCount == lastPressedCount) {
+                                                val zoom = event.calculateZoom()
+                                                val pan = event.calculatePan()
+
+                                                scale = (scale * zoom).coerceIn(1f, 5f)
+                                                if (scale > 1.05f) {
+                                                    panX += pan.x
+                                                    panY += pan.y
+                                                } else {
+                                                    panX = 0f
+                                                    panY = 0f
+                                                }
+                                            }
+                                            lastPressedCount = pressedCount
+                                            event.changes.forEach { it.consume() }
+                                        } else if (pressedCount == 1) {
+                                            val pan = event.calculatePan()
+                                            if (scale > 1.05f) {
+                                                if (pressedCount == lastPressedCount) {
+                                                    panX += pan.x
+                                                    panY += pan.y
+                                                    event.changes.forEach { it.consume() }
+                                                }
+                                            } else {
+                                                if (pressedCount == lastPressedCount && !hasSwipedAsset) {
+                                                    totalHorizontalSwipe += pan.x
+                                                    if (totalHorizontalSwipe < -80f) {
+                                                        if (selectedIndex < assets.size - 1) {
+                                                            selectedIndex++
+                                                            hasSwipedAsset = true
+                                                        }
+                                                    } else if (totalHorizontalSwipe > 80f) {
+                                                        if (selectedIndex > 0) {
+                                                            selectedIndex--
+                                                            hasSwipedAsset = true
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            lastPressedCount = pressedCount
+                                        } else {
+                                            lastPressedCount = pressedCount
+                                        }
+                                    } while (event.changes.any { it.pressed })
+                                }
+                            }
+                    ) {
+                        AsyncImage(
+                            model = imageRequest,
+                            contentDescription = null,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    scaleX = animScale
+                                    scaleY = animScale
+                                    translationX = animPanX
+                                    translationY = animPanY
+                                }
+                        )
+                    }
+                }
+
+                // Bottom carousel section
                 Column(
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(alpha = 0.6f))
                         .navigationBarsPadding()
-                        .padding(bottom = 16.dp),
+                        .padding(vertical = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.7f),
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Text(
-                        text = "Swipe down to dismiss",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.7f)
-                    )
+                    LazyRow(
+                        state = carouselState,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(72.dp)
+                            .onSizeChanged { size ->
+                                carouselWidthPx = size.width
+                            },
+                        contentPadding = PaddingValues(horizontal = sidePaddingDp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        itemsIndexed(assets, key = { _, asset -> asset.id }) { index, asset ->
+                            val isSelected = index == selectedIndex
+                            val assetDecision = decisions[asset.id] ?: DuplicateDecision.NONE
+                            val assetFav = isFavorite(asset)
+
+                            val borderColor = when {
+                                isSelected -> Color.White
+                                assetDecision == DuplicateDecision.KEEP -> Color(0xFF4CAF50)
+                                assetDecision == DuplicateDecision.DELETE -> MaterialTheme.colorScheme.error
+                                else -> Color.White.copy(alpha = 0.3f)
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .size(width = itemWidthDp, height = 68.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(Color.DarkGray)
+                                    .border(
+                                        width = if (isSelected) 2.5.dp else 1.dp,
+                                        color = borderColor,
+                                        shape = RoundedCornerShape(6.dp)
+                                    )
+                                    .clickable {
+                                        selectedIndex = index
+                                    }
+                            ) {
+                                val thumbRequest = remember(asset.id, baseUrl, apiKey) {
+                                    ImageRequest.Builder(context)
+                                        .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                                        .addHeader("x-api-key", apiKey)
+                                        .crossfade(false)
+                                        .build()
+                                }
+
+                                AsyncImage(
+                                    model = thumbRequest,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .graphicsLayer {
+                                            alpha = if (isSelected) 1f else 0.6f
+                                        }
+                                )
+
+                                // Decision indicator badge
+                                if (assetDecision != DuplicateDecision.NONE) {
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(2.dp)
+                                            .size(16.dp)
+                                            .background(
+                                                if (assetDecision == DuplicateDecision.DELETE) MaterialTheme.colorScheme.error else Color(0xFF4CAF50),
+                                                CircleShape
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = if (assetDecision == DuplicateDecision.DELETE) Icons.Default.Delete else Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(10.dp)
+                                        )
+                                    }
+                                }
+
+                                // Favorite indicator
+                                if (assetFav) {
+                                    Icon(
+                                        imageVector = Icons.Default.Favorite,
+                                        contentDescription = null,
+                                        tint = Color.Red,
+                                        modifier = Modifier
+                                            .align(Alignment.BottomStart)
+                                            .padding(2.dp)
+                                            .size(12.dp)
+                                    )
+                                }
+
+                                // Video indicator
+                                if (asset.type == "VIDEO") {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = "Video",
+                                        tint = Color.White,
+                                        modifier = Modifier
+                                            .align(Alignment.TopStart)
+                                            .padding(2.dp)
+                                            .size(12.dp)
+                                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                    )
+                                }
+
+                                // File size label
+                                val thumbSizeStr = asset.exifInfo?.fileSizeInBytes?.let { formatSizeStr(it) }
+                                if (thumbSizeStr != null) {
+                                    Text(
+                                        text = thumbSizeStr,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold),
+                                        color = Color.White,
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                            .padding(horizontal = 2.dp, vertical = 1.dp),
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.5f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Swipe down to dismiss",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                            color = Color.White.copy(alpha = 0.5f)
+                        )
+                    }
                 }
             }
         }
