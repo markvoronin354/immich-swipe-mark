@@ -25,40 +25,46 @@ class DuplicatesViewModel(
         loadDuplicates()
     }
 
-    private fun loadDuplicates() {
+    fun loadDuplicates() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-            try {
-                // Fetch clusters directly from Immich API
-                val duplicateClusters = api.getDuplicates()
-                
-                // Map to UI model and assign a unique ID to each cluster (sorted largest to smallest)
-                val mappedClusters = duplicateClusters.map { cluster ->
-                    DuplicateClusterUiModel(
-                        clusterId = UUID.randomUUID().toString(),
-                        assets = cluster.assets.sortedWith(
-                            compareByDescending<Asset> { it.exifInfo?.fileSizeInBytes ?: 0L }
-                                .thenByDescending { (it.exifInfo?.imageWidth ?: 0) * (it.exifInfo?.imageHeight ?: 0) }
-                        )
+            fetchDuplicates()
+        }
+    }
+
+    private suspend fun fetchDuplicates() {
+        _uiState.update { it.copy(isLoading = true, error = null) }
+        try {
+            // Fetch clusters directly from Immich API
+            val duplicateClusters = api.getDuplicates()
+            
+            // Map to UI model and assign a unique ID to each cluster (sorted largest to smallest)
+            val mappedClusters = duplicateClusters.map { cluster ->
+                DuplicateClusterUiModel(
+                    clusterId = UUID.randomUUID().toString(),
+                    assets = cluster.assets.sortedWith(
+                        compareByDescending<Asset> { it.exifInfo?.fileSizeInBytes ?: 0L }
+                            .thenByDescending { (it.exifInfo?.imageWidth ?: 0) * (it.exifInfo?.imageHeight ?: 0) }
                     )
-                }
-                
-                _uiState.update { 
-                    it.copy(
-                        isLoading = false,
-                        clusters = mappedClusters,
-                        // Set default decisions: Keep the first (newest usually), delete the rest
-                        decisions = generateDefaultDecisions(mappedClusters)
-                    ) 
-                }
-            } catch (e: Exception) {
-                AppLogger.e("Duplicates", "Failed to load duplicates", e)
-                _uiState.update { 
-                    it.copy(
-                        isLoading = false, 
-                        error = e.message ?: "Unknown error occurred"
-                    ) 
-                }
+                )
+            }
+            
+            _uiState.update { 
+                it.copy(
+                    isLoading = false,
+                    isSyncing = false,
+                    clusters = mappedClusters,
+                    // Set default decisions: Keep the first (newest usually), delete the rest
+                    decisions = generateDefaultDecisions(mappedClusters)
+                ) 
+            }
+        } catch (e: Exception) {
+            AppLogger.e("Duplicates", "Failed to load duplicates", e)
+            _uiState.update { 
+                it.copy(
+                    isLoading = false, 
+                    isSyncing = false,
+                    error = e.message ?: "Unknown error occurred"
+                ) 
             }
         }
     }
@@ -137,7 +143,7 @@ class DuplicatesViewModel(
                 }
                 
                 // Refresh list after successful deletion
-                loadDuplicates()
+                fetchDuplicates()
             } catch (e: Exception) {
                 AppLogger.e("Duplicates", "Failed to sync deletions", e)
                 _uiState.update { 
@@ -146,6 +152,8 @@ class DuplicatesViewModel(
                         error = "Failed to sync: ${e.message}"
                     ) 
                 }
+            } finally {
+                _uiState.update { it.copy(isSyncing = false) }
             }
         }
     }

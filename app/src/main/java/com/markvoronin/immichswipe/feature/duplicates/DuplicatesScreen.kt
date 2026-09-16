@@ -15,8 +15,10 @@ import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -967,8 +969,12 @@ fun FullScreenPreviewModal(
     val currentOnDecisionToggle by rememberUpdatedState(onDecisionToggle)
     val currentOnFavoriteToggle by rememberUpdatedState(onFavoriteToggle)
 
-    var selectedIndex by remember { mutableIntStateOf(previewData.initialIndex.coerceIn(0, assets.size - 1)) }
-    val carouselState = rememberLazyListState()
+    val initialIndex = remember(previewData) { previewData.initialIndex.coerceIn(0, assets.size - 1) }
+    var selectedIndex by remember(previewData) { mutableIntStateOf(initialIndex) }
+    val carouselState = remember(previewData) {
+        LazyListState(firstVisibleItemIndex = initialIndex)
+    }
+    val isUserDragging by carouselState.interactionSource.collectIsDraggedAsState()
 
     var carouselWidthPx by remember { mutableIntStateOf(0) }
     val itemWidthDp = 54.dp
@@ -981,8 +987,10 @@ fun FullScreenPreviewModal(
         16.dp
     }
 
-    // 1. Keep selectedIndex synchronized with whichever thumbnail is closest to the carousel center
-    LaunchedEffect(carouselState) {
+    // 1. Keep selectedIndex synchronized with whichever thumbnail is closest to the carousel center when user drags carousel
+    LaunchedEffect(carouselState, isUserDragging, carouselWidthPx) {
+        if (!isUserDragging || carouselWidthPx <= 0) return@LaunchedEffect
+
         snapshotFlow {
             // Read firstVisibleItemIndex and firstVisibleItemScrollOffset to trigger snapshot observation on every scroll pixel
             @Suppress("UNUSED_EXPRESSION")
@@ -1010,13 +1018,25 @@ fun FullScreenPreviewModal(
     // 2. Center thumbnail in carousel when selectedIndex changes (from tapping thumbnail or swiping main photo)
     LaunchedEffect(selectedIndex, carouselWidthPx) {
         if (carouselWidthPx > 0 && !carouselState.isScrollInProgress) {
-            carouselState.animateScrollToItem(selectedIndex, 0)
+            carouselState.scrollToItem(selectedIndex, 0)
         }
     }
 
     // 3. Snap selected thumbnail to exact center line when carousel finishes scrolling
-    LaunchedEffect(carouselState.isScrollInProgress) {
-        if (!carouselState.isScrollInProgress && carouselWidthPx > 0) {
+    LaunchedEffect(carouselState.isScrollInProgress, isUserDragging) {
+        if (!carouselState.isScrollInProgress && !isUserDragging && carouselWidthPx > 0) {
+            val layoutInfo = carouselState.layoutInfo
+            val contentStart = layoutInfo.beforeContentPadding
+            val viewportCenter = layoutInfo.viewportSize.width / 2
+            if (layoutInfo.viewportSize.width > 0) {
+                val closest = layoutInfo.visibleItemsInfo.minByOrNull { item ->
+                    val itemCenter = contentStart + item.offset + item.size / 2
+                    abs(itemCenter - viewportCenter)
+                }?.index
+                if (closest != null) {
+                    selectedIndex = closest
+                }
+            }
             carouselState.animateScrollToItem(selectedIndex, 0)
         }
     }
