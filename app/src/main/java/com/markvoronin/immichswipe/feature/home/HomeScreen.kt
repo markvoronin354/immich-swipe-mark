@@ -316,7 +316,8 @@ fun HomeScreen(
                                                 SessionManager.getApiKey() ?: "",
                                                 uiState.user?.id ?: ""
                                             )
-                                        )
+                                        ),
+                                        swipeDecisionRepository = swipeDecisionRepository
                                     )
                                 )
                                 com.markvoronin.immichswipe.feature.duplicates.DuplicatesScreen(

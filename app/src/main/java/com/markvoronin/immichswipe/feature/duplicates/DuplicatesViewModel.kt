@@ -4,8 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.markvoronin.immichswipe.core.AppLogger
+import com.markvoronin.immichswipe.core.SessionManager
+import com.markvoronin.immichswipe.data.api.DeleteAssetsRequest
 import com.markvoronin.immichswipe.data.api.ImmichApi
 import com.markvoronin.immichswipe.data.api.UpdateAssetsRequest
+import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,7 +18,8 @@ import java.util.UUID
 import com.markvoronin.immichswipe.domain.model.Asset
 
 class DuplicatesViewModel(
-    private val api: ImmichApi
+    private val api: ImmichApi,
+    private val swipeDecisionRepository: SwipeDecisionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DuplicatesUiState())
@@ -136,10 +140,28 @@ class DuplicatesViewModel(
             _uiState.update { it.copy(isSyncing = true) }
             try {
                 // Get all asset IDs marked for deletion
-                val toDelete = _uiState.value.decisions.filter { it.value == DuplicateDecision.DELETE }.keys.toList()
+                val toDeleteSet = _uiState.value.decisions.filter { it.value == DuplicateDecision.DELETE }.keys.toSet()
                 
-                if (toDelete.isNotEmpty()) {
-                    api.deleteAssets(com.markvoronin.immichswipe.data.api.DeleteAssetsRequest(ids = toDelete, force = false))
+                if (toDeleteSet.isNotEmpty()) {
+                    val allAssets = _uiState.value.clusters.flatMap { it.assets }
+                    val assetsToDelete = allAssets.filter { it.id in toDeleteSet }
+                    
+                    val deletedCount = assetsToDelete.size
+                    val bytesSaved = assetsToDelete.sumOf { it.exifInfo?.fileSizeInBytes ?: 0L }
+
+                    api.deleteAssets(DeleteAssetsRequest(ids = toDeleteSet.toList(), force = false))
+
+                    val userId = SessionManager.getUserId()
+                    if (userId != null && deletedCount > 0) {
+                        swipeDecisionRepository.saveSyncHistory(
+                            userId = userId,
+                            deletedCount = deletedCount,
+                            bytesSaved = bytesSaved,
+                            keptCount = 0,
+                            archivedCount = 0,
+                            lockedCount = 0
+                        )
+                    }
                 }
                 
                 // Refresh list after successful deletion
@@ -196,11 +218,14 @@ class DuplicatesViewModel(
     }
 }
 
-class DuplicatesViewModelFactory(private val api: ImmichApi) : ViewModelProvider.Factory {
+class DuplicatesViewModelFactory(
+    private val api: ImmichApi,
+    private val swipeDecisionRepository: SwipeDecisionRepository
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(DuplicatesViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return DuplicatesViewModel(api) as T
+            return DuplicatesViewModel(api, swipeDecisionRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
