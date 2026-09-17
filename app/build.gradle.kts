@@ -16,8 +16,8 @@ android {
         applicationId = "com.markvoronin.immichswipe"
         minSdk = 26
         targetSdk = 36
-        versionCode = 22
-        versionName = "2.7.3"
+        versionCode = 24
+        versionName = "2.7.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
