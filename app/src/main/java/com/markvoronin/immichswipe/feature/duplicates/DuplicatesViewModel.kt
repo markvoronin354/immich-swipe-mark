@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
+import com.markvoronin.immichswipe.data.local.entity.SwipeDecisionEntity
+import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.domain.model.Asset
 
 class DuplicatesViewModel(
@@ -26,7 +28,28 @@ class DuplicatesViewModel(
     val uiState: StateFlow<DuplicatesUiState> = _uiState.asStateFlow()
 
     init {
+        observeSavedDecisions()
         loadDuplicates()
+    }
+
+    private fun observeSavedDecisions() {
+        viewModelScope.launch {
+            val userId = SessionManager.getUserId() ?: return@launch
+            swipeDecisionRepository.getAllDecisionsForUser(userId).collect { savedDecisions ->
+                val decisionMap = savedDecisions.associate { entity ->
+                    val d = when (entity.decision) {
+                        "KEEP" -> DuplicateDecision.KEEP
+                        "DELETE" -> DuplicateDecision.DELETE
+                        else -> DuplicateDecision.NONE
+                    }
+                    entity.assetId to d
+                }.filterValues { it != DuplicateDecision.NONE }
+
+                _uiState.update { state ->
+                    state.copy(decisions = decisionMap)
+                }
+            }
+        }
     }
 
     fun loadDuplicates() {
@@ -56,9 +79,7 @@ class DuplicatesViewModel(
                 it.copy(
                     isLoading = false,
                     isSyncing = false,
-                    clusters = mappedClusters,
-                    // Set default decisions: Keep the first (newest usually), delete the rest
-                    decisions = generateDefaultDecisions(mappedClusters)
+                    clusters = mappedClusters
                 ) 
             }
         } catch (e: Exception) {
@@ -73,28 +94,57 @@ class DuplicatesViewModel(
         }
     }
 
-    private fun generateDefaultDecisions(@Suppress("UNUSED_PARAMETER") clusters: List<DuplicateClusterUiModel>): Map<String, DuplicateDecision> {
-        // Default mode: All assets unselected (clean slate)
-        return emptyMap()
-    }
-
     fun toggleDecision(assetId: String) {
+        val current = _uiState.value.decisions[assetId] ?: DuplicateDecision.NONE
+        val next = when (current) {
+            DuplicateDecision.NONE -> DuplicateDecision.KEEP
+            DuplicateDecision.KEEP -> DuplicateDecision.DELETE
+            DuplicateDecision.DELETE -> DuplicateDecision.NONE
+        }
+
         _uiState.update { state ->
-            val current = state.decisions[assetId] ?: DuplicateDecision.NONE
-            val next = when (current) {
-                DuplicateDecision.NONE -> DuplicateDecision.KEEP
-                DuplicateDecision.KEEP -> DuplicateDecision.DELETE
-                DuplicateDecision.DELETE -> DuplicateDecision.NONE
-            }
             state.copy(
                 decisions = state.decisions.toMutableMap().apply { put(assetId, next) }
             )
         }
+
+        viewModelScope.launch {
+            val userId = SessionManager.getUserId() ?: return@launch
+            val asset = _uiState.value.clusters.flatMap { it.assets }.find { it.id == assetId }
+            val fileSize = asset?.exifInfo?.fileSizeInBytes
+            when (next) {
+                DuplicateDecision.KEEP -> swipeDecisionRepository.saveDecision(
+                    assetId = assetId,
+                    albumId = Album.VIRTUAL_DUPLICATES_ID,
+                    userId = userId,
+                    decision = "KEEP",
+                    fileSize = fileSize
+                )
+                DuplicateDecision.DELETE -> swipeDecisionRepository.saveDecision(
+                    assetId = assetId,
+                    albumId = Album.VIRTUAL_DUPLICATES_ID,
+                    userId = userId,
+                    decision = "DELETE",
+                    fileSize = fileSize
+                )
+                DuplicateDecision.NONE -> swipeDecisionRepository.removeDecision(
+                    assetId = assetId,
+                    userId = userId
+                )
+            }
+        }
     }
 
     fun clearAllDecisions() {
+        val currentDecidedAssetIds = _uiState.value.decisions.keys.toList()
         _uiState.update { state ->
             state.copy(decisions = emptyMap())
+        }
+        viewModelScope.launch {
+            val userId = SessionManager.getUserId() ?: return@launch
+            if (currentDecidedAssetIds.isNotEmpty()) {
+                swipeDecisionRepository.removeDecisions(currentDecidedAssetIds, userId)
+            }
         }
     }
 
@@ -133,15 +183,43 @@ class DuplicatesViewModel(
                 decisions = state.decisions.toMutableMap().apply { put(assetId, decision) }
             )
         }
+
+        viewModelScope.launch {
+            val userId = SessionManager.getUserId() ?: return@launch
+            val asset = _uiState.value.clusters.flatMap { it.assets }.find { it.id == assetId }
+            val fileSize = asset?.exifInfo?.fileSizeInBytes
+            when (decision) {
+                DuplicateDecision.KEEP -> swipeDecisionRepository.saveDecision(
+                    assetId = assetId,
+                    albumId = Album.VIRTUAL_DUPLICATES_ID,
+                    userId = userId,
+                    decision = "KEEP",
+                    fileSize = fileSize
+                )
+                DuplicateDecision.DELETE -> swipeDecisionRepository.saveDecision(
+                    assetId = assetId,
+                    albumId = Album.VIRTUAL_DUPLICATES_ID,
+                    userId = userId,
+                    decision = "DELETE",
+                    fileSize = fileSize
+                )
+                DuplicateDecision.NONE -> swipeDecisionRepository.removeDecision(
+                    assetId = assetId,
+                    userId = userId
+                )
+            }
+        }
     }
 
     fun syncDeletions() {
         viewModelScope.launch {
             _uiState.update { it.copy(isSyncing = true) }
             try {
-                // Get all asset IDs marked for deletion
-                val toDeleteSet = _uiState.value.decisions.filter { it.value == DuplicateDecision.DELETE }.keys.toSet()
-                
+                // Get all asset IDs marked for deletion and keep
+                val currentDecisions = _uiState.value.decisions
+                val toDeleteSet = currentDecisions.filter { it.value == DuplicateDecision.DELETE }.keys.toSet()
+                val toKeepSet = currentDecisions.filter { it.value == DuplicateDecision.KEEP }.keys.toSet()
+
                 if (toDeleteSet.isNotEmpty()) {
                     val allAssets = _uiState.value.clusters.flatMap { it.assets }
                     val assetsToDelete = allAssets.filter { it.id in toDeleteSet }
@@ -152,15 +230,29 @@ class DuplicatesViewModel(
                     api.deleteAssets(DeleteAssetsRequest(ids = toDeleteSet.toList(), force = false))
 
                     val userId = SessionManager.getUserId()
-                    if (userId != null && deletedCount > 0) {
+                    if (userId != null) {
+                        // Remove deleted assets from decisions DB
+                        swipeDecisionRepository.removeDecisions(toDeleteSet.toList(), userId)
+
+                        // Mark kept assets as synced
+                        if (toKeepSet.isNotEmpty()) {
+                            swipeDecisionRepository.markAsSynced(toKeepSet.toList(), userId)
+                        }
+
+                        // Save sync history
                         swipeDecisionRepository.saveSyncHistory(
                             userId = userId,
                             deletedCount = deletedCount,
                             bytesSaved = bytesSaved,
-                            keptCount = 0,
+                            keptCount = toKeepSet.size,
                             archivedCount = 0,
                             lockedCount = 0
                         )
+                    }
+                } else {
+                    val userId = SessionManager.getUserId()
+                    if (userId != null && toKeepSet.isNotEmpty()) {
+                        swipeDecisionRepository.markAsSynced(toKeepSet.toList(), userId)
                     }
                 }
                 
@@ -189,31 +281,51 @@ class DuplicatesViewModel(
     }
 
     fun resetDecisions() {
-        _uiState.update { state ->
-            state.copy(decisions = generateDefaultDecisions(state.clusters))
-        }
+        clearAllDecisions()
     }
 
     fun autoSelect(keepLargest: Boolean) {
+        val newDecisions = _uiState.value.decisions.toMutableMap()
+        _uiState.value.clusters.forEach { cluster ->
+            val sorted = if (keepLargest) {
+                cluster.assets.sortedWith(
+                    compareByDescending<Asset> { it.exifInfo?.fileSizeInBytes ?: 0L }
+                        .thenByDescending { (it.exifInfo?.imageWidth ?: 0) * (it.exifInfo?.imageHeight ?: 0) }
+                )
+            } else {
+                // Items with 0L size (unknown) should probably go to the bottom of "smallest"
+                cluster.assets.sortedWith(compareBy<Asset> { if ((it.exifInfo?.fileSizeInBytes ?: 0L) == 0L) Long.MAX_VALUE else it.exifInfo!!.fileSizeInBytes }.thenBy { it.fileCreatedAt })
+            }
+            
+            val toKeep = sorted.firstOrNull()
+            cluster.assets.forEach { asset ->
+                newDecisions[asset.id] = if (asset.id == toKeep?.id) DuplicateDecision.KEEP else DuplicateDecision.DELETE
+            }
+        }
         _uiState.update { state ->
-            val newDecisions = state.decisions.toMutableMap()
-            state.clusters.forEach { cluster ->
-                val sorted = if (keepLargest) {
-                    cluster.assets.sortedWith(
-                        compareByDescending<Asset> { it.exifInfo?.fileSizeInBytes ?: 0L }
-                            .thenByDescending { (it.exifInfo?.imageWidth ?: 0) * (it.exifInfo?.imageHeight ?: 0) }
+            state.copy(decisions = newDecisions)
+        }
+
+        viewModelScope.launch {
+            val userId = SessionManager.getUserId() ?: return@launch
+            val allAssetsMap = _uiState.value.clusters.flatMap { it.assets }.associateBy { it.id }
+            val entitiesToSave = newDecisions.mapNotNull { (assetId, decision) ->
+                if (decision == DuplicateDecision.NONE) null
+                else {
+                    val asset = allAssetsMap[assetId]
+                    SwipeDecisionEntity(
+                        assetId = assetId,
+                        albumId = Album.VIRTUAL_DUPLICATES_ID,
+                        userId = userId,
+                        decision = decision.name,
+                        fileSize = asset?.exifInfo?.fileSizeInBytes,
+                        createdAt = System.currentTimeMillis()
                     )
-                } else {
-                    // Items with 0L size (unknown) should probably go to the bottom of "smallest"
-                    cluster.assets.sortedWith(compareBy<Asset> { if ((it.exifInfo?.fileSizeInBytes ?: 0L) == 0L) Long.MAX_VALUE else it.exifInfo!!.fileSizeInBytes }.thenBy { it.fileCreatedAt })
-                }
-                
-                val toKeep = sorted.firstOrNull()
-                cluster.assets.forEach { asset ->
-                    newDecisions[asset.id] = if (asset.id == toKeep?.id) DuplicateDecision.KEEP else DuplicateDecision.DELETE
                 }
             }
-            state.copy(decisions = newDecisions)
+            if (entitiesToSave.isNotEmpty()) {
+                swipeDecisionRepository.saveDecisions(entitiesToSave)
+            }
         }
     }
 }

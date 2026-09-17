@@ -55,6 +55,17 @@ class SwipeDecisionRepository(
     }
 
     /**
+     * Enregistre plusieurs décisions en base locale.
+     */
+    suspend fun saveDecisions(decisions: List<SwipeDecisionEntity>) {
+        if (decisions.isNotEmpty()) {
+            decisions.chunked(500).forEach { chunk ->
+                swipeDecisionDao.insertDecisions(chunk)
+            }
+        }
+    }
+
+    /**
      * Marque plusieurs assets comme synchronisés pour un utilisateur.
      */
     suspend fun markAsSynced(assetIds: List<String>, userId: String) {

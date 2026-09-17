@@ -1,7 +1,9 @@
 package com.markvoronin.immichswipe.feature.duplicates
 
+import android.content.Intent
 import android.view.LayoutInflater
 import androidx.annotation.OptIn
+import androidx.core.net.toUri
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -13,8 +15,11 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,6 +31,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -57,6 +63,7 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -144,11 +151,26 @@ fun DuplicatesScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "Duplicates",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Column {
+                        Text(
+                            text = "Duplicates",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        val remaining = uiState.unsortedAssetsCount
+                        val remainingClusters = uiState.unsortedClustersCount
+                        val subtitleText = if (remaining == 0) {
+                            "All photos sorted!"
+                        } else {
+                            "$remaining photo${if (remaining > 1) "s" else ""} remaining ($remainingClusters group${if (remainingClusters > 1) "s" else ""})"
+                        }
+                        Text(
+                            text = subtitleText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (remaining == 0) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (remaining == 0) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
                     val deleteCount = uiState.decisions.count { it.value == DuplicateDecision.DELETE }
                     Button(
                         onClick = { viewModel.toggleDeleteConfirmation(true) },
@@ -325,12 +347,53 @@ fun DuplicateClusterCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "${cluster.assets.size} similar photos",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
+            val unsortedInCluster = cluster.assets.count { asset ->
+                decisions[asset.id] == null || decisions[asset.id] == DuplicateDecision.NONE
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${cluster.assets.size} similar photos",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                if (unsortedInCluster == 0) {
+                    Surface(
+                        color = Color(0xFF4CAF50).copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = Color(0xFF4CAF50),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = "Sorted",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF4CAF50),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        text = "$unsortedInCluster left to sort",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
 
             if (cluster.assets.size <= 2) {
                 Row(
@@ -430,7 +493,6 @@ fun DuplicateAssetItem(
                         var currentScale = 1f
                         var currentOffset = Offset.Zero
                         var activeZooming = false
-                        var lastPressedCount = 0
 
                         do {
                             val event = awaitPointerEvent()
@@ -438,59 +500,34 @@ fun DuplicateAssetItem(
                             val pressedCount = pressedPointers.size
 
                             if (pressedCount >= 2) {
-                                if (!activeZooming) {
-                                    activeZooming = true
+                                activeZooming = true
+                                val zoom = event.calculateZoom()
+                                val pan = event.calculatePan()
+
+                                currentScale = (currentScale * zoom).coerceIn(1f, 4f)
+                                val maxOffset = 250f * currentScale
+                                currentOffset = Offset(
+                                    (currentOffset.x + pan.x).coerceIn(-maxOffset, maxOffset),
+                                    (currentOffset.y + pan.y).coerceIn(-maxOffset, maxOffset)
+                                )
+
+                                currentItemBounds?.let { bounds ->
+                                    currentOnZoomStateUpdate(
+                                        ZoomData(
+                                            asset = asset,
+                                            decision = currentDecision,
+                                            initialBounds = bounds,
+                                            scale = currentScale,
+                                            offset = currentOffset,
+                                            isGestureActive = true
+                                        )
+                                    )
                                 }
-                            }
-
-                            if (activeZooming) {
-                                if (pressedCount >= 1) {
-                                    if (pressedCount == lastPressedCount) {
-                                        val zoom = if (pressedCount >= 2) event.calculateZoom() else 1f
-                                        val pan = event.calculatePan()
-
-                                        currentScale = (currentScale * zoom).coerceIn(1f, 5f)
-                                        currentOffset += pan
-                                    }
-
-                                    lastPressedCount = pressedCount
-
-                                    currentItemBounds?.let { bounds ->
-                                        currentOnZoomStateUpdate(
-                                            ZoomData(
-                                                asset = asset,
-                                                decision = currentDecision,
-                                                initialBounds = bounds,
-                                                scale = currentScale,
-                                                offset = currentOffset,
-                                                isGestureActive = true
-                                            )
-                                        )
-                                    }
-
-                                    event.changes.forEach {
-                                        if (it.positionChange() != Offset.Zero) {
-                                            it.consume()
-                                        }
-                                    }
-                                } else {
-                                    activeZooming = false
-                                    lastPressedCount = 0
-                                    currentItemBounds?.let { bounds ->
-                                        currentOnZoomStateUpdate(
-                                            ZoomData(
-                                                asset = asset,
-                                                decision = currentDecision,
-                                                initialBounds = bounds,
-                                                scale = currentScale,
-                                                offset = currentOffset,
-                                                isGestureActive = false
-                                            )
-                                        )
+                                event.changes.forEach {
+                                    if (it.positionChange() != Offset.Zero) {
+                                        it.consume()
                                     }
                                 }
-                            } else {
-                                lastPressedCount = pressedCount
                             }
                         } while (event.changes.any { it.pressed })
 
@@ -992,7 +1029,6 @@ fun FullScreenPreviewModal(
         if (!isUserDragging || carouselWidthPx <= 0) return@LaunchedEffect
 
         snapshotFlow {
-            // Read firstVisibleItemIndex and firstVisibleItemScrollOffset to trigger snapshot observation on every scroll pixel
             @Suppress("UNUSED_EXPRESSION")
             carouselState.firstVisibleItemIndex
             @Suppress("UNUSED_EXPRESSION")
@@ -1015,29 +1051,35 @@ fun FullScreenPreviewModal(
         }
     }
 
-    // 2. Center thumbnail in carousel when selectedIndex changes (from tapping thumbnail or swiping main photo)
+    // 2. Center thumbnail in carousel when selectedIndex changes
     LaunchedEffect(selectedIndex, carouselWidthPx) {
         if (carouselWidthPx > 0 && !carouselState.isScrollInProgress) {
             carouselState.scrollToItem(selectedIndex, 0)
         }
     }
 
-    // 3. Snap selected thumbnail to exact center line when carousel finishes scrolling
-    LaunchedEffect(carouselState.isScrollInProgress, isUserDragging) {
-        if (!carouselState.isScrollInProgress && !isUserDragging && carouselWidthPx > 0) {
-            val layoutInfo = carouselState.layoutInfo
-            val contentStart = layoutInfo.beforeContentPadding
-            val viewportCenter = layoutInfo.viewportSize.width / 2
-            if (layoutInfo.viewportSize.width > 0) {
-                val closest = layoutInfo.visibleItemsInfo.minByOrNull { item ->
-                    val itemCenter = contentStart + item.offset + item.size / 2
-                    abs(itemCenter - viewportCenter)
-                }?.index
-                if (closest != null) {
-                    selectedIndex = closest
+    // 3. Snap selected thumbnail to exact center line ONLY after the user finishes dragging the carousel
+    var wasCarouselDragged by remember { mutableStateOf(false) }
+    LaunchedEffect(isUserDragging) {
+        if (isUserDragging) {
+            wasCarouselDragged = true
+        } else if (wasCarouselDragged) {
+            wasCarouselDragged = false
+            if (carouselWidthPx > 0) {
+                val layoutInfo = carouselState.layoutInfo
+                val contentStart = layoutInfo.beforeContentPadding
+                val viewportCenter = layoutInfo.viewportSize.width / 2
+                if (layoutInfo.viewportSize.width > 0) {
+                    val closest = layoutInfo.visibleItemsInfo.minByOrNull { item ->
+                        val itemCenter = contentStart + item.offset + item.size / 2
+                        abs(itemCenter - viewportCenter)
+                    }?.index
+                    if (closest != null) {
+                        selectedIndex = closest
+                    }
                 }
+                carouselState.animateScrollToItem(selectedIndex, 0)
             }
-            carouselState.animateScrollToItem(selectedIndex, 0)
         }
     }
 
@@ -1064,30 +1106,6 @@ fun FullScreenPreviewModal(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = backdropAlpha))
-                .pointerInput(Unit) {
-                    detectVerticalDragGestures(
-                        onDragStart = { isDraggingDismiss = true },
-                        onDragEnd = {
-                            isDraggingDismiss = false
-                            if (dismissOffsetY > 200f) {
-                                onDismiss()
-                            } else {
-                                dismissOffsetY = 0f
-                            }
-                        },
-                        onDragCancel = {
-                            isDraggingDismiss = false
-                            dismissOffsetY = 0f
-                        },
-                        onVerticalDrag = { change, dragAmount ->
-                            if (dragAmount > 0 || dismissOffsetY > 0) {
-                                isDraggingDismiss = true
-                                dismissOffsetY = (dismissOffsetY + dragAmount).coerceAtLeast(0f)
-                                change.consume()
-                            }
-                        }
-                    )
-                }
         ) {
             Column(
                 modifier = Modifier
@@ -1100,6 +1118,8 @@ fun FullScreenPreviewModal(
                 val currentDecision = decisions[currentAsset.id] ?: DuplicateDecision.NONE
                 val currentIsFav = isFavorite(currentAsset)
 
+                var isFileNameExpanded by remember(currentAsset.id) { mutableStateOf(false) }
+
                 // Top overlay bar
                 Row(
                     modifier = Modifier
@@ -1109,13 +1129,32 @@ fun FullScreenPreviewModal(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                isFileNameExpanded = !isFileNameExpanded
+                            }
+                    ) {
                         val sizeStr = currentAsset.exifInfo?.fileSizeInBytes?.let { formatSizeStr(it) } ?: ""
+                        val originalName = currentAsset.originalFileName ?: "Photo"
+
+                        val displayedName = if (isFileNameExpanded) {
+                            originalName
+                        } else {
+                            formatMiddleEllipsisFileName(originalName, maxLength = 22)
+                        }
+
                         Text(
-                            text = "${currentAsset.originalFileName ?: "Photo"} (${selectedIndex + 1}/${assets.size})",
-                            style = MaterialTheme.typography.titleMedium,
+                            text = displayedName,
+                            style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp),
                             color = Color.White,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = if (isFileNameExpanded) Int.MAX_VALUE else 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         if (sizeStr.isNotEmpty()) {
                             Text(
@@ -1141,29 +1180,24 @@ fun FullScreenPreviewModal(
                             )
                         }
 
-                        // Decision status badge
-                        val badgeColor = when (currentDecision) {
-                            DuplicateDecision.DELETE -> MaterialTheme.colorScheme.error
-                            DuplicateDecision.KEEP -> Color(0xFF4CAF50)
-                            DuplicateDecision.NONE -> Color.White.copy(alpha = 0.7f)
-                        }
-                        val badgeText = when (currentDecision) {
-                            DuplicateDecision.DELETE -> "DELETE"
-                            DuplicateDecision.KEEP -> "KEEP"
-                            DuplicateDecision.NONE -> "NONE"
-                        }
-
-                        Text(
-                            text = badgeText,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = badgeColor,
+                        // Open in Immich Button
+                        IconButton(
+                            onClick = {
+                                if (baseUrl != null) {
+                                    val intent = Intent(Intent.ACTION_VIEW, "$baseUrl/photos/${currentAsset.id}".toUri())
+                                    context.startActivity(intent)
+                                }
+                            },
                             modifier = Modifier
-                                .padding(end = 12.dp)
-                                .clickable { currentOnDecisionToggle(currentAsset.id) }
-                                .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
+                                .padding(end = 8.dp)
+                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                                contentDescription = "Open in Immich",
+                                tint = Color.White
+                            )
+                        }
 
                         IconButton(
                             onClick = onDismiss,
@@ -1178,7 +1212,7 @@ fun FullScreenPreviewModal(
                     }
                 }
 
-                // Middle area: Static, stable photo viewer with no sliding transition animations
+                // Middle area: Static, stable photo viewer with isolated zoom and pan
                 var scale by remember { mutableFloatStateOf(1f) }
                 var panX by remember { mutableFloatStateOf(0f) }
                 var panY by remember { mutableFloatStateOf(0f) }
@@ -1216,101 +1250,115 @@ fun FullScreenPreviewModal(
                         contentScale = ContentScale.Fit
                     )
                 } else {
-                    Box(
+                    BoxWithConstraints(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
-                            .pointerInput(currentAsset.id) {
-                                detectTapGestures(
-                                    onTap = {
-                                        currentOnDecisionToggle(currentAsset.id)
-                                    },
-                                    onDoubleTap = {
-                                        if (scale > 1.05f) {
-                                            scale = 1f
-                                            panX = 0f
-                                            panY = 0f
+                    ) {
+                        val containerWidthPx = with(density) { maxWidth.toPx() }
+                        val containerHeightPx = with(density) { maxHeight.toPx() }
+                        var totalHorizontalSwipe by remember { mutableFloatStateOf(0f) }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .pointerInput(currentAsset.id) {
+                                    detectTapGestures(
+                                        onTap = {
+                                            currentOnDecisionToggle(currentAsset.id)
+                                        },
+                                        onDoubleTap = {
+                                            if (scale > 1.05f) {
+                                                scale = 1f
+                                                panX = 0f
+                                                panY = 0f
+                                            } else {
+                                                scale = 2.5f
+                                                panX = 0f
+                                                panY = 0f
+                                            }
+                                        }
+                                    )
+                                }
+                                .pointerInput(currentAsset.id) {
+                                    detectTransformGestures { _, pan, zoom, _ ->
+                                        val newScale = (scale * zoom).coerceIn(1f, 5f)
+                                        scale = newScale
+                                        if (newScale > 1.05f) {
+                                            val maxPanX = (containerWidthPx * (newScale - 1f)) / 2f
+                                            val maxPanY = (containerHeightPx * (newScale - 1f)) / 2f
+                                            panX = (panX + pan.x).coerceIn(-maxPanX, maxPanX)
+                                            panY = (panY + pan.y).coerceIn(-maxPanY, maxPanY)
                                         } else {
-                                            scale = 3f
                                             panX = 0f
                                             panY = 0f
                                         }
                                     }
-                                )
-                            }
-                            .pointerInput(currentAsset.id) {
-                                awaitEachGesture {
-                                    awaitFirstDown(requireUnconsumed = false)
-                                    var lastPressedCount = 0
-                                    var totalHorizontalSwipe = 0f
-                                    var hasSwipedAsset = false
-
-                                    do {
-                                        val event = awaitPointerEvent()
-                                        val pressedPointers = event.changes.filter { it.pressed }
-                                        val pressedCount = pressedPointers.size
-
-                                        if (pressedCount >= 2) {
-                                            if (pressedCount == lastPressedCount) {
-                                                val zoom = event.calculateZoom()
-                                                val pan = event.calculatePan()
-
-                                                scale = (scale * zoom).coerceIn(1f, 5f)
-                                                if (scale > 1.05f) {
-                                                    panX += pan.x
-                                                    panY += pan.y
-                                                } else {
-                                                    panX = 0f
-                                                    panY = 0f
-                                                }
-                                            }
-                                            lastPressedCount = pressedCount
-                                            event.changes.forEach { it.consume() }
-                                        } else if (pressedCount == 1) {
-                                            val pan = event.calculatePan()
-                                            if (scale > 1.05f) {
-                                                if (pressedCount == lastPressedCount) {
-                                                    panX += pan.x
-                                                    panY += pan.y
-                                                    event.changes.forEach { it.consume() }
-                                                }
-                                            } else {
-                                                if (pressedCount == lastPressedCount && !hasSwipedAsset) {
-                                                    totalHorizontalSwipe += pan.x
-                                                    if (totalHorizontalSwipe < -80f) {
-                                                        if (selectedIndex < assets.size - 1) {
-                                                            selectedIndex++
-                                                            hasSwipedAsset = true
-                                                        }
-                                                    } else if (totalHorizontalSwipe > 80f) {
-                                                        if (selectedIndex > 0) {
-                                                            selectedIndex--
-                                                            hasSwipedAsset = true
-                                                        }
+                                }
+                                .pointerInput(currentAsset.id, scale) {
+                                    if (scale <= 1.05f) {
+                                        detectHorizontalDragGestures(
+                                            onDragEnd = { totalHorizontalSwipe = 0f },
+                                            onDragCancel = { totalHorizontalSwipe = 0f },
+                                            onHorizontalDrag = { change, dragAmount ->
+                                                totalHorizontalSwipe += dragAmount
+                                                if (totalHorizontalSwipe < -100f) {
+                                                    if (selectedIndex < assets.size - 1) {
+                                                        selectedIndex++
+                                                        totalHorizontalSwipe = 0f
+                                                    }
+                                                } else if (totalHorizontalSwipe > 100f) {
+                                                    if (selectedIndex > 0) {
+                                                        selectedIndex--
+                                                        totalHorizontalSwipe = 0f
                                                     }
                                                 }
+                                                change.consume()
                                             }
-                                            lastPressedCount = pressedCount
-                                        } else {
-                                            lastPressedCount = pressedCount
-                                        }
-                                    } while (event.changes.any { it.pressed })
+                                        )
+                                    }
                                 }
-                            }
-                    ) {
-                        AsyncImage(
-                            model = imageRequest,
-                            contentDescription = null,
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .graphicsLayer {
-                                    scaleX = animScale
-                                    scaleY = animScale
-                                    translationX = animPanX
-                                    translationY = animPanY
+                                .pointerInput(currentAsset.id, scale) {
+                                    if (scale <= 1.05f) {
+                                        detectVerticalDragGestures(
+                                            onDragStart = { isDraggingDismiss = true },
+                                            onDragEnd = {
+                                                isDraggingDismiss = false
+                                                if (dismissOffsetY > 200f) {
+                                                    onDismiss()
+                                                } else {
+                                                    dismissOffsetY = 0f
+                                                }
+                                            },
+                                            onDragCancel = {
+                                                isDraggingDismiss = false
+                                                dismissOffsetY = 0f
+                                            },
+                                            onVerticalDrag = { change, dragAmount ->
+                                                if (dragAmount > 0 || dismissOffsetY > 0) {
+                                                    isDraggingDismiss = true
+                                                    dismissOffsetY = (dismissOffsetY + dragAmount).coerceAtLeast(0f)
+                                                    change.consume()
+                                                }
+                                            }
+                                        )
+                                    }
                                 }
-                        )
+                        ) {
+                            AsyncImage(
+                                model = imageRequest,
+                                contentDescription = null,
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer {
+                                        scaleX = animScale
+                                        scaleY = animScale
+                                        translationX = animPanX
+                                        translationY = animPanY
+                                    }
+                            )
+                        }
                     }
                 }
 
@@ -1323,6 +1371,42 @@ fun FullScreenPreviewModal(
                         .padding(vertical = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Decision status badge for currentAsset (placed right above the carousel)
+                    val badgeColor = when (currentDecision) {
+                        DuplicateDecision.DELETE -> MaterialTheme.colorScheme.error
+                        DuplicateDecision.KEEP -> Color(0xFF4CAF50)
+                        DuplicateDecision.NONE -> Color.White.copy(alpha = 0.7f)
+                    }
+                    val badgeText = when (currentDecision) {
+                        DuplicateDecision.DELETE -> "DELETE"
+                        DuplicateDecision.KEEP -> "KEEP"
+                        DuplicateDecision.NONE -> "NONE"
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .padding(bottom = 6.dp)
+                            .clickable { currentOnDecisionToggle(currentAsset.id) }
+                            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                            .border(1.dp, badgeColor.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(badgeColor, CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = badgeText,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = badgeColor
+                        )
+                    }
+
                     LazyRow(
                         state = carouselState,
                         modifier = Modifier
@@ -1470,6 +1554,33 @@ fun FullScreenPreviewModal(
             }
         }
     }
+}
+
+fun formatMiddleEllipsisFileName(fileName: String, maxLength: Int = 22): String {
+    if (fileName.length <= maxLength) return fileName
+
+    val lastDotIndex = fileName.lastIndexOf('.')
+    val hasExt = lastDotIndex > 0 && lastDotIndex < fileName.length - 1
+
+    val ext = if (hasExt) fileName.substring(lastDotIndex) else ""
+    val baseName = if (hasExt) fileName.substring(0, lastDotIndex) else fileName
+
+    val ellipsis = "…"
+    val availableForBase = maxLength - ext.length - ellipsis.length
+
+    if (availableForBase < 3) {
+        val avail = maxLength - ellipsis.length
+        if (avail <= 0) return fileName.take(maxLength)
+        val prefixLen = 2.coerceAtMost(avail - 1)
+        val suffixLen = avail - prefixLen
+        return fileName.take(prefixLen) + ellipsis + fileName.takeLast(suffixLen)
+    }
+
+    // Keep a small prefix (4 chars) at start so maximum space is left to keep the end of the filename intact
+    val prefixLen = 4.coerceAtMost(availableForBase / 3)
+    val suffixLen = availableForBase - prefixLen
+
+    return baseName.take(prefixLen) + ellipsis + baseName.takeLast(suffixLen) + ext
 }
 
 fun formatSizeStr(bytes: Long): String {
