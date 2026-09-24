@@ -419,9 +419,14 @@ fun SwipeScreen(
                 val currentIndex = uiState.currentIndex
                 val assets = uiState.assets
 
-                // When in bulk mode, the "main" card should show the last selected asset
+                val isBulk = uiState.isBulkDeleteMode || uiState.isBulkKeepMode
                 val mainIndex = uiState.bulkLastIndex ?: currentIndex
-                val nextUnprocessedIndex = viewModel.getNextUnprocessedIndex()
+                val nextUnprocessedIndex = if (isBulk) {
+                    val candidate = (uiState.bulkLastIndex ?: currentIndex) + 1
+                    if (candidate < assets.size) candidate else -1
+                } else {
+                    viewModel.getNextUnprocessedIndex()
+                }
                 
                 val visibleIndices = listOfNotNull(
                     mainIndex,
@@ -556,6 +561,9 @@ fun SwipeScreen(
                     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
                     var isLongPressActive by remember { mutableStateOf(false) }
                     var dragStartedX by remember { mutableFloatStateOf(0f) }
+                    val currentUiStateDelete by rememberUpdatedState(uiState)
+                    val densityDelete = LocalDensity.current
+                    val stepPxDelete = with(densityDelete) { 36.dp.toPx() }
 
                     FloatingActionButton(
                         onClick = { if (!uiState.isBulkDeleteMode && !uiState.isBulkKeepMode) viewModel.onSwipe(SwipeDecision.DELETE) },
@@ -564,7 +572,7 @@ fun SwipeScreen(
                         shape = CircleShape,
                         modifier = Modifier
                             .size(48.dp)
-                            .pointerInput(uiState.currentIndex, uiState.assets) {
+                            .pointerInput(Unit) {
                                 detectDragGesturesAfterLongPress(
                                     onDragStart = { offset ->
                                         isLongPressActive = true
@@ -583,21 +591,25 @@ fun SwipeScreen(
                                     onDrag = { change, _ ->
                                         change.consume()
                                         if (isLongPressActive) {
+                                            val state = currentUiStateDelete
                                             val totalDrag = change.position.x - dragStartedX
                                             if (totalDrag > 0) {
-                                                val itemsToSelect = (totalDrag / 15f).toInt()
+                                                val itemsToSelect = (totalDrag / stepPxDelete).toInt()
                                                 val selection = mutableSetOf<String>()
-                                                var lastIdx = uiState.currentIndex
+                                                var lastIdx = state.currentIndex
                                                 for (i in 0..itemsToSelect) {
-                                                    val idx = uiState.currentIndex + i
-                                                    if (idx < uiState.assets.size) {
-                                                        selection.add(uiState.assets[idx].id)
+                                                    val idx = state.currentIndex + i
+                                                    if (idx < state.assets.size) {
+                                                        selection.add(state.assets[idx].id)
                                                         lastIdx = idx
                                                     }
                                                 }
                                                 viewModel.setBulkSelection(selection, lastIdx)
                                             } else {
-                                                viewModel.setBulkSelection(setOfNotNull(uiState.assets.getOrNull(uiState.currentIndex)?.id), uiState.currentIndex)
+                                                viewModel.setBulkSelection(
+                                                    setOfNotNull(state.assets.getOrNull(state.currentIndex)?.id),
+                                                    state.currentIndex
+                                                )
                                             }
                                         }
                                     }
@@ -819,6 +831,9 @@ fun SwipeScreen(
                     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
                     var isLongPressActive by remember { mutableStateOf(false) }
                     var dragStartedX by remember { mutableFloatStateOf(0f) }
+                    val currentUiStateKeep by rememberUpdatedState(uiState)
+                    val densityKeep = LocalDensity.current
+                    val stepPxKeep = with(densityKeep) { 36.dp.toPx() }
 
                     FloatingActionButton(
                         onClick = { if (!uiState.isBulkKeepMode && !uiState.isBulkDeleteMode) viewModel.onSwipe(SwipeDecision.KEEP) },
@@ -827,7 +842,7 @@ fun SwipeScreen(
                         shape = CircleShape,
                         modifier = Modifier
                             .size(48.dp)
-                            .pointerInput(uiState.currentIndex, uiState.assets) {
+                            .pointerInput(Unit) {
                                 detectDragGesturesAfterLongPress(
                                     onDragStart = { offset ->
                                         isLongPressActive = true
@@ -846,21 +861,25 @@ fun SwipeScreen(
                                     onDrag = { change, _ ->
                                         change.consume()
                                         if (isLongPressActive) {
+                                            val state = currentUiStateKeep
                                             val totalDrag = dragStartedX - change.position.x
                                             if (totalDrag > 0) {
-                                                val itemsToSelect = (totalDrag / 15f).toInt()
+                                                val itemsToSelect = (totalDrag / stepPxKeep).toInt()
                                                 val selection = mutableSetOf<String>()
-                                                var lastIdx = uiState.currentIndex
+                                                var lastIdx = state.currentIndex
                                                 for (i in 0..itemsToSelect) {
-                                                    val idx = uiState.currentIndex + i
-                                                    if (idx < uiState.assets.size) {
-                                                        selection.add(uiState.assets[idx].id)
+                                                    val idx = state.currentIndex + i
+                                                    if (idx < state.assets.size) {
+                                                        selection.add(state.assets[idx].id)
                                                         lastIdx = idx
                                                     }
                                                 }
                                                 viewModel.setBulkSelection(selection, lastIdx)
                                             } else {
-                                                viewModel.setBulkSelection(setOfNotNull(uiState.assets.getOrNull(uiState.currentIndex)?.id), uiState.currentIndex)
+                                                viewModel.setBulkSelection(
+                                                    setOfNotNull(state.assets.getOrNull(state.currentIndex)?.id),
+                                                    state.currentIndex
+                                                )
                                             }
                                         }
                                     }
@@ -954,6 +973,7 @@ fun SwipeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.3f))
+                .clickable { viewModel.exitBulkMode() }
                 .zIndex(500f),
             contentAlignment = Alignment.Center
         ) {

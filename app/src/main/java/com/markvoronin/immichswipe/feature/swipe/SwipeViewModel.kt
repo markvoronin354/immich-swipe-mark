@@ -421,15 +421,48 @@ class SwipeViewModel(
         val s = _uiState.value
         val selection = s.bulkSelection
         val isDelete = s.isBulkDeleteMode
+        val lastIdx = s.bulkLastIndex ?: s.currentIndex
         if (selection.isEmpty()) { exitBulkMode(); return }
+
+        val decision = if (isDelete) SwipeDecision.DELETE else SwipeDecision.KEEP
+
+        // 1. Optimistic memory update
+        val newDecisions = s.decisions.toMutableMap()
+        val newHistory = s.history.toMutableList()
+        selection.forEach { id ->
+            newDecisions[id] = decision
+            if (!newHistory.contains(id)) {
+                newHistory.add(id)
+            }
+        }
+
+        // Calculate next unprocessed index after the bulk selection
+        val targetIndex = (lastIdx + 1).coerceAtMost(s.assets.size)
+        val nextUnprocessedIndex = s.assets.indices.firstOrNull { i ->
+            i >= targetIndex && !newDecisions.containsKey(s.assets[i].id)
+        } ?: s.assets.size
+
+        _uiState.update { it.copy(
+            isBulkDeleteMode = false,
+            isBulkKeepMode = false,
+            bulkSelection = emptySet(),
+            bulkLastIndex = null,
+            currentIndex = nextUnprocessedIndex,
+            decisions = newDecisions,
+            history = newHistory
+        ) }
+
+        if (nextUnprocessedIndex < s.assets.size) {
+            loadAssetDetail(s.assets[nextUnprocessedIndex].id, nextUnprocessedIndex)
+        }
+
+        // 2. Persist decisions to DB asynchronously
         viewModelScope.launch {
             val config = sessionRepository.sessionConfig.first() ?: return@launch
-            val decision = if (isDelete) SwipeDecision.DELETE else SwipeDecision.KEEP
             selection.forEach { id ->
                 val asset = s.assets.find { it.id == id }
                 swipeDecisionRepository.saveDecision(id, album.id, config.userId, decision.name, asset?.exifInfo?.fileSizeInBytes)
             }
-            exitBulkMode()
         }
     }
 
