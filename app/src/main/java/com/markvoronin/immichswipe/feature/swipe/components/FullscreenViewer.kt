@@ -77,8 +77,6 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import coil.compose.AsyncImage
-import coil.compose.rememberAsyncImagePainter
-import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.size.Precision
 import com.markvoronin.immichswipe.R
@@ -121,9 +119,10 @@ fun FullscreenViewer(
     val activity = remember(context) { context.findActivity() }
     val scope = rememberCoroutineScope()
 
-    var isHoldingByPress by remember { mutableStateOf(false) }
-    var pausedByHoldState by remember { mutableStateOf(false) }
+    var isHoldingByPress by remember(asset.id) { mutableStateOf(false) }
+    var pausedByHoldState by remember(asset.id) { mutableStateOf(false) }
     var ignoreNextTap by remember { mutableStateOf(false) }
+    var isZoomedIn by remember(asset.id) { mutableStateOf(false) }
 
     val swipeY = remember { Animatable(0f) }
     val swipeX = remember { Animatable(0f) }
@@ -197,7 +196,7 @@ fun FullscreenViewer(
     // Manage orientation for the lifetime of the FullscreenViewer
     DisposableEffect(Unit) {
         @SuppressLint("SourceLockedOrientationActivity")
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_USER
         onDispose {
             @SuppressLint("SourceLockedOrientationActivity")
             activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
@@ -288,7 +287,8 @@ fun FullscreenViewer(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .pointerInput(Unit) {
+                    .pointerInput(isZoomedIn) {
+                        if (isZoomedIn) return@pointerInput
                         detectDragGestures(
                             onDragEnd = {
                                 scope.launch {
@@ -298,10 +298,16 @@ fun FullscreenViewer(
                                     if (currentY > 120 && abs(currentX) < 100) {
                                         onClose()
                                     } else if (currentX > 250) {
+                                        launch { swipeY.animateTo(0f, tween(200)) }
                                         swipeX.animateTo(2000f, tween(200))
+                                        swipeX.snapTo(0f)
+                                        swipeY.snapTo(0f)
                                         currentOnSwipe(SwipeDecision.KEEP)
                                     } else if (currentX < -250) {
+                                        launch { swipeY.animateTo(0f, tween(200)) }
                                         swipeX.animateTo(-2000f, tween(200))
+                                        swipeX.snapTo(0f)
+                                        swipeY.snapTo(0f)
                                         currentOnSwipe(SwipeDecision.DELETE)
                                     } else {
                                         launch { swipeY.animateTo(0f) }
@@ -328,16 +334,16 @@ fun FullscreenViewer(
             ZoomableBox(
                 modifier = Modifier.fillMaxSize(),
                 resetOnRelease = false,
+                onIsZoomedChanged = { isZoomedIn = it },
                 onTap = { offset, size ->
                     if (!ignoreNextTap) {
                         val width = size.width.toFloat()
-                        if (tapToSwipeEnabled && (offset.x < width / 3 || offset.x > 2 * width / 3)) {
+                        if (tapToSwipeEnabled && !isZoomedIn && (offset.x < width * 0.3f || offset.x > width * 0.7f)) {
                             when {
-                                offset.x < width / 3 -> currentOnSwipe(SwipeDecision.DELETE)
-                                offset.x > 2 * width / 3 -> currentOnSwipe(SwipeDecision.KEEP)
+                                offset.x < width * 0.3f -> currentOnSwipe(SwipeDecision.DELETE)
+                                offset.x > width * 0.7f -> currentOnSwipe(SwipeDecision.KEEP)
                             }
                         } else if (asset.type == "VIDEO") {
-                            // In full screen video, tap in the middle used to toggle mute
                             onToggleMute()
                             showMuteIndicator = true
                             toggleControllerTrigger++
@@ -355,23 +361,17 @@ fun FullscreenViewer(
                     if (wasReleased == true) {
                         // Fast tap detected
                         val width = size.width.toFloat()
-                        if (tapToSwipeEnabled && (offset.x < width / 3 || offset.x > 2 * width / 3)) {
+                        if (tapToSwipeEnabled && !isZoomedIn && (offset.x < width * 0.3f || offset.x > width * 0.7f)) {
                             when {
-                                offset.x < width / 3 -> {
+                                offset.x < width * 0.3f -> {
                                     currentOnSwipe(SwipeDecision.DELETE)
                                     ignoreNextTap = true
                                 }
-                                offset.x > 2 * width / 3 -> {
+                                offset.x > width * 0.7f -> {
                                     currentOnSwipe(SwipeDecision.KEEP)
                                     ignoreNextTap = true
                                 }
                             }
-                        } else if (asset.type == "VIDEO") {
-                            // For video in fullscreen, trigger mute toggle immediately on release
-                            onToggleMute()
-                            showMuteIndicator = true
-                            toggleControllerTrigger++
-                            ignoreNextTap = true
                         }
                     } else {
                         // Hold detected
@@ -427,38 +427,22 @@ fun FullscreenViewer(
                 } else {
                     val baseUrlClean = SessionManager.getBaseUrl()?.removeSuffix("/")
                     val apiKeyLocal = SessionManager.getApiKey() ?: ""
-                    
-                    val highResRequest = ImageRequest.Builder(LocalContext.current)
-                        // Fetching the original image (or the high resolution webp) for crisp zooming
-                        .data("$baseUrlClean/api/assets/${asset.id}/original")
-                        .addHeader("x-api-key", apiKeyLocal)
-                        .crossfade(true)
-                        .placeholderMemoryCacheKey(CachePolicy.ENABLED.toString()) // Keep the UI snappy if we already have the thumbnail
-                        .build()
-                        
-                    // Provide the preview image as the loading placeholder to avoid black flashes
-                    val previewRequest = ImageRequest.Builder(LocalContext.current)
-                        .data("$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
-                        .addHeader("x-api-key", apiKeyLocal)
-                        .build()
 
-                    ZoomableBox(
-                        modifier = Modifier.fillMaxSize(),
-                        resetOnRelease = false,
-                        enabled = true,
-                        isFillMode = false,
-                        onTap = { _, _ -> toggleControllerTrigger++ }
-                    ) {
-                        AsyncImage(
-                            model = highResRequest,
-                            error = rememberAsyncImagePainter(previewRequest), // Fallback to preview if original is too heavy or fails
-                            fallback = rememberAsyncImagePainter(previewRequest),
-                            placeholder = rememberAsyncImagePainter(previewRequest),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit
-                        )
+                    val photoRequest = remember(asset.id, baseUrlClean, apiKeyLocal) {
+                        ImageRequest.Builder(context)
+                            .data("$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                            .addHeader("x-api-key", apiKeyLocal)
+                            .crossfade(true)
+                            .precision(Precision.INEXACT)
+                            .build()
                     }
+
+                    AsyncImage(
+                        model = photoRequest,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
                 }
             }
 

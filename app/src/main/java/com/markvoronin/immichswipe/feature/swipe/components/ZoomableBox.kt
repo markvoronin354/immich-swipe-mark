@@ -48,6 +48,7 @@ fun ZoomableBox(
     onTap: ((Offset, IntSize) -> Unit)? = null,
     onDoubleTap: (() -> Unit)? = null,
     onPress: (suspend PressGestureScope.(Offset, IntSize) -> Unit)? = null,
+    onIsZoomedChanged: ((Boolean) -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
     if (!enabled) {
@@ -63,6 +64,14 @@ fun ZoomableBox(
 
     val animatedScale = remember { Animatable(1f) }
     val animatedOffset = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
+
+    val currentScale = if (resetOnRelease) animatedScale.value else scale
+    val isZoomedIn = currentScale > 1.05f
+    val currentIsZoomedIn by rememberUpdatedState(isZoomedIn)
+
+    LaunchedEffect(isZoomedIn) {
+        onIsZoomedChanged?.invoke(isZoomedIn)
+    }
 
     LaunchedEffect(isFillMode, fillScale) {
         val target = if (isFillMode) fillScale else 1f
@@ -156,22 +165,27 @@ fun ZoomableBox(
                 detectTapGestures(
                     onTap = { offset -> currentOnTap?.invoke(offset, boxSize) },
                     onDoubleTap = { tapOffset ->
-                        if (currentOnDoubleTap != null) {
-                            currentOnDoubleTap?.invoke()
-                        } else if (!resetOnRelease) {
-                            if (scale > 1.01f) {
+                        if (currentIsZoomedIn) {
+                            if (resetOnRelease) {
+                                scope.launch {
+                                    launch { animatedScale.animateTo(if (isFillMode) fillScale else 1f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                    launch { animatedOffset.animateTo(Offset.Zero, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                }
+                            } else {
                                 scope.launch {
                                     launch { animate(scale, 1f, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> scale = v } }
                                     launch { animate(typeConverter = Offset.VectorConverter, initialValue = offset, targetValue = Offset.Zero, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> offset = v } }
                                 }
-                            } else {
-                                val targetScale = 3f
-                                val zoomChange = targetScale / scale
-                                val targetOffset = (tapOffset - boxSize.toSize().center) * (1f - zoomChange) + offset * zoomChange
-                                scope.launch {
-                                    launch { animate(scale, targetScale, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> scale = v } }
-                                    launch { animate(typeConverter = Offset.VectorConverter, initialValue = offset, targetValue = targetOffset, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> offset = v } }
-                                }
+                            }
+                        } else if (currentOnDoubleTap != null) {
+                            currentOnDoubleTap?.invoke()
+                        } else if (!resetOnRelease) {
+                            val targetScale = 3f
+                            val zoomChange = targetScale / scale
+                            val targetOffset = (tapOffset - boxSize.toSize().center) * (1f - zoomChange) + offset * zoomChange
+                            scope.launch {
+                                launch { animate(scale, targetScale, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> scale = v } }
+                                launch { animate(typeConverter = Offset.VectorConverter, initialValue = offset, targetValue = targetOffset, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> offset = v } }
                             }
                         }
                     },
