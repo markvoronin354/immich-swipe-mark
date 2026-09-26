@@ -31,5 +31,6 @@ data class SwipeCardActions(
     val onOpenFullscreen: () -> Unit,
     val onDownload: (Asset) -> Unit = {},
     val onShare: (Asset) -> Unit = {},
-    val onToggleMute: () -> Unit = {}
+    val onToggleMute: () -> Unit = {},
+    val onSwipeOffsetChanged: (Float) -> Unit = {}
 )

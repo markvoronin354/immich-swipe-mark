@@ -486,6 +486,8 @@ fun SwipeScreen(
                     nextUnprocessedIndex.takeIf { it != -1 && it != mainIndex }
                 ).distinct().reversed()
 
+                var topCardOffsetX by remember(mainIndex) { mutableFloatStateOf(0f) }
+
                 visibleIndices.forEach { index ->
                     val asset = assets[index]
                     val isNextCard = index > mainIndex
@@ -496,6 +498,7 @@ fun SwipeScreen(
                             isFullscreenOpen = uiState.isFullscreenMode,
                             providedPlayer = if (!isNextCard && !uiState.isFullscreenMode) sharedPlayer else null,
                             isMuted = uiState.isMuted,
+                            topCardSwipeOffset = if (isNextCard) topCardOffsetX else 0f,
                             config = SwipeCardConfig(
                                 playbackBehavior = uiState.playbackBehavior,
                                 fullscreenButtonPosition = uiState.fullscreenButtonPosition,
@@ -521,7 +524,12 @@ fun SwipeScreen(
                                 onOpenFullscreen = { viewModel.toggleFullscreen(true) },
                                 onDownload = { viewModel.downloadAsset(it) },
                                 onShare = { viewModel.shareAsset(it) },
-                                onToggleMute = { viewModel.toggleMute() }
+                                onToggleMute = { viewModel.toggleMute() },
+                                onSwipeOffsetChanged = { offset ->
+                                    if (!isNextCard) {
+                                        topCardOffsetX = offset
+                                    }
+                                }
                             )
                         )
                     }

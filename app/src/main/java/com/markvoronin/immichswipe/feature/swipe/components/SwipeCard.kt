@@ -54,6 +54,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -106,6 +107,7 @@ fun SwipeCard(
     isFullscreenOpen: Boolean,
     providedPlayer: ExoPlayer? = null,
     isMuted: Boolean = false,
+    topCardSwipeOffset: Float = 0f,
     config: SwipeCardConfig,
     actions: SwipeCardActions
 ) {
@@ -250,17 +252,35 @@ fun SwipeCard(
         }
     }
 
+    LaunchedEffect(isNext) {
+        if (!isNext) {
+            snapshotFlow { offsetX.value }.collect { offset ->
+                actions.onSwipeOffsetChanged(offset)
+            }
+        }
+    }
+
+    val swipeProgress = (abs(topCardSwipeOffset) / 500f).coerceIn(0f, 1f)
+    val targetScale = if (isNext) 0.85f + (0.15f * swipeProgress) else 1f
+    val targetAlpha = if (isNext) 0.6f + (0.4f * swipeProgress) else 1f
+
     val animatedScale by animateFloatAsState(
-        targetValue = if (isNext) 0.85f else 1f,
-        animationSpec = tween(durationMillis = 400, easing = LinearOutSlowInEasing),
+        targetValue = targetScale,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "ScaleAnimation"
+    )
+
+    val animatedAlpha by animateFloatAsState(
+        targetValue = targetAlpha,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "AlphaAnimation"
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
         Card(
             modifier = Modifier
                 .fillMaxSize()
-                .alpha(if (isNext) 0.6f else 1f)
+                .alpha(animatedAlpha)
                 .graphicsLayer {
                     scaleX = animatedScale
                     scaleY = animatedScale
@@ -373,8 +393,8 @@ fun SwipeCard(
                                     val width = size.width.toFloat()
                                     if (config.tapToSwipeEnabled) {
                                         when {
-                                            offset.x < width / 3 -> actions.onSwipe(SwipeDecision.DELETE)
-                                            offset.x > 2 * width / 3 -> actions.onSwipe(SwipeDecision.KEEP)
+                                            offset.x < width * 0.3f -> actions.onSwipe(SwipeDecision.DELETE)
+                                            offset.x > width * 0.7f -> actions.onSwipe(SwipeDecision.KEEP)
                                             else -> {
                                                 actions.onToggleMute()
                                                 showMuteIndicator = true
@@ -402,11 +422,11 @@ fun SwipeCard(
                                     } else if (config.tapToSwipeEnabled) {
                                         val width = size.width.toFloat()
                                         when {
-                                            offset.x < width / 3 -> {
+                                            offset.x < width * 0.3f -> {
                                                 actions.onSwipe(SwipeDecision.DELETE)
                                                 ignoreNextTap = true
                                             }
-                                            offset.x > 2 * width / 3 -> {
+                                            offset.x > width * 0.7f -> {
                                                 actions.onSwipe(SwipeDecision.KEEP)
                                                 ignoreNextTap = true
                                             }
@@ -494,8 +514,8 @@ fun SwipeCard(
                                 val width = size.width.toFloat()
                                 if (config.tapToSwipeEnabled) {
                                     when {
-                                        offset.x < width / 3 -> actions.onSwipe(SwipeDecision.DELETE)
-                                        offset.x > 2 * width / 3 -> actions.onSwipe(SwipeDecision.KEEP)
+                                        offset.x < width * 0.3f -> actions.onSwipe(SwipeDecision.DELETE)
+                                        offset.x > width * 0.7f -> actions.onSwipe(SwipeDecision.KEEP)
                                         else -> { /* Middle tap for photos */ }
                                     }
                                 }
@@ -517,11 +537,11 @@ fun SwipeCard(
                                 } else if (config.tapToSwipeEnabled) {
                                     val width = size.width.toFloat()
                                     when {
-                                        offset.x < width / 3 -> {
+                                        offset.x < width * 0.3f -> {
                                             actions.onSwipe(SwipeDecision.DELETE)
                                             ignoreNextTap = true
                                         }
-                                        offset.x > 2 * width / 3 -> {
+                                        offset.x > width * 0.7f -> {
                                             actions.onSwipe(SwipeDecision.KEEP)
                                             ignoreNextTap = true
                                         }
