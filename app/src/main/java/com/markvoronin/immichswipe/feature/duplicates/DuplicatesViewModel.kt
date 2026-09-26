@@ -8,16 +8,16 @@ import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.data.api.DeleteAssetsRequest
 import com.markvoronin.immichswipe.data.api.ImmichApi
 import com.markvoronin.immichswipe.data.api.UpdateAssetsRequest
+import com.markvoronin.immichswipe.data.local.entity.SwipeDecisionEntity
 import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
+import com.markvoronin.immichswipe.domain.model.Album
+import com.markvoronin.immichswipe.domain.model.Asset
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
-import com.markvoronin.immichswipe.data.local.entity.SwipeDecisionEntity
-import com.markvoronin.immichswipe.domain.model.Album
-import com.markvoronin.immichswipe.domain.model.Asset
 
 class DuplicatesViewModel(
     private val api: ImmichApi,

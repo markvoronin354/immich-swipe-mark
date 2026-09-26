@@ -1,27 +1,22 @@
 package com.markvoronin.immichswipe.data.repository
 
+import com.markvoronin.immichswipe.core.AppLogger
+import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.data.api.DeleteAssetsRequest
 import com.markvoronin.immichswipe.data.api.ImmichApi
 import com.markvoronin.immichswipe.data.api.SearchAssetsRequest
 import com.markvoronin.immichswipe.data.api.UpdateAssetsRequest
-import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.data.local.dao.AlbumAssetDao
 import com.markvoronin.immichswipe.data.local.entity.AlbumAssetEntity
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.domain.model.Asset
-import com.markvoronin.immichswipe.core.SortOrder
+import com.markvoronin.immichswipe.domain.model.ExifInfo
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 data class AssetBatch(
@@ -46,7 +41,20 @@ class AssetRepository(
         if (userId == null || albumAssetDao == null) return@channelFlow
 
         // 1. Emit local cache instantly
-        val cachedEntities = albumAssetDao.getAssetsForAlbum(albumId, userId)
+        val cachedEntities = when (sortOrder) {
+            SortOrder.CHRONOLOGICAL_DESC -> albumAssetDao.getAssetsChronologicalDesc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.CHRONOLOGICAL_ASC -> albumAssetDao.getAssetsChronologicalAsc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.SIZE_DESC -> albumAssetDao.getAssetsSizeDesc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.SIZE_ASC -> albumAssetDao.getAssetsSizeAsc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.TYPE_VIDEO_FIRST -> albumAssetDao.getAssetsTypeVideoFirstDesc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.TYPE_PHOTO_FIRST -> albumAssetDao.getAssetsTypePhotoFirstDesc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.TYPE_VIDEO_FIRST_ASC -> albumAssetDao.getAssetsTypeVideoFirstAsc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.TYPE_PHOTO_FIRST_ASC -> albumAssetDao.getAssetsTypePhotoFirstAsc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.SHUFFLED -> albumAssetDao.getAssetsShuffled(albumId, userId, shuffleSeed ?: 1L, limit = 5000, offset = 0)
+            SortOrder.TYPE_VIDEO_FIRST_SHUFFLED -> albumAssetDao.getAssetsTypeVideoFirstShuffled(albumId, userId, shuffleSeed ?: 1L, limit = 5000, offset = 0)
+            SortOrder.TYPE_PHOTO_FIRST_SHUFFLED -> albumAssetDao.getAssetsTypePhotoFirstShuffled(albumId, userId, shuffleSeed ?: 1L, limit = 5000, offset = 0)
+        }
+        
         val mappedLocal = withContext(Dispatchers.Default) {
             cachedEntities.map { entity ->
                 Asset(
@@ -181,36 +189,45 @@ class AssetRepository(
         if (allFetchedAssets.size < effectiveTotal) {
             AppLogger.w("AssetRepo", "Sync finished but only fetched ${allFetchedAssets.size} / $effectiveTotal. Server might be hiding some items.")
         }
-        send(AssetBatch(allFetchedAssets.toList(), effectiveTotal, isLocalCache = false, isSyncing = false))
+        
+        // Re-read from DB to ensure sort order is applied to new items
+        val finalEntities = when (sortOrder) {
+            SortOrder.CHRONOLOGICAL_DESC -> albumAssetDao.getAssetsChronologicalDesc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.CHRONOLOGICAL_ASC -> albumAssetDao.getAssetsChronologicalAsc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.SIZE_DESC -> albumAssetDao.getAssetsSizeDesc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.SIZE_ASC -> albumAssetDao.getAssetsSizeAsc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.TYPE_VIDEO_FIRST -> albumAssetDao.getAssetsTypeVideoFirstDesc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.TYPE_PHOTO_FIRST -> albumAssetDao.getAssetsTypePhotoFirstDesc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.TYPE_VIDEO_FIRST_ASC -> albumAssetDao.getAssetsTypeVideoFirstAsc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.TYPE_PHOTO_FIRST_ASC -> albumAssetDao.getAssetsTypePhotoFirstAsc(albumId, userId, limit = 5000, offset = 0)
+            SortOrder.SHUFFLED -> albumAssetDao.getAssetsShuffled(albumId, userId, shuffleSeed ?: 1L, limit = 5000, offset = 0)
+            SortOrder.TYPE_VIDEO_FIRST_SHUFFLED -> albumAssetDao.getAssetsTypeVideoFirstShuffled(albumId, userId, shuffleSeed ?: 1L, limit = 5000, offset = 0)
+            SortOrder.TYPE_PHOTO_FIRST_SHUFFLED -> albumAssetDao.getAssetsTypePhotoFirstShuffled(albumId, userId, shuffleSeed ?: 1L, limit = 5000, offset = 0)
+        }
+        
+        val mappedFinal = withContext(Dispatchers.Default) {
+            finalEntities.map { entity ->
+                Asset(
+                    id = entity.assetId,
+                    ownerId = userId,
+                    fileCreatedAt = entity.fileCreatedAt ?: "",
+                    type = entity.type ?: "IMAGE",
+                    originalFileName = entity.originalFileName,
+                    exifInfo = ExifInfo(
+                        fileSizeInBytes = entity.fileSizeInBytes,
+                        imageWidth = entity.imageWidth,
+                        imageHeight = entity.imageHeight
+                    )
+                )
+            }
+        }
+        
+        send(AssetBatch(mappedFinal, effectiveTotal, isLocalCache = false, isSyncing = false))
     }
 
+    // Retained for duplicates endpoint compatibility but not used for standard albums anymore
     fun applySort(allAssets: List<Asset>, sortOrder: SortOrder, shuffleSeed: Long?): List<Asset> {
-        return when (sortOrder) {
-            SortOrder.SHUFFLED -> {
-                val random = if (shuffleSeed != null) java.util.Random(shuffleSeed) else java.util.Random()
-                allAssets.shuffled(random)
-            }
-            SortOrder.SIZE_DESC -> allAssets.sortedByDescending { it.exifInfo?.fileSizeInBytes ?: 0L }
-            SortOrder.SIZE_ASC -> allAssets.sortedBy { it.exifInfo?.fileSizeInBytes ?: 0L }
-            SortOrder.TYPE_VIDEO_FIRST -> allAssets.sortedWith(compareByDescending<Asset> { it.type == "VIDEO" }.thenByDescending { it.fileCreatedAt })
-            SortOrder.TYPE_PHOTO_FIRST -> allAssets.sortedWith(compareByDescending<Asset> { it.type == "IMAGE" }.thenByDescending { it.fileCreatedAt })
-            SortOrder.TYPE_VIDEO_FIRST_ASC -> allAssets.sortedWith(compareByDescending<Asset> { it.type == "VIDEO" }.thenBy { it.fileCreatedAt })
-            SortOrder.TYPE_PHOTO_FIRST_ASC -> allAssets.sortedWith(compareByDescending<Asset> { it.type == "IMAGE" }.thenBy { it.fileCreatedAt })
-            SortOrder.TYPE_VIDEO_FIRST_SHUFFLED -> {
-                val random = if (shuffleSeed != null) java.util.Random(shuffleSeed) else java.util.Random()
-                val videos = allAssets.filter { it.type == "VIDEO" }.shuffled(random)
-                val photos = allAssets.filter { it.type != "VIDEO" }.shuffled(random)
-                videos + photos
-            }
-            SortOrder.TYPE_PHOTO_FIRST_SHUFFLED -> {
-                val random = if (shuffleSeed != null) java.util.Random(shuffleSeed) else java.util.Random()
-                val photos = allAssets.filter { it.type == "IMAGE" }.shuffled(random)
-                val others = allAssets.filter { it.type != "IMAGE" }.shuffled(random)
-                photos + others
-            }
-            SortOrder.CHRONOLOGICAL_DESC -> allAssets.sortedByDescending { it.fileCreatedAt }
-            SortOrder.CHRONOLOGICAL_ASC -> allAssets.sortedBy { it.fileCreatedAt }
-        }
+        return allAssets // No-op, sorting is now done in DB, except for duplicates which handles it inline
     }
 
     suspend fun clearUserData(userId: String) {

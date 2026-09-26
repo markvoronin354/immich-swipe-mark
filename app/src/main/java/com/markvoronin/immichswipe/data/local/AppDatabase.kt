@@ -7,12 +7,12 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.markvoronin.immichswipe.core.AppLogger
-import com.markvoronin.immichswipe.data.local.dao.SwipeDecisionDao
 import com.markvoronin.immichswipe.data.local.dao.AlbumAssetDao
+import com.markvoronin.immichswipe.data.local.dao.SwipeDecisionDao
 import com.markvoronin.immichswipe.data.local.dao.UserAccountDao
+import com.markvoronin.immichswipe.data.local.entity.AlbumAssetEntity
 import com.markvoronin.immichswipe.data.local.entity.SwipeDecisionEntity
 import com.markvoronin.immichswipe.data.local.entity.SyncHistoryEntity
-import com.markvoronin.immichswipe.data.local.entity.AlbumAssetEntity
 import com.markvoronin.immichswipe.data.local.entity.UserAccountEntity
 
 /**

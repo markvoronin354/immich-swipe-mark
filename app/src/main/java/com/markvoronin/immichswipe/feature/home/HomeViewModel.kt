@@ -1,12 +1,20 @@
 package com.markvoronin.immichswipe.feature.home
 
-import kotlin.time.Duration.Companion.milliseconds
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.markvoronin.immichswipe.data.repository.UserRepository
-import com.markvoronin.immichswipe.data.repository.AlbumRepository
+import com.markvoronin.immichswipe.core.AppLogger
+import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.data.api.ImmichApi
+import com.markvoronin.immichswipe.data.repository.AccountRepository
+import com.markvoronin.immichswipe.data.repository.AlbumRepository
+import com.markvoronin.immichswipe.data.repository.AssetRepository
+import com.markvoronin.immichswipe.data.repository.SessionRepository
+import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
+import com.markvoronin.immichswipe.data.repository.UserRepository
+import com.markvoronin.immichswipe.domain.model.Album
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,16 +26,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
-import com.markvoronin.immichswipe.core.SessionManager
-import com.markvoronin.immichswipe.core.AppLogger
-import com.markvoronin.immichswipe.data.repository.SessionRepository
-import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
-import com.markvoronin.immichswipe.data.repository.AssetRepository
-import com.markvoronin.immichswipe.data.repository.AccountRepository
-import com.markvoronin.immichswipe.domain.model.Album
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * ViewModel de l'écran d'accueil.

@@ -1,10 +1,10 @@
 package com.markvoronin.immichswipe.data.api
 
+import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.ConnectionLevel
 import com.markvoronin.immichswipe.core.DiagStatus
 import com.markvoronin.immichswipe.core.SessionConfig
 import com.markvoronin.immichswipe.core.SessionManager
-import com.markvoronin.immichswipe.core.AppLogger
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor

@@ -2,6 +2,21 @@ package com.markvoronin.immichswipe.feature.swipe
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.markvoronin.immichswipe.core.AppLogger
+import com.markvoronin.immichswipe.core.CardDisplayMode
+import com.markvoronin.immichswipe.core.IconPosition
+import com.markvoronin.immichswipe.core.PlaybackBehavior
+import com.markvoronin.immichswipe.core.SessionManager
+import com.markvoronin.immichswipe.core.SortCategory
+import com.markvoronin.immichswipe.core.SortOrder
+import com.markvoronin.immichswipe.data.repository.AssetRepository
+import com.markvoronin.immichswipe.data.repository.SessionRepository
+import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
+import com.markvoronin.immichswipe.domain.model.Album
+import com.markvoronin.immichswipe.domain.model.Asset
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,24 +26,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.CancellationException
-import com.markvoronin.immichswipe.core.AppLogger
-import com.markvoronin.immichswipe.core.CardDisplayMode
-import com.markvoronin.immichswipe.core.SortOrder
-import com.markvoronin.immichswipe.core.SortCategory
-import com.markvoronin.immichswipe.core.PlaybackBehavior
-import com.markvoronin.immichswipe.core.IconPosition
-import com.markvoronin.immichswipe.core.SessionManager
-import com.markvoronin.immichswipe.data.repository.SessionRepository
-import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
-import com.markvoronin.immichswipe.data.repository.AssetRepository
-import com.markvoronin.immichswipe.domain.model.Album
-import com.markvoronin.immichswipe.domain.model.Asset
-import com.markvoronin.immichswipe.feature.swipe.SwipeDecision
-import com.markvoronin.immichswipe.feature.swipe.SwipeUiState
-import kotlin.time.Duration.Companion.milliseconds
 
 class SwipeViewModel(
     private val assetRepository: AssetRepository,
@@ -274,8 +271,20 @@ class SwipeViewModel(
                     detail.exifInfo?.fileSizeInBytes?.let { newSizes[assetId] = it }
                     _uiState.update { it.copy(assets = currentAssets, assetSizes = newSizes) }
                 }
+
+                // Call preloader logic for the next items in queue
+                preloadNextAssets(index)
             } catch (_: Exception) {}
         }
+    }
+
+    private fun preloadNextAssets(currentIndex: Int) {
+        val state = _uiState.value
+        val prefetchCount = 3
+        
+        // Context needs to be provided somehow for VideoPreloader and Coil.
+        // Usually ViewModels shouldn't have Android context. 
+        // We will emit an event or state to handle it in Compose instead.
     }
 
     fun onSwipe(decision: SwipeDecision) {

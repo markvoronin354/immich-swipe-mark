@@ -3,10 +3,10 @@ package com.markvoronin.immichswipe.data.repository
 import android.content.Context
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.AppTheme
+import com.markvoronin.immichswipe.core.CardDisplayMode
 import com.markvoronin.immichswipe.core.IconPosition
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SessionConfig
-import com.markvoronin.immichswipe.core.CardDisplayMode
 import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.data.datastore.SessionDataStore
 import kotlinx.coroutines.flow.Flow

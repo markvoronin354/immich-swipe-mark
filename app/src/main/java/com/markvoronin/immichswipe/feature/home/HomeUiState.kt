@@ -1,12 +1,12 @@
 package com.markvoronin.immichswipe.feature.home
 
-import com.markvoronin.immichswipe.domain.model.Album
-import com.markvoronin.immichswipe.domain.model.User
-import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.AppTheme
 import com.markvoronin.immichswipe.core.ConnectionStatus
+import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.data.local.entity.UserAccountEntity
+import com.markvoronin.immichswipe.domain.model.Album
+import com.markvoronin.immichswipe.domain.model.User
 
 /**
  * Les différents onglets disponibles dans l'application.

@@ -1,8 +1,8 @@
 package com.markvoronin.immichswipe.data.repository
 
 import com.markvoronin.immichswipe.data.local.dao.AlbumDecisionCount
-import com.markvoronin.immichswipe.data.local.dao.UnsyncedDecisionCounts
 import com.markvoronin.immichswipe.data.local.dao.SwipeDecisionDao
+import com.markvoronin.immichswipe.data.local.dao.UnsyncedDecisionCounts
 import com.markvoronin.immichswipe.data.local.entity.SwipeDecisionEntity
 import com.markvoronin.immichswipe.data.local.entity.SyncHistoryEntity
 import kotlinx.coroutines.flow.Flow

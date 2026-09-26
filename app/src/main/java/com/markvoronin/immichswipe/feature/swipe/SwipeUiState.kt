@@ -1,10 +1,10 @@
 package com.markvoronin.immichswipe.feature.swipe
 
-import com.markvoronin.immichswipe.domain.model.Asset
-import com.markvoronin.immichswipe.core.PlaybackBehavior
-import com.markvoronin.immichswipe.core.IconPosition
 import com.markvoronin.immichswipe.core.CardDisplayMode
+import com.markvoronin.immichswipe.core.IconPosition
+import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SortOrder
+import com.markvoronin.immichswipe.domain.model.Asset
 
 /**
  * Les différentes décisions possibles pour un asset.

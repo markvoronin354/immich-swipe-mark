@@ -2,11 +2,11 @@ package com.markvoronin.immichswipe.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.markvoronin.immichswipe.data.repository.AccountRepository
 import com.markvoronin.immichswipe.data.repository.AlbumRepository
+import com.markvoronin.immichswipe.data.repository.AssetRepository
 import com.markvoronin.immichswipe.data.repository.SessionRepository
 import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
-import com.markvoronin.immichswipe.data.repository.AssetRepository
-import com.markvoronin.immichswipe.data.repository.AccountRepository
 
 class HomeViewModelFactory(
     private val sessionRepository: SessionRepository,

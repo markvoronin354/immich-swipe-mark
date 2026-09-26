@@ -1,10 +1,10 @@
 package com.markvoronin.immichswipe.core
 
+import androidx.compose.ui.graphics.Color
 import com.markvoronin.immichswipe.data.api.ImmichApi
 import com.markvoronin.immichswipe.data.api.RetrofitFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import androidx.compose.ui.graphics.Color
 
 /**
  * Représente les différents niveaux de santé de la connexion.
