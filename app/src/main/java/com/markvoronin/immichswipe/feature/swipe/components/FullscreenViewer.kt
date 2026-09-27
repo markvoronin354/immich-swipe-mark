@@ -97,7 +97,6 @@ fun FullscreenViewer(
     asset: Asset,
     nextAsset: Asset? = null,
     isFavorite: Boolean,
-    muteButtonPosition: IconPosition,
     onSwipe: (SwipeDecision) -> Unit,
     onUndo: () -> Unit,
     onDoubleTap: () -> Unit,
@@ -528,25 +527,11 @@ fun FullscreenViewer(
                         }
 
                         if (showMuteButton && asset.type == "VIDEO") {
-                            val muteAlign = when (muteButtonPosition) {
-                                IconPosition.TOP_LEFT -> Alignment.TopStart
-                                IconPosition.TOP_RIGHT -> Alignment.TopEnd
-                                IconPosition.BOTTOM_LEFT -> Alignment.BottomStart
-                                IconPosition.BOTTOM_RIGHT -> Alignment.BottomEnd
-                            }
-
-                            val mutePadding = when (muteButtonPosition) {
-                                IconPosition.TOP_LEFT -> Modifier.padding(top = 50.dp, start = 20.dp)
-                                IconPosition.TOP_RIGHT -> Modifier.padding(top = 110.dp, end = 20.dp)
-                                IconPosition.BOTTOM_LEFT -> Modifier.padding(bottom = (if (isLandscape) 80.dp else 160.dp) + controlsOffset, start = 24.dp)
-                                IconPosition.BOTTOM_RIGHT -> Modifier.padding(bottom = (if (isLandscape) 20.dp else 100.dp) + controlsOffset, end = 24.dp)
-                            }
-
                             IconButton(
                                 onClick = onToggleMute,
                                 modifier = Modifier
-                                    .align(muteAlign)
-                                    .then(mutePadding)
+                                    .align(Alignment.BottomEnd)
+                                    .padding(bottom = (if (isLandscape) 20.dp else 100.dp) + controlsOffset, end = 24.dp)
                                     .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                             ) {
                                 Icon(

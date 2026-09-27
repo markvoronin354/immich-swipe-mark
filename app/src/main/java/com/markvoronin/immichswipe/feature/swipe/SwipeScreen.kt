@@ -1007,7 +1007,6 @@ fun SwipeScreen(
             asset = currentAsset,
             nextAsset = nextAsset,
             isFavorite = uiState.isFavorite(currentAsset.id),
-            muteButtonPosition = uiState.muteButtonPosition,
             onSwipe = {
                 viewModel.onSwipe(it)
             },
