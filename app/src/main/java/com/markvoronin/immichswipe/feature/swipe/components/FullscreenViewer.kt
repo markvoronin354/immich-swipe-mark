@@ -208,14 +208,25 @@ fun FullscreenViewer(
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 AppLogger.d("Fullscreen", "Playback state changed: $state, asset=${asset.id}")
-                isVideoReady = state == Player.STATE_READY
+                if (state == Player.STATE_READY) {
+                    isVideoReady = true
+                    showLoadingIndicator = false
+                } else if (state == Player.STATE_BUFFERING) {
+                    showLoadingIndicator = true
+                } else if (state == Player.STATE_ENDED || state == Player.STATE_IDLE) {
+                    showLoadingIndicator = false
+                }
             }
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 AppLogger.d("Fullscreen", "Is playing changed: $isPlaying, asset=${asset.id}")
-                if (isPlaying) isVideoReady = true
+                if (isPlaying) {
+                    isVideoReady = true
+                    showLoadingIndicator = false
+                }
             }
             override fun onPlayerError(error: PlaybackException) {
                 AppLogger.e("Fullscreen", "Player error: ${error.message}", error)
+                showLoadingIndicator = false
             }
         }
 

@@ -220,10 +220,20 @@ fun SwipeCard(
     DisposableEffect(exoPlayer, lifecycleOwner, asset.id) {
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
-                isVideoReady = state == Player.STATE_READY
+                if (state == Player.STATE_READY) {
+                    isVideoReady = true
+                    showLoadingIndicator = false
+                } else if (state == Player.STATE_BUFFERING) {
+                    showLoadingIndicator = true
+                } else if (state == Player.STATE_ENDED || state == Player.STATE_IDLE) {
+                    showLoadingIndicator = false
+                }
             }
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                if (isPlaying) isVideoReady = true
+                if (isPlaying) {
+                    isVideoReady = true
+                    showLoadingIndicator = false
+                }
             }
         }
 

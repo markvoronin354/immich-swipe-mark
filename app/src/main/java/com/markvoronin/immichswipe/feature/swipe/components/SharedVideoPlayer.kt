@@ -258,7 +258,7 @@ fun SharedVideoPlayer(
                                             .clickable(onClick = togglePlayPause)
                                     ) {
                                         Box(
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
