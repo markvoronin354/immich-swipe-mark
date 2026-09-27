@@ -43,13 +43,13 @@ interface AlbumAssetDao {
     suspend fun getAssetsTypePhotoFirstAsc(albumId: String, userId: String, limit: Int, offset: Int): List<AlbumAssetEntity>
 
     // Pseudo-random shuffling using SQLite built-in hash on assetId string + seed
-    @Query("SELECT * FROM album_assets WHERE albumId = :albumId AND userId = :userId ORDER BY (length(assetId) * :seed) % 1000 ASC LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM album_assets WHERE albumId = :albumId AND userId = :userId ORDER BY (unicode(substr(assetId, 1, 1))*31 + unicode(substr(assetId, 5, 1))*17 + unicode(substr(assetId, 9, 1))*13 + unicode(substr(assetId, 15, 1))*7 + unicode(substr(assetId, 21, 1))*3 + :seed) % 1000007 ASC LIMIT :limit OFFSET :offset")
     suspend fun getAssetsShuffled(albumId: String, userId: String, seed: Long, limit: Int, offset: Int): List<AlbumAssetEntity>
 
-    @Query("SELECT * FROM album_assets WHERE albumId = :albumId AND userId = :userId ORDER BY CASE WHEN type = 'VIDEO' THEN 0 ELSE 1 END ASC, (length(assetId) * :seed) % 1000 ASC LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM album_assets WHERE albumId = :albumId AND userId = :userId ORDER BY CASE WHEN type = 'VIDEO' THEN 0 ELSE 1 END ASC, (unicode(substr(assetId, 1, 1))*31 + unicode(substr(assetId, 5, 1))*17 + unicode(substr(assetId, 9, 1))*13 + unicode(substr(assetId, 15, 1))*7 + unicode(substr(assetId, 21, 1))*3 + :seed) % 1000007 ASC LIMIT :limit OFFSET :offset")
     suspend fun getAssetsTypeVideoFirstShuffled(albumId: String, userId: String, seed: Long, limit: Int, offset: Int): List<AlbumAssetEntity>
 
-    @Query("SELECT * FROM album_assets WHERE albumId = :albumId AND userId = :userId ORDER BY CASE WHEN type = 'IMAGE' THEN 0 ELSE 1 END ASC, (length(assetId) * :seed) % 1000 ASC LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM album_assets WHERE albumId = :albumId AND userId = :userId ORDER BY CASE WHEN type = 'IMAGE' THEN 0 ELSE 1 END ASC, (unicode(substr(assetId, 1, 1))*31 + unicode(substr(assetId, 5, 1))*17 + unicode(substr(assetId, 9, 1))*13 + unicode(substr(assetId, 15, 1))*7 + unicode(substr(assetId, 21, 1))*3 + :seed) % 1000007 ASC LIMIT :limit OFFSET :offset")
     suspend fun getAssetsTypePhotoFirstShuffled(albumId: String, userId: String, seed: Long, limit: Int, offset: Int): List<AlbumAssetEntity>
 
     @Query("SELECT * FROM album_assets WHERE albumId = :albumId AND userId = :userId ORDER BY fileCreatedAt DESC")

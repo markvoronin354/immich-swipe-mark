@@ -15,6 +15,7 @@ import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.domain.model.Asset
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -49,6 +51,7 @@ class SwipeViewModel(
     private val isFetchingAssetsFlow = MutableStateFlow(true)
     private var assetsJob: Job? = null
     private var sortingJob: Job? = null
+    private var pendingJumpToFirstUnprocessed = false
     
     private val _downloadRequestSignal = MutableSharedFlow<Asset>(extraBufferCapacity = 1)
     val downloadRequestSignal = _downloadRequestSignal.asSharedFlow()
@@ -85,42 +88,45 @@ class SwipeViewModel(
                 sessionRepository.sortOrder,
                 sessionRepository.tapToSwipeEnabled
             ) { values ->
-                val order = values[18] as SortOrder
-                val category = when (order) {
-                    SortOrder.CHRONOLOGICAL_DESC, SortOrder.CHRONOLOGICAL_ASC, SortOrder.SHUFFLED -> SortCategory.TIME
-                    SortOrder.SIZE_DESC, SortOrder.SIZE_ASC -> SortCategory.SIZE
-                    else -> SortCategory.TYPE
-                }
-
-                val oldOrder = _uiState.value.sortOrder
-                _uiState.update { it.copy(
-                    playbackBehavior = values[0] as PlaybackBehavior,
-                    fullscreenButtonPosition = values[1] as IconPosition,
-                    immichButtonPosition = values[2] as IconPosition,
-                    cardDisplayButtonPosition = values[3] as IconPosition,
-                    muteButtonPosition = values[4] as IconPosition,
-                    showFullscreenButton = values[5] as Boolean,
-                    showImmichButton = values[6] as Boolean,
-                    showCardDisplayButton = values[7] as Boolean,
-                    showMuteButton = values[8] as Boolean,
-                    showDownloadButton = values[9] as Boolean,
-                    downloadButtonPosition = values[10] as IconPosition,
-                    showShareButton = values[11] as Boolean,
-                    shareButtonPosition = values[12] as IconPosition,
-                    showSwipeButtons = values[13] as Boolean,
-                    autoNextOnFav = values[14] as Boolean,
-                    swapSummaryArchive = values[15] as Boolean,
-                    syncLocalDeletion = values[16] as Boolean,
-                    trashLocalDeletion = values[17] as Boolean,
-                    sortOrder = order,
-                    sortCategory = category,
-                    tapToSwipeEnabled = values[19] as Boolean
-                )}
-                
-                if (oldOrder != order) {
-                    refreshSortedWorkPile(jumpToFirstUnprocessed = true)
-                }
+                updateSettingsState(values)
             }.collect {}
+        }
+    }
+
+    private fun updateSettingsState(values: Array<*>) {
+        val order = values[18] as SortOrder
+        val category = when (order) {
+            SortOrder.CHRONOLOGICAL_DESC, SortOrder.CHRONOLOGICAL_ASC, SortOrder.SHUFFLED -> SortCategory.TIME
+            SortOrder.SIZE_DESC, SortOrder.SIZE_ASC -> SortCategory.SIZE
+            else -> SortCategory.TYPE
+        }
+        val oldOrder = _uiState.value.sortOrder
+        _uiState.update { it.copy(
+            playbackBehavior = values[0] as PlaybackBehavior,
+            fullscreenButtonPosition = values[1] as IconPosition,
+            immichButtonPosition = values[2] as IconPosition,
+            cardDisplayButtonPosition = values[3] as IconPosition,
+            muteButtonPosition = values[4] as IconPosition,
+            showFullscreenButton = values[5] as Boolean,
+            showImmichButton = values[6] as Boolean,
+            showCardDisplayButton = values[7] as Boolean,
+            showMuteButton = values[8] as Boolean,
+            showDownloadButton = values[9] as Boolean,
+            downloadButtonPosition = values[10] as IconPosition,
+            showShareButton = values[11] as Boolean,
+            shareButtonPosition = values[12] as IconPosition,
+            showSwipeButtons = values[13] as Boolean,
+            autoNextOnFav = values[14] as Boolean,
+            swapSummaryArchive = values[15] as Boolean,
+            syncLocalDeletion = values[16] as Boolean,
+            trashLocalDeletion = values[17] as Boolean,
+            sortOrder = order,
+            sortCategory = category,
+            tapToSwipeEnabled = values[19] as Boolean
+        )}
+        if (oldOrder != order) {
+            pendingJumpToFirstUnprocessed = true
+            refreshSortedWorkPile(jumpToFirstUnprocessed = true)
         }
     }
 
@@ -136,70 +142,86 @@ class SwipeViewModel(
                 isAssetsLoadingFlow.value = true
                 isFetchingAssetsFlow.value = true
 
-                launch {
-                    try {
-                        assetRepository.getAssetsByAlbum(
-                            albumId = album.id,
-                            userId = config.userId,
-                            sortOrder = sessionRepository.sortOrder.first(),
-                            shuffleSeed = SessionManager.globalShuffleSeed
-                        ).collect { batch ->
-                            allAssetsFoundFlow.value = batch.assets
-                            
-                            // Only update the total if it's from the server or if it's higher than current
-                            // This prevents local cache emissions from temporarily resetting the count to 1000
-                            if (!batch.isLocalCache || batch.total > _uiState.value.remoteTotalCount) {
-                                _uiState.update { it.copy(remoteTotalCount = batch.total) }
-                            }
-                            
-                            if (batch.assets.isNotEmpty()) {
-                                isAssetsLoadingFlow.value = false
-                            }
-
-                            isFetchingAssetsFlow.value = batch.isSyncing
-                        }
-                    } finally {
-                        isAssetsLoadingFlow.value = false
-                        isFetchingAssetsFlow.value = false
-                    }
-                }
-
-                combine(
-                    swipeDecisionRepository.getDecisionsForAlbum(album.id, config.userId),
-                    allAssetsFoundFlow,
-                    isAssetsLoadingFlow,
-                    isFetchingAssetsFlow
-                ) { localDecisions, allAssetsFound, isInitialLoading, isFetching ->
-                    val decisionMap = localDecisions.associate { entity ->
-                        val d = try { SwipeDecision.valueOf(entity.decision) } catch (_: Exception) { SwipeDecision.KEEP }
-                        entity.assetId to d
-                    }
-                    val sizeMap = localDecisions.associate { it.assetId to (it.fileSize ?: 0L) }
-                    
-                    // Deriving history from decisions if empty
-                    val derivedHistory = if (_uiState.value.history.isEmpty()) {
-                         localDecisions.map { it.assetId }
-                    } else _uiState.value.history
-
-                    masterWorkPile = allAssetsFound
-                    
-                    val isResetting = localDecisions.isEmpty() && _uiState.value.decisions.isNotEmpty()
-                    
-                    refreshSortedWorkPile(
-                        jumpToFirstUnprocessed = _uiState.value.assets.isEmpty() || isResetting,
-                        overrideDecisions = decisionMap,
-                        overrideSizes = sizeMap,
-                        overrideHistory = derivedHistory,
-                        overrideIsLoading = isInitialLoading && allAssetsFound.isEmpty(),
-                        overrideIsFetchingAssets = isFetching || (isInitialLoading && allAssetsFound.isEmpty())
-                    )
-                }.collect {}
+                launch { fetchAssetsLoop(config.userId) }
+                observeDecisionsAndAssets(config.userId)
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 AppLogger.e("Swipe", "Error loading album", e)
                 _uiState.update { it.copy(isLoading = false, isFetchingAssets = false, error = e.message) }
             }
         }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private suspend fun fetchAssetsLoop(userId: String) {
+        try {
+            sessionRepository.sortOrder.flatMapLatest { sortOrder ->
+                assetRepository.getAssetsByAlbum(
+                    albumId = album.id,
+                    userId = userId,
+                    sortOrder = sortOrder,
+                    shuffleSeed = SessionManager.globalShuffleSeed
+                )
+            }.collect { batch ->
+                _uiState.update { it.copy(
+                    remoteTotalCount = if (!batch.isLocalCache || batch.total > it.remoteTotalCount) batch.total else it.remoteTotalCount,
+                    syncLoadedCount = batch.assets.size,
+                    syncTotalCount = batch.total,
+                    isSyncing = batch.isSyncing
+                )}
+                
+                // Only publish to active work pile when metadata sync is complete or coming from local cache
+                if (batch.isLocalCache || !batch.isSyncing || allAssetsFoundFlow.value.isEmpty()) {
+                    allAssetsFoundFlow.value = batch.assets
+                }
+                
+                if (batch.isLocalCache || !batch.isSyncing) {
+                    isAssetsLoadingFlow.value = false
+                    isFetchingAssetsFlow.value = false
+                } else {
+                    isFetchingAssetsFlow.value = true
+                }
+            }
+        } finally {
+            isAssetsLoadingFlow.value = false
+            isFetchingAssetsFlow.value = false
+        }
+    }
+
+    private suspend fun observeDecisionsAndAssets(userId: String) {
+        combine(
+            swipeDecisionRepository.getDecisionsForAlbum(album.id, userId),
+            allAssetsFoundFlow,
+            isAssetsLoadingFlow,
+            isFetchingAssetsFlow
+        ) { localDecisions, allAssetsFound, isInitialLoading, isFetching ->
+            val decisionMap = localDecisions.associate { entity ->
+                val d = try { SwipeDecision.valueOf(entity.decision) } catch (_: Exception) { SwipeDecision.KEEP }
+                entity.assetId to d
+            }
+            val sizeMap = localDecisions.associate { it.assetId to (it.fileSize ?: 0L) }
+            
+            val derivedHistory = if (_uiState.value.history.isEmpty()) {
+                localDecisions.map { it.assetId }
+            } else _uiState.value.history
+
+            masterWorkPile = allAssetsFound
+            
+            val isResetting = localDecisions.isEmpty() && _uiState.value.decisions.isNotEmpty()
+            val shouldJump = pendingJumpToFirstUnprocessed || _uiState.value.assets.isEmpty() || isResetting
+            if (shouldJump) {
+                pendingJumpToFirstUnprocessed = false
+            }
+            
+            refreshSortedWorkPile(
+                jumpToFirstUnprocessed = shouldJump,
+                overrideDecisions = decisionMap,
+                overrideSizes = sizeMap,
+                overrideHistory = derivedHistory,
+                overrideIsLoading = isInitialLoading && allAssetsFound.isEmpty(),
+                overrideIsFetchingAssets = isFetching || (isInitialLoading && allAssetsFound.isEmpty())
+            )
+        }.collect {}
     }
 
     private fun refreshSortedWorkPile(
@@ -223,8 +245,9 @@ class SwipeViewModel(
 
             _uiState.update { state ->
                 val currentAssetId = state.assets.getOrNull(state.currentIndex)?.id
+                val shouldForceJump = jumpToFirstUnprocessed || pendingJumpToFirstUnprocessed || state.sortOrder != order
                 
-                var nextIndex = if (jumpToFirstUnprocessed) {
+                var nextIndex = if (shouldForceJump) {
                     sorted.indexOfFirst { !decisions.containsKey(it.id) }
                 } else {
                     // Try to find where the current asset moved to in the new list
@@ -243,6 +266,7 @@ class SwipeViewModel(
 
                 state.copy(
                     assets = sorted,
+                    sortOrder = order,
                     currentIndex = nextIndex,
                     decisions = decisions,
                     assetSizes = assetSizes,
@@ -270,6 +294,13 @@ class SwipeViewModel(
                     val newSizes = _uiState.value.assetSizes.toMutableMap()
                     detail.exifInfo?.fileSizeInBytes?.let { newSizes[assetId] = it }
                     _uiState.update { it.copy(assets = currentAssets, assetSizes = newSizes) }
+                }
+
+                val masterIndex = masterWorkPile.indexOfFirst { it.id == assetId }
+                if (masterIndex != -1) {
+                    val newMaster = masterWorkPile.toMutableList()
+                    newMaster[masterIndex] = detail
+                    masterWorkPile = newMaster
                 }
 
                 // Call preloader logic for the next items in queue
@@ -357,7 +388,13 @@ class SwipeViewModel(
         }
     }
 
-    fun setSortOrder(order: SortOrder) = viewModelScope.launch { sessionRepository.saveSortOrder(order) }
+    fun setSortOrder(order: SortOrder) {
+        if (_uiState.value.sortOrder != order) {
+            pendingJumpToFirstUnprocessed = true
+            _uiState.update { it.copy(isLoading = true, sortOrder = order) }
+            viewModelScope.launch { sessionRepository.saveSortOrder(order) }
+        }
+    }
     fun setSortCategory(category: SortCategory) {
         val defaultOrder = when (category) {
             SortCategory.TIME -> SortOrder.CHRONOLOGICAL_DESC

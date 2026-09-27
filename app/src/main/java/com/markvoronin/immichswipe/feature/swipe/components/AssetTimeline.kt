@@ -44,7 +44,7 @@ import coil.request.ImageRequest
 import coil.size.Precision
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.domain.model.Asset
-
+import kotlin.math.abs
 
 @Composable
 fun AssetTimeline(
@@ -59,21 +59,26 @@ fun AssetTimeline(
     bulkSelection: Set<String> = emptySet(),
     isBulkDelete: Boolean = false
 ) {
-    val context = LocalContext.current
     val listState = rememberLazyListState()
-
     val baseUrl = remember { SessionManager.getBaseUrl()?.removeSuffix("/") }
     val apiKey = remember { SessionManager.getApiKey() ?: "" }
 
-    LaunchedEffect(currentIndex, isBulkMode, bulkSelection) {
-        if (assets.isNotEmpty()) {
-            val targetIndex = if (isBulkMode && bulkSelection.isNotEmpty()) {
-                assets.indices.lastOrNull { i -> bulkSelection.contains(assets[i].id) } ?: currentIndex
+    val targetIndex = if (isBulkMode && bulkSelection.isNotEmpty()) {
+        assets.indices.lastOrNull { i -> bulkSelection.contains(assets[i].id) } ?: currentIndex
+    } else {
+        currentIndex
+    }
+    val currentAssetId = assets.getOrNull(targetIndex)?.id
+
+    LaunchedEffect(targetIndex, currentAssetId, isBulkMode, bulkSelection) {
+        if (assets.isNotEmpty() && targetIndex in assets.indices) {
+            val scrollIndex = (targetIndex - 1).coerceAtLeast(0)
+            val currentVisible = listState.firstVisibleItemIndex
+            val distance = abs(scrollIndex - currentVisible)
+            if (distance > 3) {
+                listState.scrollToItem(scrollIndex, scrollOffset = 0)
             } else {
-                currentIndex
-            }
-            if (targetIndex in assets.indices) {
-                listState.animateScrollToItem(targetIndex, scrollOffset = 0)
+                listState.animateScrollToItem(scrollIndex, scrollOffset = 0)
             }
         }
     }
@@ -87,106 +92,131 @@ fun AssetTimeline(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        itemsIndexed(assets) { index, asset ->
-            val decision = decisions[asset.id]
-            val isCurrent = index == currentIndex
-            val hasHeart = isFavorite(asset.id)
-            val hasArchive = isArchived(asset.id)
-            val hasLock = isLocked(asset.id)
-            val isSelected = bulkSelection.contains(asset.id)
+        itemsIndexed(assets, key = { _, asset -> asset.id }) { index, asset ->
+            AssetTimelineItem(
+                asset = asset,
+                index = index,
+                isCurrent = index == currentIndex,
+                isSelected = bulkSelection.contains(asset.id),
+                decision = decisions[asset.id],
+                hasHeart = isFavorite(asset.id),
+                hasArchive = isArchived(asset.id),
+                hasLock = isLocked(asset.id),
+                isBulkDelete = isBulkDelete,
+                baseUrl = baseUrl,
+                apiKey = apiKey,
+                onAssetClick = onAssetClick
+            )
+        }
+    }
+}
 
-            Box(
+@Composable
+private fun AssetTimelineItem(
+    asset: Asset,
+    index: Int,
+    isCurrent: Boolean,
+    isSelected: Boolean,
+    decision: SwipeDecision?,
+    hasHeart: Boolean,
+    hasArchive: Boolean,
+    hasLock: Boolean,
+    isBulkDelete: Boolean,
+    baseUrl: String?,
+    apiKey: String,
+    onAssetClick: (Int) -> Unit
+) {
+    val context = LocalContext.current
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(
+                width = if (isSelected) 3.dp else if (isCurrent) 2.dp else 0.dp,
+                color = if (isSelected) {
+                    if (isBulkDelete) MaterialRed else MaterialGreen
+                } else if (isCurrent) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .clickable { onAssetClick(index) }
+    ) {
+        if (baseUrl != null) {
+            val thumbnailRequest = remember(asset.id, baseUrl, apiKey) {
+                ImageRequest.Builder(context)
+                    .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=thumbnail")
+                    .addHeader("x-api-key", apiKey)
+                    .crossfade(true)
+                    .precision(Precision.INEXACT)
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .build()
+            }
+            AsyncImage(
+                model = thumbnailRequest,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().alpha(if (isCurrent) 1f else 0.6f)
+            )
+        }
+
+        if (asset.type == "VIDEO") {
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.8f),
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .border(
-                        width = if (isSelected) 3.dp else if (isCurrent) 2.dp else 0.dp,
-                        color = if (isSelected) {
-                            if (isBulkDelete) MaterialRed else MaterialGreen
-                        } else if (isCurrent) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .clickable { onAssetClick(index) }
-            ) {
-                if (baseUrl != null) {
-                    val thumbnailRequest = remember(asset.id, baseUrl, apiKey) {
-                        ImageRequest.Builder(context)
-                            .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=thumbnail")
-                            .addHeader("x-api-key", apiKey)
-                            .crossfade(true)
-                            .precision(Precision.INEXACT)
-                            .memoryCachePolicy(CachePolicy.ENABLED)
-                            .diskCachePolicy(CachePolicy.ENABLED)
-                            .build()
-                    }
-                    AsyncImage(
-                        model = thumbnailRequest,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize().alpha(if (isCurrent) 1f else 0.6f)
-                    )
-                }
+                    .align(Alignment.BottomStart)
+                    .padding(2.dp)
+                    .size(14.dp)
+                    .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+            )
+        }
 
-                if (asset.type == "VIDEO") {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.8f),
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(2.dp)
-                            .size(14.dp)
-                            .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                    )
-                }
-
-                Column(
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(2.dp),
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            decision?.let { d ->
+                Box(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(2.dp),
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                        .size(16.dp)
+                        .clip(CircleShape)
+                        .background(
+                            when (d) {
+                                SwipeDecision.KEEP -> MaterialGreen
+                                SwipeDecision.DELETE -> MaterialRed
+                                SwipeDecision.ARCHIVE -> MaterialTheme.colorScheme.primary
+                                SwipeDecision.LOCK -> MaterialTheme.colorScheme.outline
+                            }
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    decision?.let { d ->
-                        Box(
-                            modifier = Modifier
-                                .size(16.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    when (d) {
-                                        SwipeDecision.KEEP -> MaterialGreen
-                                        SwipeDecision.DELETE -> MaterialRed
-                                        SwipeDecision.ARCHIVE -> MaterialTheme.colorScheme.primary
-                                        SwipeDecision.LOCK -> MaterialTheme.colorScheme.outline
-                                    }
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = when (d) {
-                                    SwipeDecision.KEEP -> Icons.Default.Check
-                                    SwipeDecision.DELETE -> Icons.Default.Delete
-                                    SwipeDecision.ARCHIVE -> Icons.Default.Archive
-                                    SwipeDecision.LOCK -> Icons.Default.Lock
-                                },
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(10.dp)
-                            )
-                        }
-                    }
-
-                    if (hasHeart) {
-                        TimelineMiniBadge(Icons.Default.Favorite, Color.Red)
-                    }
-                    if (hasArchive && decision != SwipeDecision.ARCHIVE) {
-                        TimelineMiniBadge(Icons.Default.Archive, Color.Black)
-                    }
-                    if (hasLock && decision != SwipeDecision.LOCK) {
-                        TimelineMiniBadge(Icons.Default.Lock, Color.Black)
-                    }
+                    Icon(
+                        imageVector = when (d) {
+                            SwipeDecision.KEEP -> Icons.Default.Check
+                            SwipeDecision.DELETE -> Icons.Default.Delete
+                            SwipeDecision.ARCHIVE -> Icons.Default.Archive
+                            SwipeDecision.LOCK -> Icons.Default.Lock
+                        },
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(10.dp)
+                    )
                 }
+            }
+
+            if (hasHeart) {
+                TimelineMiniBadge(Icons.Default.Favorite, Color.Red)
+            }
+            if (hasArchive && decision != SwipeDecision.ARCHIVE) {
+                TimelineMiniBadge(Icons.Default.Archive, Color.Black)
+            }
+            if (hasLock && decision != SwipeDecision.LOCK) {
+                TimelineMiniBadge(Icons.Default.Lock, Color.Black)
             }
         }
     }

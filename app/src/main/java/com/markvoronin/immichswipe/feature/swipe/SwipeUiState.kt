@@ -20,6 +20,8 @@ data class SwipeUiState(
     val isLoading: Boolean = false,
     val isFetchingAssets: Boolean = false,
     val isSyncing: Boolean = false,
+    val syncLoadedCount: Int = 0,
+    val syncTotalCount: Int = 0,
     val showSuccessAnimation: Boolean = false,
     val showSummary: Boolean = false,
     val albumName: String = "",

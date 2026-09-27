@@ -57,6 +57,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -106,6 +107,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
+import androidx.compose.ui.draw.clip
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
@@ -453,7 +455,23 @@ fun SwipeScreen(
             contentAlignment = Alignment.Center
         ) {
             if (uiState.isLoading && uiState.assets.isEmpty()) {
-                CircularProgressIndicator()
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator()
+                    if (uiState.syncTotalCount > 0) {
+                        Text(
+                            text = "Loading album metadata... ${uiState.syncLoadedCount} / ${uiState.syncTotalCount}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        LinearProgressIndicator(
+                            progress = { (uiState.syncLoadedCount.toFloat() / uiState.syncTotalCount).coerceIn(0f, 1f) },
+                            modifier = Modifier.width(200.dp).clip(RoundedCornerShape(4.dp))
+                        )
+                    }
+                }
             } else if (uiState.error != null && uiState.assets.isEmpty()) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
@@ -849,6 +867,7 @@ fun SwipeScreen(
                                                     else -> SortOrder.TYPE_VIDEO_FIRST
                                                 }
                                                 viewModel.setSortOrder(subOrder)
+                                                showSortMenu = false
                                             }
                                             SortPopupItem(R.string.settings_sort_photos, Icons.Default.Image, currentIsPhoto) {
                                                 val subOrder = when(uiState.sortOrder) {
@@ -857,6 +876,7 @@ fun SwipeScreen(
                                                     else -> SortOrder.TYPE_PHOTO_FIRST
                                                 }
                                                 viewModel.setSortOrder(subOrder)
+                                                showSortMenu = false
                                             }
 
                                             Spacer(Modifier.height(8.dp))
@@ -869,6 +889,7 @@ fun SwipeScreen(
                                                 uiState.sortOrder == SortOrder.TYPE_VIDEO_FIRST || uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST
                                             ) {
                                                 viewModel.setSortOrder(if (currentIsPhoto) SortOrder.TYPE_PHOTO_FIRST else SortOrder.TYPE_VIDEO_FIRST)
+                                                showSortMenu = false
                                             }
                                             SortPopupItem(
                                                 R.string.settings_sort_oldest, 
@@ -876,6 +897,7 @@ fun SwipeScreen(
                                                 uiState.sortOrder == SortOrder.TYPE_VIDEO_FIRST_ASC || uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST_ASC
                                             ) {
                                                 viewModel.setSortOrder(if (currentIsPhoto) SortOrder.TYPE_PHOTO_FIRST_ASC else SortOrder.TYPE_VIDEO_FIRST_ASC)
+                                                showSortMenu = false
                                             }
                                             SortPopupItem(
                                                 R.string.settings_sort_shuffled, 
@@ -883,6 +905,7 @@ fun SwipeScreen(
                                                 uiState.sortOrder == SortOrder.TYPE_VIDEO_FIRST_SHUFFLED || uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST_SHUFFLED
                                             ) {
                                                 viewModel.setSortOrder(if (currentIsPhoto) SortOrder.TYPE_PHOTO_FIRST_SHUFFLED else SortOrder.TYPE_VIDEO_FIRST_SHUFFLED)
+                                                showSortMenu = false
                                             }
                                         }
                                     }

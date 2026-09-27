@@ -100,10 +100,18 @@ class AssetRepository(
             return@channelFlow
         }
 
+        val apiOrder = when (sortOrder) {
+            SortOrder.CHRONOLOGICAL_ASC,
+            SortOrder.TYPE_VIDEO_FIRST_ASC,
+            SortOrder.TYPE_PHOTO_FIRST_ASC,
+            SortOrder.SIZE_ASC -> "asc"
+            else -> "desc"
+        }
+
         val baseRequest = when (albumId) {
-            Album.VIRTUAL_ALL_ID -> SearchAssetsRequest(visibility = visibility, withExif = needsExif, order = "desc")
-            Album.VIRTUAL_ORPHANS_ID -> SearchAssetsRequest(isNotInAlbum = true, visibility = visibility, withExif = needsExif, order = "desc")
-            else -> SearchAssetsRequest(albumIds = listOf(albumId), visibility = visibility, withExif = needsExif, order = "desc")
+            Album.VIRTUAL_ALL_ID -> SearchAssetsRequest(visibility = visibility, withExif = needsExif, order = apiOrder)
+            Album.VIRTUAL_ORPHANS_ID -> SearchAssetsRequest(isNotInAlbum = true, visibility = visibility, withExif = needsExif, order = apiOrder)
+            else -> SearchAssetsRequest(albumIds = listOf(albumId), visibility = visibility, withExif = needsExif, order = apiOrder)
         }
 
         // 2. Fetch statistics to get the TRUE total (Search metadata total can be capped or inaccurate on some versions)
@@ -154,8 +162,8 @@ class AssetRepository(
                         fetchedIds.addAll(newItems.map { it.id })
                         allFetchedAssets.addAll(newItems)
                         
-                        // Persistence in background
-                        launch(Dispatchers.IO) {
+                        // Synchronous persistence to ensure Room DB has all items before final query
+                        withContext(Dispatchers.IO) {
                             newItems.chunked(500).forEach { chunk ->
                                 albumAssetDao.insertAlbumAssets(chunk.map { asset ->
                                     AlbumAssetEntity(
@@ -225,9 +233,60 @@ class AssetRepository(
         send(AssetBatch(mappedFinal, effectiveTotal, isLocalCache = false, isSyncing = false))
     }
 
-    // Retained for duplicates endpoint compatibility but not used for standard albums anymore
     fun applySort(allAssets: List<Asset>, sortOrder: SortOrder, shuffleSeed: Long?): List<Asset> {
-        return allAssets // No-op, sorting is now done in DB, except for duplicates which handles it inline
+        val seed = shuffleSeed ?: 1L
+        return when (sortOrder) {
+            SortOrder.CHRONOLOGICAL_DESC -> allAssets.sortedByDescending { it.fileCreatedAt }
+            SortOrder.CHRONOLOGICAL_ASC -> allAssets.sortedBy { it.fileCreatedAt }
+            SortOrder.SIZE_DESC -> allAssets.sortedByDescending { it.exifInfo?.fileSizeInBytes ?: 0L }
+            SortOrder.SIZE_ASC -> allAssets.sortedBy { it.exifInfo?.fileSizeInBytes ?: 0L }
+            SortOrder.SHUFFLED -> allAssets.sortedBy { getShuffleHash(it.id, seed) }
+            else -> applyTypeSort(allAssets, sortOrder, seed)
+        }
+    }
+
+    private fun getShuffleHash(assetId: String, seed: Long): Long {
+        var h = seed xor 0x5DEECE66DL
+        for (i in assetId.indices) {
+            h = (h * 31L) + assetId[i].code
+        }
+        h = h xor (h ushr 33)
+        h = h * 0xff51afd7ed558ccdUL.toLong()
+        h = h xor (h ushr 33)
+        h = h * 0xc4ceb9fe1a85ec53UL.toLong()
+        h = h xor (h ushr 33)
+        return h
+    }
+
+    private fun applyTypeSort(allAssets: List<Asset>, sortOrder: SortOrder, seed: Long): List<Asset> {
+        val isVideoFirst = sortOrder in listOf(
+            SortOrder.TYPE_VIDEO_FIRST,
+            SortOrder.TYPE_VIDEO_FIRST_ASC,
+            SortOrder.TYPE_VIDEO_FIRST_SHUFFLED
+        )
+        val targetType = if (isVideoFirst) "VIDEO" else "IMAGE"
+        val isAsc = sortOrder == SortOrder.TYPE_VIDEO_FIRST_ASC || sortOrder == SortOrder.TYPE_PHOTO_FIRST_ASC
+        val isShuffled = sortOrder == SortOrder.TYPE_VIDEO_FIRST_SHUFFLED || sortOrder == SortOrder.TYPE_PHOTO_FIRST_SHUFFLED
+
+        if (isShuffled) {
+            val primary = allAssets.filter { it.type.equals(targetType, ignoreCase = true) }
+                .sortedBy { getShuffleHash(it.id, seed) }
+            val secondary = allAssets.filter { !it.type.equals(targetType, ignoreCase = true) }
+                .sortedBy { getShuffleHash(it.id, seed) }
+            return primary + secondary
+        }
+
+        return if (isAsc) {
+            allAssets.sortedWith(
+                compareBy<Asset> { if (it.type.equals(targetType, ignoreCase = true)) 0 else 1 }
+                    .thenBy { it.fileCreatedAt }
+            )
+        } else {
+            allAssets.sortedWith(
+                compareBy<Asset> { if (it.type.equals(targetType, ignoreCase = true)) 0 else 1 }
+                    .thenByDescending { it.fileCreatedAt }
+            )
+        }
     }
 
     suspend fun clearUserData(userId: String) {
