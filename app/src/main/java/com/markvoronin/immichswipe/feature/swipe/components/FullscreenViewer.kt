@@ -119,6 +119,8 @@ fun FullscreenViewer(
     val scope = rememberCoroutineScope()
 
     var isHoldingByPress by remember(asset.id) { mutableStateOf(false) }
+    var wasHoldDetected by remember(asset.id) { mutableStateOf(false) }
+    val currentIsHolding by rememberUpdatedState(isHoldingByPress || wasHoldDetected)
     var pausedByHoldState by remember(asset.id) { mutableStateOf(false) }
     var ignoreNextTap by remember { mutableStateOf(false) }
     var isZoomedIn by remember(asset.id) { mutableStateOf(false) }
@@ -291,6 +293,13 @@ fun FullscreenViewer(
                         detectDragGestures(
                             onDragEnd = {
                                 scope.launch {
+                                    if (currentIsHolding) {
+                                        launch { swipeY.animateTo(0f) }
+                                        launch { swipeX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                        wasHoldDetected = false
+                                        pausedByHoldState = false
+                                        return@launch
+                                    }
                                     val currentX = swipeX.value
                                     val currentY = swipeY.value
 
@@ -314,8 +323,19 @@ fun FullscreenViewer(
                                     }
                                 }
                             },
+                            onDragCancel = {
+                                scope.launch {
+                                    launch { swipeY.animateTo(0f) }
+                                    launch { swipeX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                    wasHoldDetected = false
+                                    pausedByHoldState = false
+                                }
+                            },
                             onDrag = { change, dragAmount ->
                                 change.consume()
+                                if (currentIsHolding) {
+                                    return@detectDragGestures
+                                }
                                 scope.launch {
                                     swipeY.snapTo((swipeY.value + dragAmount.y).coerceAtLeast(0f))
                                     swipeX.snapTo(swipeX.value + dragAmount.x)
@@ -353,6 +373,7 @@ fun FullscreenViewer(
                 onDoubleTap = onDoubleTap,
                 onPress = { offset, size ->
                     ignoreNextTap = false
+                    wasHoldDetected = false
                     val wasReleased = withTimeoutOrNull(500) {
                         awaitRelease()
                         true
@@ -376,22 +397,23 @@ fun FullscreenViewer(
                         // Hold detected
                         ignoreNextTap = true
                         isHoldingByPress = true
+                        wasHoldDetected = true
                         if (asset.type == "VIDEO") {
                             pausedByHoldState = true
                         }
                         try {
                             awaitRelease()
-                        } catch (e: GestureCancellationException) {
-                            // Ignore
-                        } finally {
                             isHoldingByPress = false
                             pausedByHoldState = false
+                            wasHoldDetected = false
+                        } catch (e: GestureCancellationException) {
+                            isHoldingByPress = false
                         }
                     }
                 },
                 aspectRatio = asset.exifInfo?.let { it.imageWidth?.toFloat()?.div(it.imageHeight?.toFloat() ?: 1f) }
             ) {
-                val finalControlsVisible = controlsVisible && !isHoldingByPress
+                val finalControlsVisible = controlsVisible && !isHoldingByPress && !wasHoldDetected
 
                 if (asset.type == "VIDEO" && exoPlayer != null) {
                     SharedVideoPlayer(
@@ -447,7 +469,7 @@ fun FullscreenViewer(
 
             if (showSizeIndicator && asset.type != "VIDEO") {
                 AnimatedVisibility(
-                    visible = controlsVisible && !isHoldingByPress,
+                    visible = controlsVisible && !isHoldingByPress && !wasHoldDetected,
                     enter = fadeIn(),
                     exit = fadeOut(),
                     modifier = Modifier.align(Alignment.BottomCenter)
@@ -473,7 +495,7 @@ fun FullscreenViewer(
             else if (swipeX.value < 0f) IndicatorBadge(stringResource(R.string.swipe_delete_upper), MaterialRed, Alignment.TopEnd) { (-swipeX.value / 200f).coerceIn(0f, 1f) * 0.9f }
 
                 AnimatedVisibility(
-                    visible = controlsVisible && !isHoldingByPress,
+                    visible = controlsVisible && !isHoldingByPress && !wasHoldDetected,
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {

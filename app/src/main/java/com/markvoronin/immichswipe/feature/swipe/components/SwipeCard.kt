@@ -53,6 +53,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -125,6 +126,8 @@ fun SwipeCard(
     var dragDirection by remember { mutableIntStateOf(0) } // 0: undecided, 1: horizontal, 2: vertical
 
     var isHoldingByPress by remember(asset.id) { mutableStateOf(false) }
+    var wasHoldDetected by remember(asset.id) { mutableStateOf(false) }
+    val currentIsHolding by rememberUpdatedState(isHoldingByPress || wasHoldDetected)
     var pausedByHoldState by remember(asset.id) { mutableStateOf(false) }
     var ignoreNextTap by remember(asset.id) { mutableStateOf(false) }
 
@@ -301,6 +304,14 @@ fun SwipeCard(
                         },
                         onDragEnd = {
                             scope.launch {
+                                if (currentIsHolding) {
+                                    offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    offsetY.animateTo(dragStartY, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    dragDirection = 0
+                                    wasHoldDetected = false
+                                    pausedByHoldState = false
+                                    return@launch
+                                }
                                 val currentX = offsetX.value
                                 val currentY = offsetY.value
 
@@ -331,6 +342,14 @@ fun SwipeCard(
                         },
                         onDragCancel = {
                             scope.launch {
+                                if (currentIsHolding) {
+                                    offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    offsetY.animateTo(dragStartY, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    dragDirection = 0
+                                    wasHoldDetected = false
+                                    pausedByHoldState = false
+                                    return@launch
+                                }
                                 val currentY = offsetY.value
                                 if (dragDirection == 2 || currentY < -10f) {
                                     if (currentY <= -metadataHeightPx * 0.4f) {
@@ -347,6 +366,9 @@ fun SwipeCard(
                         },
                         onDrag = { change, dragAmount ->
                             change.consume()
+                            if (currentIsHolding) {
+                                return@detectDragGestures
+                            }
                             
                             if (dragDirection == 0) {
                                 val accumulatedDX = abs(offsetX.value - dragStartX)
@@ -410,6 +432,7 @@ fun SwipeCard(
                             onDoubleTap = actions.onDoubleTap,
                             onPress = { offset, size ->
                                 ignoreNextTap = false
+                                wasHoldDetected = false
                                 val wasReleased = withTimeoutOrNull(500) {
                                     awaitRelease()
                                     true
@@ -436,14 +459,15 @@ fun SwipeCard(
                                     // Hold detected
                                     ignoreNextTap = true
                                     isHoldingByPress = true
+                                    wasHoldDetected = true
                                     pausedByHoldState = true
                                     try {
                                         awaitRelease()
-                                    } catch (e: GestureCancellationException) {
-                                        // Ignore cancellation
-                                    } finally {
                                         isHoldingByPress = false
                                         pausedByHoldState = false
+                                        wasHoldDetected = false
+                                    } catch (e: GestureCancellationException) {
+                                        isHoldingByPress = false
                                     }
                                 }
                             }
@@ -455,7 +479,7 @@ fun SwipeCard(
                                 isMuted = isMuted,
                                 isPaused = pausedByHoldState,
                                 isVideoReady = isVideoReady,
-                                showControls = !isHoldingByPress,
+                                showControls = !isHoldingByPress && !wasHoldDetected,
                                 cardDisplayMode = config.cardDisplayMode,
                                 fileSize = asset.exifInfo?.fileSizeInBytes,
                                 showSize = config.showSizeIndicator
@@ -525,6 +549,7 @@ fun SwipeCard(
                         onDoubleTap = actions.onDoubleTap,
                         onPress = { offset, size ->
                             ignoreNextTap = false
+                            wasHoldDetected = false
                             val wasReleased = withTimeoutOrNull(500) {
                                 awaitRelease()
                                 true
@@ -551,11 +576,12 @@ fun SwipeCard(
                                 // Hold detected
                                 ignoreNextTap = true
                                 isHoldingByPress = true
+                                wasHoldDetected = true
                                 try {
                                     awaitRelease()
+                                    isHoldingByPress = false
+                                    wasHoldDetected = false
                                 } catch (e: GestureCancellationException) {
-                                    // Ignore cancellation
-                                } finally {
                                     isHoldingByPress = false
                                 }
                             }
@@ -571,7 +597,7 @@ fun SwipeCard(
 
                     if (config.showSizeIndicator && !isNext) {
                         androidx.compose.animation.AnimatedVisibility(
-                            visible = !isHoldingByPress,
+                            visible = !isHoldingByPress && !wasHoldDetected,
                             enter = fadeIn(),
                             exit = fadeOut(),
                             modifier = Modifier.align(Alignment.BottomCenter)
@@ -630,7 +656,7 @@ fun SwipeCard(
 
                 if (!isNext) {
                     androidx.compose.animation.AnimatedVisibility(
-                        visible = !isHoldingByPress,
+                        visible = !isHoldingByPress && !wasHoldDetected,
                         enter = fadeIn(),
                         exit = fadeOut(),
                         modifier = Modifier.fillMaxSize()
