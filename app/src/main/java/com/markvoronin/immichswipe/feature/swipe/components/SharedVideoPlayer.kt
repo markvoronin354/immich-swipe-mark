@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -90,8 +92,19 @@ fun SharedVideoPlayer(
         var currentTime by remember { mutableLongStateOf(0L) }
         var duration by remember { mutableLongStateOf(0L) }
         var isVideoPlaying by remember { mutableStateOf(player.isPlaying) }
+        var userPaused by remember { mutableStateOf(false) }
         var isScrubbing by remember { mutableStateOf(false) }
         var scrubValue by remember { mutableLongStateOf(0L) }
+
+        val togglePlayPause = {
+            if (player.isPlaying) {
+                userPaused = true
+                player.pause()
+            } else {
+                userPaused = false
+                player.play()
+            }
+        }
 
         val videoAlpha by animateFloatAsState(
             targetValue = if (isVideoReady) 1f else 0f,
@@ -114,7 +127,7 @@ fun SharedVideoPlayer(
             if (isPaused) {
                 player.pause()
             } else {
-                if (player.playbackState == Player.STATE_READY && !player.isPlaying) {
+                if (!userPaused && player.playbackState == Player.STATE_READY && !player.isPlaying) {
                     player.play()
                 }
                 while (true) {
@@ -228,13 +241,38 @@ fun SharedVideoPlayer(
                             .fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // 1. Indicators Row (Timestamp, Size) - Now ABOVE
+                        // 1. Indicators Row (Pause, Timestamp, Size) - Now ABOVE
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
                             if (duration > 0 || isFullscreen) {
                                 val timeToDisplay = if (isScrubbing) scrubValue else currentTime
+
+                                if (!isFullscreen) {
+                                    Surface(
+                                        color = Color.Black.copy(alpha = 0.5f),
+                                        shape = RoundedCornerShape(4.dp),
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .clickable(onClick = togglePlayPause)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = if (isVideoPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                                contentDescription = if (isVideoPlaying) "Pause" else "Play",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(Modifier.width(6.dp))
+                                }
+
                                 Surface(
                                     color = Color.Black.copy(alpha = 0.5f),
                                     shape = RoundedCornerShape(4.dp)
@@ -274,7 +312,7 @@ fun SharedVideoPlayer(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 IconButton(
-                                    onClick = { if (player.isPlaying) player.pause() else player.play() },
+                                    onClick = togglePlayPause,
                                     modifier = Modifier.size(32.dp).background(Color.Black.copy(alpha = 0.3f), CircleShape)
                                 ) {
                                     Icon(
