@@ -58,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -326,6 +327,8 @@ fun SwipeCard(
                                         offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     }
                                 } else if (dragDirection == 2) { // Vertical metadata
+                                    // Reset horizontal offset so card doesn't stay shifted/rotated
+                                    offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     // Snap based on final position
                                     if (currentY <= -metadataHeightPx * 0.4f) {
                                         offsetY.animateTo(-metadataHeightPx, spring(dampingRatio = Spring.DampingRatioLowBouncy))
@@ -351,6 +354,8 @@ fun SwipeCard(
                                     return@launch
                                 }
                                 val currentY = offsetY.value
+                                // Always reset horizontal offset when canceling or in vertical mode
+                                offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                 if (dragDirection == 2 || currentY < -10f) {
                                     if (currentY <= -metadataHeightPx * 0.4f) {
                                         offsetY.animateTo(-metadataHeightPx, spring(dampingRatio = Spring.DampingRatioLowBouncy))
@@ -358,7 +363,6 @@ fun SwipeCard(
                                         offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     }
                                 } else {
-                                    offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     offsetY.animateTo(dragStartY, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                 }
                                 dragDirection = 0
@@ -381,6 +385,13 @@ fun SwipeCard(
                                         dragDirection = 2
                                     } else {
                                         dragDirection = if (accumulatedDX > accumulatedDY) 1 else 2
+                                    }
+
+                                    // Immediately animate back the non-chosen axis when direction locks
+                                    if (dragDirection == 1) {
+                                        scope.launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                    } else {
+                                        scope.launch { offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
                                     }
                                 }
                             }
@@ -621,49 +632,12 @@ fun SwipeCard(
                 }
 
                 if (!isNext) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .heightIn(max = with(density) { maxHeightPx.toDp() })
-                            .onSizeChanged { metadataHeightPx = it.height.toFloat() }
-                            .graphicsLayer { translationY = metadataHeightPx + offsetY.value }
-                    ) {
-                        MetadataPanel(
-                            asset = asset,
-                            onClose = { scope.launch { offsetY.animateTo(0f) } },
-                            onDrag = { delta ->
-                                scope.launch {
-                                    offsetY.snapTo((offsetY.value + delta).coerceIn(-metadataHeightPx, 0f))
-                                }
-                            },
-                            onDragEnd = {
-                                scope.launch {
-                                    val currentY = offsetY.value
-                                    // Snap based on position
-                                    if (currentY <= -metadataHeightPx * 0.4f) {
-                                        offsetY.animateTo(-metadataHeightPx, spring(dampingRatio = Spring.DampingRatioLowBouncy))
-                                    } else {
-                                        offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
-                                    }
-                                }
-                            },
-                            offsetYValue = offsetY.value,
-                            maxHeightPx = metadataHeightPx
-                        )
-                    }
-                }
-
-                if (!isNext) {
                     androidx.compose.animation.AnimatedVisibility(
                         visible = !isHoldingByPress && !wasHoldDetected,
                         enter = fadeIn(),
                         exit = fadeOut(),
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        val densityLocal = LocalDensity.current
-                        val panelPushDp = with(densityLocal) { (-offsetY.value).toDp() }
-
                         listOf(Alignment.Start, Alignment.End).forEach { side ->
                             Column(
                                 modifier = Modifier
@@ -777,10 +751,52 @@ fun SwipeCard(
                                         )
                                     }
                                 }
-
-                                Spacer(Modifier.height(panelPushDp))
                             }
                         }
+                    }
+                }
+
+                if (!isNext) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .zIndex(1f)
+                            .heightIn(max = with(density) { maxHeightPx.toDp() })
+                            .onSizeChanged { metadataHeightPx = it.height.toFloat() }
+                            .graphicsLayer { translationY = metadataHeightPx + offsetY.value }
+                    ) {
+                        MetadataPanel(
+                            asset = asset,
+                            onClose = {
+                                scope.launch {
+                                    offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                }
+                            },
+                            onDrag = { delta ->
+                                scope.launch {
+                                    if (offsetX.value != 0f) {
+                                        offsetX.snapTo(0f)
+                                    }
+                                    offsetY.snapTo((offsetY.value + delta).coerceIn(-metadataHeightPx, 0f))
+                                }
+                            },
+                            onDragEnd = {
+                                scope.launch {
+                                    val currentY = offsetY.value
+                                    offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    // Snap based on position
+                                    if (currentY <= -metadataHeightPx * 0.4f) {
+                                        offsetY.animateTo(-metadataHeightPx, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    } else {
+                                        offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    }
+                                }
+                            },
+                            offsetYValue = offsetY.value,
+                            maxHeightPx = metadataHeightPx
+                        )
                     }
                 }
 

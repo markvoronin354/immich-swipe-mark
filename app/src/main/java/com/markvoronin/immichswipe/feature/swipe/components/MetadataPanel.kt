@@ -103,7 +103,7 @@ fun MetadataPanel(
         modifier = Modifier
             .wrapContentHeight()
             .nestedScroll(nestedScrollConnection),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.60f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)),
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
     ) {
         Column(
