@@ -104,6 +104,13 @@ class SwipeDecisionRepository(
     }
 
     /**
+     * Supprime toutes les décisions d'un album.
+     */
+    suspend fun deleteDecisionsForAlbum(albumId: String, userId: String) {
+        swipeDecisionDao.deleteDecisionsForAlbum(albumId, userId)
+    }
+
+    /**
      * Enregistre un historique de synchronisation.
      */
     suspend fun saveSyncHistory(

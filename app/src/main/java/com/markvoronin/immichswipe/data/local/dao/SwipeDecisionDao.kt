@@ -56,6 +56,18 @@ interface SwipeDecisionDao {
      */
     @Query("DELETE FROM swipe_decisions WHERE assetId IN (:assetIds) AND userId = :userId")
     suspend fun deleteDecisionsForAllAlbums(assetIds: List<String>, userId: String)
+
+    /**
+     * Supprime toutes les décisions d'un album pour un utilisateur.
+     */
+    @Query("""
+        DELETE FROM swipe_decisions 
+        WHERE userId = :userId AND (
+            albumId = :albumId 
+            OR assetId IN (SELECT assetId FROM album_assets WHERE albumId = :albumId AND userId = :userId)
+        )
+    """)
+    suspend fun deleteDecisionsForAlbum(albumId: String, userId: String)
     
     /**
      * Compte le nombre de décisions prises pour un album spécifique d'un utilisateur.

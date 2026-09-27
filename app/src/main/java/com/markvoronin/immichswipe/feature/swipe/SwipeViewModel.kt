@@ -446,16 +446,25 @@ class SwipeViewModel(
         viewModelScope.launch {
             try {
                 val config = sessionRepository.sessionConfig.first() ?: return@launch
-                val ids = _uiState.value.assets.map { it.id }
-                if (ids.isNotEmpty()) {
-                    swipeDecisionRepository.removeDecisions(ids, config.userId)
+                
+                // 1. Delete ALL decisions for this album from SQLite Room DB
+                swipeDecisionRepository.deleteDecisionsForAlbum(album.id, config.userId)
+                
+                // 2. Also delete decisions for any assets currently in masterWorkPile
+                val currentIds = masterWorkPile.map { it.id }
+                if (currentIds.isNotEmpty()) {
+                    swipeDecisionRepository.removeDecisions(currentIds, config.userId)
                 }
+
+                pendingJumpToFirstUnprocessed = true
                 _uiState.update { it.copy(
                     showResetConfirmation = false, 
                     history = emptyList(), 
                     decisions = emptyMap(),
                     currentIndex = 0
                 ) }
+                
+                refreshSortedWorkPile(jumpToFirstUnprocessed = true)
             } catch (e: Exception) {
                 AppLogger.e("SwipeViewModel", "Error resetting album decisions", e)
                 _uiState.update { it.copy(showResetConfirmation = false) }
