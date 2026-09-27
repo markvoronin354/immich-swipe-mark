@@ -72,13 +72,12 @@ fun AssetTimeline(
 
     LaunchedEffect(targetIndex, currentAssetId, isBulkMode, bulkSelection) {
         if (assets.isNotEmpty() && targetIndex in assets.indices) {
-            val scrollIndex = (targetIndex - 1).coerceAtLeast(0)
             val currentVisible = listState.firstVisibleItemIndex
-            val distance = abs(scrollIndex - currentVisible)
+            val distance = abs(targetIndex - currentVisible)
             if (distance > 3) {
-                listState.scrollToItem(scrollIndex, scrollOffset = 0)
+                listState.scrollToItem(targetIndex, scrollOffset = 0)
             } else {
-                listState.animateScrollToItem(scrollIndex, scrollOffset = 0)
+                listState.animateScrollToItem(targetIndex, scrollOffset = 0)
             }
         }
     }
