@@ -22,7 +22,7 @@ data class SettingsUiState(
     val userName: String = "",
     val userQuotaBytes: Long? = null,
     val playbackBehavior: PlaybackBehavior = PlaybackBehavior.PAUSE_OTHERS,
-    val themeMode: AppTheme = AppTheme.SYSTEM,
+    val themeMode: AppTheme = AppTheme.DARK,
     val dynamicColor: Boolean = true,
     val fullscreenButtonPosition: IconPosition = IconPosition.TOP_RIGHT,
     val immichButtonPosition: IconPosition = IconPosition.TOP_LEFT,

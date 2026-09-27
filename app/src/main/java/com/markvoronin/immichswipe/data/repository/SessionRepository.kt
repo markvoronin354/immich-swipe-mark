@@ -55,7 +55,7 @@ class SessionRepository(context: Context) {
      * Expose le thème actuel.
      */
     val themeMode: Flow<AppTheme> = dataStore.getThemeMode().map {
-        it?.let { try { AppTheme.valueOf(it) } catch(e: Exception) { AppTheme.SYSTEM } } ?: AppTheme.SYSTEM
+        it?.let { try { AppTheme.valueOf(it) } catch(e: Exception) { AppTheme.DARK } } ?: AppTheme.DARK
     }
 
     /**
