@@ -27,9 +27,12 @@ interface SwipeDecisionDao {
      * Utilise désormais la table de jointure album_assets.
      */
     @Query("""
-        SELECT sd.* FROM swipe_decisions sd
-        JOIN album_assets aa ON sd.assetId = aa.assetId
-        WHERE aa.albumId = :albumId AND sd.userId = :userId AND aa.userId = :userId
+        SELECT DISTINCT sd.* FROM swipe_decisions sd
+        LEFT JOIN album_assets aa ON sd.assetId = aa.assetId AND aa.userId = :userId
+        WHERE sd.userId = :userId AND (
+            sd.albumId = :albumId 
+            OR aa.albumId = :albumId
+        )
     """)
     fun getDecisionsForAlbum(albumId: String, userId: String): Flow<List<SwipeDecisionEntity>>
 

@@ -167,7 +167,7 @@ class SwipeViewModel(
                     remoteTotalCount = if (!batch.isLocalCache || batch.total > it.remoteTotalCount) batch.total else it.remoteTotalCount,
                     syncLoadedCount = batch.assets.size,
                     syncTotalCount = batch.total,
-                    isSyncing = batch.isSyncing
+                    isFetchingAssets = batch.isSyncing
                 )}
                 
                 // Only publish to active work pile when metadata sync is complete or coming from local cache
@@ -201,13 +201,18 @@ class SwipeViewModel(
             }
             val sizeMap = localDecisions.associate { it.assetId to (it.fileSize ?: 0L) }
             
+            val currentDecisions = _uiState.value.decisions
+            val currentSizes = _uiState.value.assetSizes
+            val mergedDecisions = decisionMap + currentDecisions
+            val mergedSizes = sizeMap + currentSizes
+
             val derivedHistory = if (_uiState.value.history.isEmpty()) {
                 localDecisions.map { it.assetId }
             } else _uiState.value.history
 
-            masterWorkPile = allAssetsFound
+            masterWorkPile = (masterWorkPile + allAssetsFound).distinctBy { it.id }
             
-            val isResetting = localDecisions.isEmpty() && _uiState.value.decisions.isNotEmpty()
+            val isResetting = localDecisions.isEmpty() && currentDecisions.isNotEmpty()
             val shouldJump = pendingJumpToFirstUnprocessed || _uiState.value.assets.isEmpty() || isResetting
             if (shouldJump) {
                 pendingJumpToFirstUnprocessed = false
@@ -215,8 +220,8 @@ class SwipeViewModel(
             
             refreshSortedWorkPile(
                 jumpToFirstUnprocessed = shouldJump,
-                overrideDecisions = decisionMap,
-                overrideSizes = sizeMap,
+                overrideDecisions = mergedDecisions,
+                overrideSizes = mergedSizes,
                 overrideHistory = derivedHistory,
                 overrideIsLoading = isInitialLoading && allAssetsFound.isEmpty(),
                 overrideIsFetchingAssets = isFetching || (isInitialLoading && allAssetsFound.isEmpty())
@@ -266,6 +271,7 @@ class SwipeViewModel(
 
                 state.copy(
                     assets = sorted,
+                    masterWorkPile = masterWorkPile,
                     sortOrder = order,
                     currentIndex = nextIndex,
                     decisions = decisions,
@@ -288,20 +294,20 @@ class SwipeViewModel(
         viewModelScope.launch {
             try {
                 val detail = assetRepository.getAssetDetail(assetId)
-                val currentAssets = _uiState.value.assets.toMutableList()
-                if (index < currentAssets.size && currentAssets[index].id == assetId) {
-                    currentAssets[index] = detail
-                    val newSizes = _uiState.value.assetSizes.toMutableMap()
-                    detail.exifInfo?.fileSizeInBytes?.let { newSizes[assetId] = it }
-                    _uiState.update { it.copy(assets = currentAssets, assetSizes = newSizes) }
-                }
-
                 val masterIndex = masterWorkPile.indexOfFirst { it.id == assetId }
                 if (masterIndex != -1) {
                     val newMaster = masterWorkPile.toMutableList()
                     newMaster[masterIndex] = detail
                     masterWorkPile = newMaster
                 }
+
+                val currentAssets = _uiState.value.assets.toMutableList()
+                if (index < currentAssets.size && currentAssets[index].id == assetId) {
+                    currentAssets[index] = detail
+                }
+                val newSizes = _uiState.value.assetSizes.toMutableMap()
+                detail.exifInfo?.fileSizeInBytes?.let { newSizes[assetId] = it }
+                _uiState.update { it.copy(assets = currentAssets, masterWorkPile = masterWorkPile, assetSizes = newSizes) }
 
                 // Call preloader logic for the next items in queue
                 preloadNextAssets(index)

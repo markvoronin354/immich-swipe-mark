@@ -26,6 +26,7 @@ data class SwipeUiState(
     val showSummary: Boolean = false,
     val albumName: String = "",
     val assets: List<Asset> = emptyList(),
+    val masterWorkPile: List<Asset> = emptyList(),
     val remoteTotalCount: Int = 0,
     val currentIndex: Int = 0,
     val decisions: Map<String, SwipeDecision> = emptyMap(),
@@ -114,7 +115,10 @@ data class SwipeUiState(
     }
     
     private fun getEffectiveSize(assetId: String): Long {
-        return assetSizes[assetId] ?: assets.find { it.id == assetId }?.exifInfo?.fileSizeInBytes ?: 0L
+        return assetSizes[assetId]
+            ?: assets.find { it.id == assetId }?.exifInfo?.fileSizeInBytes
+            ?: masterWorkPile.find { it.id == assetId }?.exifInfo?.fileSizeInBytes
+            ?: 0L
     }
 
     /**
@@ -125,12 +129,21 @@ data class SwipeUiState(
         return if (knownSizes.isEmpty()) 0L else knownSizes.sum() / knownSizes.size
     }
     
-    // Calcul des poids (en bytes)
-    val keptSize: Long get() = assets.filter { decisions[it.id] == SwipeDecision.KEEP }.sumOf { getEffectiveSize(it.id) }
-    val deletedSize: Long get() = assets.filter { decisions[it.id] == SwipeDecision.DELETE }.sumOf { getEffectiveSize(it.id) }
-    val favoriteSize: Long get() = assets.filter { isFavorite(it.id) && isProcessedKeep(it.id) }.sumOf { getEffectiveSize(it.id) }
-    val archiveSize: Long get() = assets.filter { decisions[it.id] == SwipeDecision.ARCHIVE }.sumOf { getEffectiveSize(it.id) }
-    val lockedSize: Long get() = assets.filter { decisions[it.id] == SwipeDecision.LOCK }.sumOf { getEffectiveSize(it.id) }
+    // Calcul des poids (en bytes) basés sur l'ensemble des décisions
+    val keptSize: Long get() = decisions.filter { it.value == SwipeDecision.KEEP }.keys.sumOf { getEffectiveSize(it) }
+    val deletedSize: Long get() = decisions.filter { it.value == SwipeDecision.DELETE }.keys.sumOf { getEffectiveSize(it) }
+    val favoriteSize: Long get() = decisions.filter { (id, _) -> isFavorite(id) && isProcessedKeep(id) }.keys.sumOf { getEffectiveSize(it) }
+    val archiveSize: Long get() = decisions.filter { it.value == SwipeDecision.ARCHIVE }.keys.sumOf { getEffectiveSize(it) }
+    val lockedSize: Long get() = decisions.filter { it.value == SwipeDecision.LOCK }.keys.sumOf { getEffectiveSize(it) }
+
+    val deletedAssets: List<Asset> get() {
+        val deletedIds = decisions.filter { it.value == SwipeDecision.DELETE }.keys
+        val fromAssets = assets.filter { it.id in deletedIds }
+        val missingIds = deletedIds - fromAssets.map { it.id }.toSet()
+        if (missingIds.isEmpty()) return fromAssets
+        val fromMaster = masterWorkPile.filter { it.id in missingIds }
+        return (fromAssets + fromMaster).distinctBy { it.id }
+    }
     
     /**
      * Taille restante : Somme des tailles connues + estimation (moyenne) pour les inconnues.

@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -152,9 +153,10 @@ fun SummaryDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                val deletedAssets = remember(uiState.decisions) {
-                    uiState.assets.filter { uiState.decisions[it.id] == SwipeDecision.DELETE }
+                val deletedAssets = remember(uiState) {
+                    uiState.deletedAssets
                 }
+                val isLoadingDeletedAssets = uiState.deletedCount > 0 && deletedAssets.size < uiState.deletedCount
 
                 if (deletedAssets.isNotEmpty()) {
                     Box(modifier = Modifier.height(220.dp).fillMaxWidth()) {
@@ -175,6 +177,38 @@ fun SummaryDialog(
                                     modifier = Modifier.animateItem()
                                 )
                             }
+                            if (isLoadingDeletedAssets) {
+                                item(key = "loading_indicator") {
+                                    Surface(
+                                        modifier = Modifier
+                                            .aspectRatio(1f)
+                                            .clip(RoundedCornerShape(12.dp)),
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(24.dp),
+                                                strokeWidth = 2.5.dp,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (uiState.deletedCount > 0) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(100.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(28.dp),
+                                strokeWidth = 3.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 } else {
