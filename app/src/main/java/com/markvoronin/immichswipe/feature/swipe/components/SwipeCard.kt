@@ -447,101 +447,104 @@ fun SwipeCard(
                     )
 
                     if (!isNext && exoPlayer != null && !isFullscreenOpen) {
-                        ZoomableBox(
-                            modifier = Modifier.fillMaxSize(),
-                            resetOnRelease = true,
-                            onTap = { offset, size ->
-                                if (offsetY.value < -20f) {
-                                    scope.launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
-                                } else if (!ignoreNextTap) {
-                                    val width = size.width.toFloat()
-                                    if (config.tapToSwipeEnabled) {
-                                        when {
-                                            offset.x < width * 0.3f -> actions.onSwipe(SwipeDecision.DELETE)
-                                            offset.x > width * 0.7f -> actions.onSwipe(SwipeDecision.KEEP)
-                                            else -> {
+                        SharedVideoPlayer(
+                            player = exoPlayer,
+                            isFullscreen = false,
+                            assetId = asset.id,
+                            isMuted = isMuted,
+                            isPaused = pausedByHoldState,
+                            isVideoReady = isVideoReady,
+                            showControls = !isHoldingByPress && !wasHoldDetected,
+                            cardDisplayMode = config.cardDisplayMode,
+                            fileSize = asset.exifInfo?.fileSizeInBytes,
+                            showSize = config.showSizeIndicator,
+                            videoSurfaceWrapper = { surface ->
+                                ZoomableBox(
+                                    modifier = Modifier.fillMaxSize(),
+                                    resetOnRelease = true,
+                                    onTap = { offset, size ->
+                                        if (offsetY.value < -20f) {
+                                            scope.launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                        } else if (!ignoreNextTap) {
+                                            val width = size.width.toFloat()
+                                            if (config.tapToSwipeEnabled) {
+                                                when {
+                                                    offset.x < width * 0.3f -> actions.onSwipe(SwipeDecision.DELETE)
+                                                    offset.x > width * 0.7f -> actions.onSwipe(SwipeDecision.KEEP)
+                                                    else -> {
+                                                        actions.onToggleMute()
+                                                        showMuteIndicator = true
+                                                    }
+                                                }
+                                            } else {
                                                 actions.onToggleMute()
                                                 showMuteIndicator = true
                                             }
                                         }
-                                    } else {
-                                        actions.onToggleMute()
-                                        showMuteIndicator = true
-                                    }
-                                }
-                                ignoreNextTap = false
-                            },
-                            onDoubleTap = actions.onDoubleTap,
-                            onPress = { offset, size ->
-                                ignoreNextTap = false
-                                wasHoldDetected = false
-                                val wasReleased = withTimeoutOrNull(500) {
-                                    awaitRelease()
-                                    true
-                                }
-                                if (wasReleased == true) {
-                                    // Fast tap detected
-                                    if (offsetY.value < -20f) {
-                                        scope.launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
-                                        ignoreNextTap = true
-                                    } else if (config.tapToSwipeEnabled) {
-                                        val width = size.width.toFloat()
-                                        when {
-                                            offset.x < width * 0.3f -> {
-                                                actions.onSwipe(SwipeDecision.DELETE)
+                                        ignoreNextTap = false
+                                    },
+                                    onDoubleTap = actions.onDoubleTap,
+                                    onPress = { offset, size ->
+                                        ignoreNextTap = false
+                                        wasHoldDetected = false
+                                        val wasReleased = withTimeoutOrNull(500) {
+                                            awaitRelease()
+                                            true
+                                        }
+                                        if (wasReleased == true) {
+                                            // Fast tap detected
+                                            if (offsetY.value < -20f) {
+                                                scope.launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
                                                 ignoreNextTap = true
+                                            } else if (config.tapToSwipeEnabled) {
+                                                val width = size.width.toFloat()
+                                                when {
+                                                    offset.x < width * 0.3f -> {
+                                                        actions.onSwipe(SwipeDecision.DELETE)
+                                                        ignoreNextTap = true
+                                                    }
+                                                    offset.x > width * 0.7f -> {
+                                                        actions.onSwipe(SwipeDecision.KEEP)
+                                                        ignoreNextTap = true
+                                                    }
+                                                }
                                             }
-                                            offset.x > width * 0.7f -> {
-                                                actions.onSwipe(SwipeDecision.KEEP)
-                                                ignoreNextTap = true
+                                        } else {
+                                            // Hold detected
+                                            ignoreNextTap = true
+                                            isHoldingByPress = true
+                                            wasHoldDetected = true
+                                            pausedByHoldState = true
+                                            try {
+                                                awaitRelease()
+                                                isHoldingByPress = false
+                                                pausedByHoldState = false
+                                                wasHoldDetected = false
+                                            } catch (e: GestureCancellationException) {
+                                                isHoldingByPress = false
                                             }
                                         }
                                     }
-                                } else {
-                                    // Hold detected
-                                    ignoreNextTap = true
-                                    isHoldingByPress = true
-                                    wasHoldDetected = true
-                                    pausedByHoldState = true
-                                    try {
-                                        awaitRelease()
-                                        isHoldingByPress = false
-                                        pausedByHoldState = false
-                                        wasHoldDetected = false
-                                    } catch (e: GestureCancellationException) {
-                                        isHoldingByPress = false
+                                ) {
+                                    surface()
+
+                                    if (showLoadingIndicator) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(Color.Black.copy(alpha = 0.2f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(
+                                                color = Color.White,
+                                                strokeWidth = 3.dp,
+                                                modifier = Modifier.size(40.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
-                        ) {
-                            SharedVideoPlayer(
-                                player = exoPlayer,
-                                isFullscreen = false,
-                                assetId = asset.id,
-                                isMuted = isMuted,
-                                isPaused = pausedByHoldState,
-                                isVideoReady = isVideoReady,
-                                showControls = !isHoldingByPress && !wasHoldDetected,
-                                cardDisplayMode = config.cardDisplayMode,
-                                fileSize = asset.exifInfo?.fileSizeInBytes,
-                                showSize = config.showSizeIndicator
-                            )
-
-                            if (showLoadingIndicator) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(Color.Black.copy(alpha = 0.2f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(
-                                        color = Color.White,
-                                        strokeWidth = 3.dp,
-                                        modifier = Modifier.size(40.dp)
-                                    )
-                                }
-                            }
-                        }
+                        )
                     }
                 } else {
                     val photoRequest = remember(asset.id, baseUrl, apiKey) {

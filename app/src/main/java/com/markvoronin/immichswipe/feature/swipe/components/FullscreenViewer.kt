@@ -364,102 +364,159 @@ fun FullscreenViewer(
                     .background(Color.Black.copy(alpha = fadeAlpha)),
                 contentAlignment = Alignment.Center
             ) {
-            ZoomableBox(
-                modifier = Modifier.fillMaxSize(),
-                resetOnRelease = false,
-                onIsZoomedChanged = { isZoomedIn = it },
-                onTap = { offset, size ->
-                    if (!ignoreNextTap) {
-                        val width = size.width.toFloat()
-                        if (tapToSwipeEnabled && !isZoomedIn && (offset.x < width * 0.3f || offset.x > width * 0.7f)) {
-                            when {
-                                offset.x < width * 0.3f -> currentOnSwipe(SwipeDecision.DELETE)
-                                offset.x > width * 0.7f -> currentOnSwipe(SwipeDecision.KEEP)
-                            }
-                        } else if (asset.type == "VIDEO") {
-                            onToggleMute()
-                            showMuteIndicator = true
-                            toggleControllerTrigger++
-                        }
-                    }
-                    ignoreNextTap = false
-                },
-                onDoubleTap = onDoubleTap,
-                onPress = { offset, size ->
-                    ignoreNextTap = false
-                    wasHoldDetected = false
-                    val wasReleased = withTimeoutOrNull(500) {
-                        awaitRelease()
-                        true
-                    }
-                    if (wasReleased == true) {
-                        // Fast tap detected
-                        val width = size.width.toFloat()
-                        if (tapToSwipeEnabled && !isZoomedIn && (offset.x < width * 0.3f || offset.x > width * 0.7f)) {
-                            when {
-                                offset.x < width * 0.3f -> {
-                                    currentOnSwipe(SwipeDecision.DELETE)
-                                    ignoreNextTap = true
-                                }
-                                offset.x > width * 0.7f -> {
-                                    currentOnSwipe(SwipeDecision.KEEP)
-                                    ignoreNextTap = true
-                                }
-                            }
-                        }
-                    } else {
-                        // Hold detected
-                        ignoreNextTap = true
-                        isHoldingByPress = true
-                        wasHoldDetected = true
-                        if (asset.type == "VIDEO") {
-                            pausedByHoldState = true
-                        }
-                        try {
-                            awaitRelease()
-                            isHoldingByPress = false
-                            pausedByHoldState = false
-                            wasHoldDetected = false
-                        } catch (e: GestureCancellationException) {
-                            isHoldingByPress = false
-                        }
-                    }
-                },
-                aspectRatio = asset.exifInfo?.let { it.imageWidth?.toFloat()?.div(it.imageHeight?.toFloat() ?: 1f) }
-            ) {
-                val finalControlsVisible = controlsVisible && !isHoldingByPress && !wasHoldDetected
+            val finalControlsVisible = controlsVisible && !isHoldingByPress && !wasHoldDetected
 
-                if (asset.type == "VIDEO" && exoPlayer != null) {
-                    SharedVideoPlayer(
-                        player = exoPlayer,
-                        isFullscreen = true,
-                        assetId = asset.id,
-                        isMuted = isMuted,
-                        isPaused = pausedByHoldState,
-                        isVideoReady = isVideoReady,
-                        toggleControllerTrigger = toggleControllerTrigger,
-                        showControls = finalControlsVisible,
-                        fileSize = asset.exifInfo?.fileSizeInBytes,
-                        showSize = showSizeIndicator,
-                        onControllerVisibilityChanged = { /* Now handled externally via controlsVisible */ },
-                        controlsOffset = controlsOffset
-                    )
-
-                    if (showLoadingIndicator) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
+            if (asset.type == "VIDEO" && exoPlayer != null) {
+                SharedVideoPlayer(
+                    player = exoPlayer,
+                    isFullscreen = true,
+                    assetId = asset.id,
+                    isMuted = isMuted,
+                    isPaused = pausedByHoldState,
+                    isVideoReady = isVideoReady,
+                    toggleControllerTrigger = toggleControllerTrigger,
+                    showControls = finalControlsVisible,
+                    fileSize = asset.exifInfo?.fileSizeInBytes,
+                    showSize = showSizeIndicator,
+                    onControllerVisibilityChanged = { /* Now handled externally via controlsVisible */ },
+                    controlsOffset = controlsOffset,
+                    videoSurfaceWrapper = { surface ->
+                        ZoomableBox(
+                            modifier = Modifier.fillMaxSize(),
+                            resetOnRelease = false,
+                            onIsZoomedChanged = { isZoomedIn = it },
+                            onTap = { offset, size ->
+                                if (!ignoreNextTap) {
+                                    val width = size.width.toFloat()
+                                    if (tapToSwipeEnabled && !isZoomedIn && (offset.x < width * 0.3f || offset.x > width * 0.7f)) {
+                                        when {
+                                            offset.x < width * 0.3f -> currentOnSwipe(SwipeDecision.DELETE)
+                                            offset.x > width * 0.7f -> currentOnSwipe(SwipeDecision.KEEP)
+                                        }
+                                    } else if (asset.type == "VIDEO") {
+                                        onToggleMute()
+                                        showMuteIndicator = true
+                                        toggleControllerTrigger++
+                                    }
+                                }
+                                ignoreNextTap = false
+                            },
+                            onDoubleTap = onDoubleTap,
+                            onPress = { offset, size ->
+                                ignoreNextTap = false
+                                wasHoldDetected = false
+                                val wasReleased = withTimeoutOrNull(500) {
+                                    awaitRelease()
+                                    true
+                                }
+                                if (wasReleased == true) {
+                                    // Fast tap detected
+                                    val width = size.width.toFloat()
+                                    if (tapToSwipeEnabled && !isZoomedIn && (offset.x < width * 0.3f || offset.x > width * 0.7f)) {
+                                        when {
+                                            offset.x < width * 0.3f -> {
+                                                currentOnSwipe(SwipeDecision.DELETE)
+                                                ignoreNextTap = true
+                                            }
+                                            offset.x > width * 0.7f -> {
+                                                currentOnSwipe(SwipeDecision.KEEP)
+                                                ignoreNextTap = true
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // Hold detected
+                                    ignoreNextTap = true
+                                    isHoldingByPress = true
+                                    wasHoldDetected = true
+                                    if (asset.type == "VIDEO") {
+                                        pausedByHoldState = true
+                                    }
+                                    try {
+                                        awaitRelease()
+                                        isHoldingByPress = false
+                                        pausedByHoldState = false
+                                        wasHoldDetected = false
+                                    } catch (e: GestureCancellationException) {
+                                        isHoldingByPress = false
+                                    }
+                                }
+                            },
+                            aspectRatio = asset.exifInfo?.let { it.imageWidth?.toFloat()?.div(it.imageHeight?.toFloat() ?: 1f) }
                         ) {
-                            CircularProgressIndicator(
-                                color = Color.White,
-                                strokeWidth = 3.dp,
-                                modifier = Modifier.size(40.dp)
-                            )
+                            surface()
+
+                            if (showLoadingIndicator) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.Black.copy(alpha = 0.2f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        color = Color.White,
+                                        strokeWidth = 3.dp,
+                                        modifier = Modifier.size(40.dp)
+                                    )
+                                }
+                            }
                         }
                     }
-                } else {
+                )
+            } else {
+                ZoomableBox(
+                    modifier = Modifier.fillMaxSize(),
+                    resetOnRelease = false,
+                    onIsZoomedChanged = { isZoomedIn = it },
+                    onTap = { offset, size ->
+                        if (!ignoreNextTap) {
+                            val width = size.width.toFloat()
+                            if (tapToSwipeEnabled && !isZoomedIn && (offset.x < width * 0.3f || offset.x > width * 0.7f)) {
+                                when {
+                                    offset.x < width * 0.3f -> currentOnSwipe(SwipeDecision.DELETE)
+                                    offset.x > width * 0.7f -> currentOnSwipe(SwipeDecision.KEEP)
+                                }
+                            }
+                        }
+                        ignoreNextTap = false
+                    },
+                    onDoubleTap = onDoubleTap,
+                    onPress = { offset, size ->
+                        ignoreNextTap = false
+                        wasHoldDetected = false
+                        val wasReleased = withTimeoutOrNull(500) {
+                            awaitRelease()
+                            true
+                        }
+                        if (wasReleased == true) {
+                            val width = size.width.toFloat()
+                            if (tapToSwipeEnabled && !isZoomedIn && (offset.x < width * 0.3f || offset.x > width * 0.7f)) {
+                                when {
+                                    offset.x < width * 0.3f -> {
+                                        currentOnSwipe(SwipeDecision.DELETE)
+                                        ignoreNextTap = true
+                                    }
+                                    offset.x > width * 0.7f -> {
+                                        currentOnSwipe(SwipeDecision.KEEP)
+                                        ignoreNextTap = true
+                                    }
+                                }
+                            }
+                        } else {
+                            ignoreNextTap = true
+                            isHoldingByPress = true
+                            wasHoldDetected = true
+                            try {
+                                awaitRelease()
+                                isHoldingByPress = false
+                                wasHoldDetected = false
+                            } catch (e: GestureCancellationException) {
+                                isHoldingByPress = false
+                            }
+                        }
+                    },
+                    aspectRatio = asset.exifInfo?.let { it.imageWidth?.toFloat()?.div(it.imageHeight?.toFloat() ?: 1f) }
+                ) {
                     val baseUrlClean = SessionManager.getBaseUrl()?.removeSuffix("/")
                     val apiKeyLocal = SessionManager.getApiKey() ?: ""
 

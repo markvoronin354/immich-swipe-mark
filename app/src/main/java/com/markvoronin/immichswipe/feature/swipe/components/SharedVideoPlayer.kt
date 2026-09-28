@@ -88,7 +88,8 @@ fun SharedVideoPlayer(
     fileSize: Long? = null,
     showSize: Boolean = false,
     onControllerVisibilityChanged: ((Boolean) -> Unit)? = null,
-    controlsOffset: Dp = 0.dp
+    controlsOffset: Dp = 0.dp,
+    videoSurfaceWrapper: @Composable (surfaceContent: @Composable () -> Unit) -> Unit = { surfaceContent -> surfaceContent() }
 ) {
     key(assetId) {
         var currentTime by remember { mutableLongStateOf(0L) }
@@ -148,89 +149,93 @@ fun SharedVideoPlayer(
         val apiKey = remember { SessionManager.getApiKey() ?: "" }
 
         Box(modifier = Modifier.fillMaxSize()) {
-            if (assetId != null && baseUrl != null) {
-                val context = LocalContext.current
-                val thumbnailRequest = remember(assetId, baseUrl, apiKey) {
-                    ImageRequest.Builder(context)
-                        .data("$baseUrl/api/assets/$assetId/thumbnail?format=WEBP&size=preview")
-                        .addHeader("x-api-key", apiKey)
-                        .crossfade(false)
-                        .precision(Precision.INEXACT)
-                        .build()
-                }
-                AsyncImage(
-                    model = thumbnailRequest,
-                    contentDescription = null,
-                    contentScale = if (isFullscreen) {
-                        ContentScale.Fit
-                    } else {
-                        if (cardDisplayMode == CardDisplayMode.FILL) ContentScale.Crop else ContentScale.Fit
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+            videoSurfaceWrapper {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (assetId != null && baseUrl != null) {
+                        val context = LocalContext.current
+                        val thumbnailRequest = remember(assetId, baseUrl, apiKey) {
+                            ImageRequest.Builder(context)
+                                .data("$baseUrl/api/assets/$assetId/thumbnail?format=WEBP&size=preview")
+                                .addHeader("x-api-key", apiKey)
+                                .crossfade(false)
+                                .precision(Precision.INEXACT)
+                                .build()
+                        }
+                        AsyncImage(
+                            model = thumbnailRequest,
+                            contentDescription = null,
+                            contentScale = if (isFullscreen) {
+                                ContentScale.Fit
+                            } else {
+                                if (cardDisplayMode == CardDisplayMode.FILL) ContentScale.Crop else ContentScale.Fit
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
 
-            val playerViewRef = remember { mutableStateOf<PlayerView?>(null) }
-            
-            LaunchedEffect(toggleControllerTrigger) {
-                if (toggleControllerTrigger > 0 && isFullscreen) {
-                    playerViewRef.value?.let { view ->
-                        AppLogger.d("VideoPlayer", "Toggling controller: visible=${view.isControllerFullyVisible}")
-                        if (view.isControllerFullyVisible) view.hideController() else view.showController()
+                    val playerViewRef = remember { mutableStateOf<PlayerView?>(null) }
+                    
+                    LaunchedEffect(toggleControllerTrigger) {
+                        if (toggleControllerTrigger > 0 && isFullscreen) {
+                            playerViewRef.value?.let { view ->
+                                AppLogger.d("VideoPlayer", "Toggling controller: visible=${view.isControllerFullyVisible}")
+                                if (view.isControllerFullyVisible) view.hideController() else view.showController()
+                            }
+                        }
+                    }
+
+                    key(isFullscreen) { // Only re-create AndroidView when switching to/from fullscreen. DO NOT key by assetId.
+                        AndroidView(
+                            factory = { context ->
+                                AppLogger.d("VideoPlayer", "AndroidView Factory: isFullscreen=$isFullscreen, asset=$assetId")
+                                val view = LayoutInflater.from(context).inflate(R.layout.view_player_texture, null) as PlayerView
+                                view.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { visibility ->
+                                    onControllerVisibilityChanged?.invoke(visibility == View.VISIBLE)
+                                })
+                                
+                                // Keep the texture from clearing to black when media changes
+                                view.setKeepContentOnPlayerReset(true)
+                                
+                                playerViewRef.value = view
+                                view
+                            },
+                            update = { view ->
+                                if (view.player != player) {
+                                    AppLogger.d("VideoPlayer", "AndroidView Update: Binding player (fullscreen=$isFullscreen), asset=$assetId")
+                                    view.player = player
+                                }
+
+                                // Force a "nudge" if the player is ready but the surface hasn't updated
+                                if (player.playbackState == Player.STATE_READY) {
+                                    view.post {
+                                        player.seekTo(player.currentPosition)
+                                    }
+                                }
+
+                                view.useController = false
+                                player.volume = if (isMuted) 0f else 1f
+                                view.resizeMode = if (isFullscreen) {
+                                    AspectRatioFrameLayout.RESIZE_MODE_FIT
+                                } else {
+                                    if (cardDisplayMode == CardDisplayMode.FILL) {
+                                        AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                                    } else {
+                                        AspectRatioFrameLayout.RESIZE_MODE_FIT
+                                    }
+                                }
+
+                                if (toggleControllerTrigger > 0 && isFullscreen) {
+                                    if (view.isControllerFullyVisible) view.hideController() else view.showController()
+                                }
+                            },
+                            onRelease = { view ->
+                                AppLogger.d("VideoPlayer", "AndroidView Release: Detaching player (fullscreen=$isFullscreen), asset=$assetId")
+                                view.player = null
+                            },
+                            modifier = Modifier.fillMaxSize().graphicsLayer { alpha = videoAlpha }
+                        )
                     }
                 }
-            }
-
-            key(isFullscreen) { // Only re-create AndroidView when switching to/from fullscreen. DO NOT key by assetId.
-                AndroidView(
-                    factory = { context ->
-                        AppLogger.d("VideoPlayer", "AndroidView Factory: isFullscreen=$isFullscreen, asset=$assetId")
-                        val view = LayoutInflater.from(context).inflate(R.layout.view_player_texture, null) as PlayerView
-                        view.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { visibility ->
-                            onControllerVisibilityChanged?.invoke(visibility == View.VISIBLE)
-                        })
-                        
-                        // Keep the texture from clearing to black when media changes
-                        view.setKeepContentOnPlayerReset(true)
-                        
-                        playerViewRef.value = view
-                        view
-                    },
-                    update = { view ->
-                        if (view.player != player) {
-                            AppLogger.d("VideoPlayer", "AndroidView Update: Binding player (fullscreen=$isFullscreen), asset=$assetId")
-                            view.player = player
-                        }
-
-                        // Force a "nudge" if the player is ready but the surface hasn't updated
-                        if (player.playbackState == Player.STATE_READY) {
-                            view.post {
-                                player.seekTo(player.currentPosition)
-                            }
-                        }
-
-                        view.useController = false
-                        player.volume = if (isMuted) 0f else 1f
-                        view.resizeMode = if (isFullscreen) {
-                            AspectRatioFrameLayout.RESIZE_MODE_FIT
-                        } else {
-                            if (cardDisplayMode == CardDisplayMode.FILL) {
-                                AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                            } else {
-                                AspectRatioFrameLayout.RESIZE_MODE_FIT
-                            }
-                        }
-
-                        if (toggleControllerTrigger > 0 && isFullscreen) {
-                            if (view.isControllerFullyVisible) view.hideController() else view.showController()
-                        }
-                    },
-                    onRelease = { view ->
-                        AppLogger.d("VideoPlayer", "AndroidView Release: Detaching player (fullscreen=$isFullscreen), asset=$assetId")
-                        view.player = null
-                    },
-                    modifier = Modifier.fillMaxSize().graphicsLayer { alpha = videoAlpha }
-                )
             }
 
             val indicatorsVisible = (showSize && fileSize != null) || (duration > 0) || isFullscreen
