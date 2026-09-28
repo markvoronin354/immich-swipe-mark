@@ -220,24 +220,28 @@ fun SwipeCard(
     DisposableEffect(exoPlayer, lifecycleOwner, asset.id) {
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
-                if (state == Player.STATE_READY) {
+                val isSameAsset = exoPlayer?.currentMediaItem?.mediaId == asset.id
+                if (state == Player.STATE_READY && isSameAsset) {
                     isVideoReady = true
                     showLoadingIndicator = false
                 } else if (state == Player.STATE_BUFFERING) {
-                    showLoadingIndicator = true
+                    // Only show indicator if buffering the correct asset, but keep isVideoReady true if it was already ready
+                    if (isSameAsset) showLoadingIndicator = true
                 } else if (state == Player.STATE_ENDED || state == Player.STATE_IDLE) {
                     showLoadingIndicator = false
                 }
             }
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                if (isPlaying) {
+                val isSameAsset = exoPlayer?.currentMediaItem?.mediaId == asset.id
+                if (isPlaying && isSameAsset) {
                     isVideoReady = true
                     showLoadingIndicator = false
                 }
             }
         }
 
-        if (exoPlayer?.playbackState == Player.STATE_READY) {
+        val isSameAssetInit = exoPlayer?.currentMediaItem?.mediaId == asset.id
+        if (exoPlayer?.playbackState == Player.STATE_READY && isSameAssetInit) {
             isVideoReady = true
         }
         exoPlayer?.addListener(listener)
@@ -424,8 +428,25 @@ fun SwipeCard(
             shape = RoundedCornerShape(16.dp)
         ) {
             Box(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))) {
-                if (asset.type == "VIDEO" && !isNext && exoPlayer != null) {
-                    if (!isFullscreenOpen) {
+                if (asset.type == "VIDEO") {
+                    val placeholderRequest = remember(asset.id, baseUrl, apiKey) {
+                        ImageRequest.Builder(context)
+                            .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                            .addHeader("x-api-key", apiKey)
+                            .crossfade(false)
+                            .precision(Precision.INEXACT)
+                            .build()
+                    }
+
+                    // Always render base thumbnail to prevent 1-frame unmount flicker when transitioning from next -> top card
+                    AsyncImage(
+                        model = placeholderRequest,
+                        contentDescription = null,
+                        contentScale = if (config.cardDisplayMode == CardDisplayMode.FILL) ContentScale.Crop else ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize()
+                    )
+
+                    if (!isNext && exoPlayer != null && !isFullscreenOpen) {
                         ZoomableBox(
                             modifier = Modifier.fillMaxSize(),
                             resetOnRelease = true,
@@ -521,28 +542,13 @@ fun SwipeCard(
                                 }
                             }
                         }
-                    } else {
-                        val placeholderRequest = remember(asset.id, baseUrl, apiKey) {
-                            ImageRequest.Builder(context)
-                                .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
-                                .addHeader("x-api-key", apiKey)
-                                .crossfade(true)
-                                .precision(Precision.INEXACT)
-                                .build()
-                        }
-                        AsyncImage(
-                            model = placeholderRequest,
-                            contentDescription = null,
-                            contentScale = if (config.cardDisplayMode == CardDisplayMode.FILL) ContentScale.Crop else ContentScale.Fit,
-                            modifier = Modifier.fillMaxSize()
-                        )
                     }
                 } else {
                     val photoRequest = remember(asset.id, baseUrl, apiKey) {
                         ImageRequest.Builder(context)
                             .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
                             .addHeader("x-api-key", apiKey)
-                            .crossfade(true)
+                            .crossfade(false)
                             .precision(Precision.INEXACT)
                             .build()
                     }

@@ -191,6 +191,9 @@ fun SwipeScreen(
     LaunchedEffect(currentAsset?.id) {
         val asset = currentAsset
         if (asset?.type == "VIDEO") {
+            // Do NOT stop/clear the player, as it forces the underlying surface to go blank
+            // which causes a flicker when recycling the TextureView.
+            // Just update the media source.
             val videoUrl = "$baseUrl/api/assets/${asset.id}/video/playback"
 
             val dataSourceFactory = VideoCache.getCacheDataSourceFactory(context, apiKey)

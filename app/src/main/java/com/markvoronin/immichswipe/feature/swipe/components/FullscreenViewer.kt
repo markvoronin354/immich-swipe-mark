@@ -207,19 +207,21 @@ fun FullscreenViewer(
     DisposableEffect(exoPlayer, asset.id) {
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
-                AppLogger.d("Fullscreen", "Playback state changed: $state, asset=${asset.id}")
-                if (state == Player.STATE_READY) {
+                val isSameAsset = exoPlayer?.currentMediaItem?.mediaId == asset.id
+                AppLogger.d("Fullscreen", "Playback state changed: $state, asset=${asset.id}, same=$isSameAsset")
+                if (state == Player.STATE_READY && isSameAsset) {
                     isVideoReady = true
                     showLoadingIndicator = false
                 } else if (state == Player.STATE_BUFFERING) {
-                    showLoadingIndicator = true
+                    if (isSameAsset) showLoadingIndicator = true
                 } else if (state == Player.STATE_ENDED || state == Player.STATE_IDLE) {
                     showLoadingIndicator = false
                 }
             }
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                AppLogger.d("Fullscreen", "Is playing changed: $isPlaying, asset=${asset.id}")
-                if (isPlaying) {
+                val isSameAsset = exoPlayer?.currentMediaItem?.mediaId == asset.id
+                AppLogger.d("Fullscreen", "Is playing changed: $isPlaying, asset=${asset.id}, same=$isSameAsset")
+                if (isPlaying && isSameAsset) {
                     isVideoReady = true
                     showLoadingIndicator = false
                 }
@@ -230,7 +232,8 @@ fun FullscreenViewer(
             }
         }
 
-        if (exoPlayer?.playbackState == Player.STATE_READY) {
+        val isSameAssetInit = exoPlayer?.currentMediaItem?.mediaId == asset.id
+        if (exoPlayer?.playbackState == Player.STATE_READY && isSameAssetInit) {
             isVideoReady = true
         }
 
@@ -272,7 +275,7 @@ fun FullscreenViewer(
                     ImageRequest.Builder(context)
                         .data("$baseUrl/api/assets/${nextAsset.id}/thumbnail?format=WEBP&size=preview")
                         .addHeader("x-api-key", apiKey)
-                        .crossfade(true)
+                        .crossfade(false)
                         .precision(Precision.INEXACT)
                         .build()
                 }
@@ -464,7 +467,7 @@ fun FullscreenViewer(
                         ImageRequest.Builder(context)
                             .data("$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
                             .addHeader("x-api-key", apiKeyLocal)
-                            .crossfade(true)
+                            .crossfade(false)
                             .precision(Precision.INEXACT)
                             .build()
                     }

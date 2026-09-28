@@ -6,6 +6,7 @@ import android.view.View
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -63,6 +64,7 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import coil.size.Precision
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.CardDisplayMode
@@ -108,7 +110,7 @@ fun SharedVideoPlayer(
 
         val videoAlpha by animateFloatAsState(
             targetValue = if (isVideoReady) 1f else 0f,
-            animationSpec = tween(durationMillis = 400),
+            animationSpec = if (isVideoReady) tween(durationMillis = 200) else snap(),
             label = "VideoAlpha"
         )
 
@@ -147,12 +149,17 @@ fun SharedVideoPlayer(
 
         Box(modifier = Modifier.fillMaxSize()) {
             if (assetId != null && baseUrl != null) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
+                val context = LocalContext.current
+                val thumbnailRequest = remember(assetId, baseUrl, apiKey) {
+                    ImageRequest.Builder(context)
                         .data("$baseUrl/api/assets/$assetId/thumbnail?format=WEBP&size=preview")
                         .addHeader("x-api-key", apiKey)
-                        .crossfade(true)
-                        .build(),
+                        .crossfade(false)
+                        .precision(Precision.INEXACT)
+                        .build()
+                }
+                AsyncImage(
+                    model = thumbnailRequest,
                     contentDescription = null,
                     contentScale = if (isFullscreen) {
                         ContentScale.Fit
@@ -174,7 +181,7 @@ fun SharedVideoPlayer(
                 }
             }
 
-            key(isFullscreen, assetId) {
+            key(isFullscreen) { // Only re-create AndroidView when switching to/from fullscreen. DO NOT key by assetId.
                 AndroidView(
                     factory = { context ->
                         AppLogger.d("VideoPlayer", "AndroidView Factory: isFullscreen=$isFullscreen, asset=$assetId")
@@ -182,6 +189,10 @@ fun SharedVideoPlayer(
                         view.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { visibility ->
                             onControllerVisibilityChanged?.invoke(visibility == View.VISIBLE)
                         })
+                        
+                        // Keep the texture from clearing to black when media changes
+                        view.setKeepContentOnPlayerReset(true)
+                        
                         playerViewRef.value = view
                         view
                     },
@@ -189,13 +200,12 @@ fun SharedVideoPlayer(
                         if (view.player != player) {
                             AppLogger.d("VideoPlayer", "AndroidView Update: Binding player (fullscreen=$isFullscreen), asset=$assetId")
                             view.player = player
+                        }
 
-                            // Force a "nudge" only once when moving to a new view while ready
-                            if (player.playbackState == Player.STATE_READY) {
-                                view.post {
-                                    AppLogger.d("VideoPlayer", "Nudging player for surface refresh (post), asset=$assetId")
-                                    player.seekTo(player.currentPosition)
-                                }
+                        // Force a "nudge" if the player is ready but the surface hasn't updated
+                        if (player.playbackState == Player.STATE_READY) {
+                            view.post {
+                                player.seekTo(player.currentPosition)
                             }
                         }
 
