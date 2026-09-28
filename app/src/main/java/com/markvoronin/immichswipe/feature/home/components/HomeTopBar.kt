@@ -52,7 +52,6 @@ import com.markvoronin.immichswipe.domain.model.User
 fun HomeTopBar(
     isHome: Boolean,
     isSwipeTab: Boolean,
-    isDuplicatesAlbum: Boolean,
     user: User?,
     connectionStatus: ConnectionStatus,
     searchQuery: String,
@@ -94,7 +93,7 @@ fun HomeTopBar(
                             tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
                         )
                     }
-                } else if (isSwipeTab && !isDuplicatesAlbum) {
+                } else if (isSwipeTab) {
                     IconButton(onClick = onSwipeReset) {
                         Icon(
                             imageVector = Icons.Default.RestartAlt,

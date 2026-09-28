@@ -131,7 +131,6 @@ fun HomeScreen(
             HomeTopBar(
                 isHome = isHome,
                 isSwipeTab = uiState.currentTab == HomeTab.SWIPE,
-                isDuplicatesAlbum = uiState.selectedAlbum?.id == Album.VIRTUAL_DUPLICATES_ID,
                 user = uiState.user,
                 connectionStatus = uiState.connectionStatus,
                 searchQuery = uiState.searchQuery,
@@ -227,7 +226,8 @@ fun HomeScreen(
                                     )
                                 )
                                 DuplicatesScreen(
-                                    viewModel = duplicatesViewModel
+                                    viewModel = duplicatesViewModel,
+                                    resetSignal = viewModel.resetRequestSignal
                                 )
                             } else if (uiState.selectedAlbum != null) {
                                 SwipeScreen(

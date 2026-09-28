@@ -168,6 +168,12 @@
     <string name="swipe_reset_button">Réinitialiser l\'album</string>
     <string name="swipe_reset_confirm_title">Réinitialiser le tri ?</string>
     <string name="swipe_reset_confirm_msg">Cela supprimera définitivement toutes les décisions locales pour cet album. Les décisions déjà synchronisées (KEEP/DELETE) sur Immich ne seront PAS annulées sur le serveur, mais elles seront effacées de votre progression locale dans cette application.</string>
+    <string name="duplicates_delete_button_title">Supprimer %1$d éléments marqués</string>
+    <string name="duplicates_delete_frees_space">Libère %1$s</string>
+    <string name="duplicates_delete_confirm_title">Supprimer les doublons ?</string>
+    <string name="duplicates_delete_confirm_msg">Cela supprimera définitivement %1$d photos (%2$s) de votre serveur Immich. Êtes-vous sûr ?</string>
+    <string name="duplicates_reset_confirm_title">Réinitialiser les choix ?</string>
+    <string name="duplicates_reset_confirm_msg">Cela effacera tous les choix locaux (GARDER/SUPPRIMER) pour les doublons.</string>
 
     <!-- Statistiques -->
     <string name="stats_popup_title">Statistiques d\'usage</string>

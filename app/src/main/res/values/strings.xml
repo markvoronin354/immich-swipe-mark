@@ -167,6 +167,12 @@
     <string name="swipe_reset_button">Reset album sorting</string>
     <string name="swipe_reset_confirm_title">Reset Album Sorting?</string>
     <string name="swipe_reset_confirm_msg">This will permanently delete all local decisions for this album. Previously synced decisions (KEEP/DELETE) on Immich will NOT be undone on the server, but they will be cleared from your local progress in this app.</string>
+    <string name="duplicates_delete_button_title">Delete %1$d marked items</string>
+    <string name="duplicates_delete_frees_space">Frees up %1$s</string>
+    <string name="duplicates_delete_confirm_title">Delete Duplicate Photos?</string>
+    <string name="duplicates_delete_confirm_msg">This will permanently delete %1$d photos (%2$s) from your Immich server. Are you sure?</string>
+    <string name="duplicates_reset_confirm_title">Reset Duplicate Choices?</string>
+    <string name="duplicates_reset_confirm_msg">This will clear all local KEEP/DELETE choices for duplicate clusters.</string>
 
     <!-- Statistics -->
     <string name="stats_popup_title">Usage Statistics</string>
