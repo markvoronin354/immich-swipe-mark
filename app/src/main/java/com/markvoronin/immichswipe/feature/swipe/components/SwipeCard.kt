@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -852,15 +853,15 @@ fun SwipeCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(64.dp)
-                            .background(Color.Black.copy(alpha = 0.4f), CircleShape),
+                            .requiredSize(64.dp)
+                            .background(Color.Black.copy(alpha = 0.6f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.requiredSize(32.dp)
                         )
                     }
                 }
