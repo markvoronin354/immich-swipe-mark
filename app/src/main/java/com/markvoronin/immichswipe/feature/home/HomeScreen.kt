@@ -237,7 +237,8 @@ fun HomeScreen(
                                     sessionRepository = viewModel.getSessionRepository(),
                                     sessionKey = sessionKey,
                                     resetSignal = viewModel.resetRequestSignal,
-                                    userQuotaBytes = uiState.user?.quotaUsageInBytes
+                                    userQuotaBytes = uiState.user?.quotaUsageInBytes,
+                                    onBack = { viewModel.goBack() }
                                 )
                             } else {
                                 SwipePlaceholder(selectedAlbum = null)

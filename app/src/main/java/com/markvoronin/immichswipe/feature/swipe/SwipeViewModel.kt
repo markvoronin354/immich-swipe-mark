@@ -194,22 +194,26 @@ class SwipeViewModel(
             isAssetsLoadingFlow,
             isFetchingAssetsFlow
         ) { localDecisions, allAssetsFound, isInitialLoading, isFetching ->
-            val decisionMap = localDecisions.associate { entity ->
-                val d = try { SwipeDecision.valueOf(entity.decision) } catch (_: Exception) { SwipeDecision.KEEP }
-                entity.assetId to d
-            }
+            val validAssetIds = allAssetsFound.map { it.id }.toSet()
+            val decisionMap = localDecisions
+                .filter { it.assetId in validAssetIds }
+                .associate { entity ->
+                    val d = try { SwipeDecision.valueOf(entity.decision) } catch (_: Exception) { SwipeDecision.KEEP }
+                    entity.assetId to d
+                }
             val sizeMap = localDecisions.associate { it.assetId to (it.fileSize ?: 0L) }
             
-            val currentDecisions = _uiState.value.decisions
+            val currentDecisions = _uiState.value.decisions.filterKeys { it in validAssetIds }
             val currentSizes = _uiState.value.assetSizes
             val mergedDecisions = decisionMap + currentDecisions
             val mergedSizes = sizeMap + currentSizes
 
             val derivedHistory = if (_uiState.value.history.isEmpty()) {
-                localDecisions.map { it.assetId }
-            } else _uiState.value.history
+                localDecisions.filter { !it.isSynced && it.assetId in validAssetIds }.map { it.assetId }
+            } else _uiState.value.history.filter { it in validAssetIds }
 
-            masterWorkPile = (masterWorkPile + allAssetsFound).distinctBy { it.id }
+            val existingDetailsMap = masterWorkPile.associateBy { it.id }
+            masterWorkPile = allAssetsFound.map { asset -> existingDetailsMap[asset.id] ?: asset }
             
             val isResetting = localDecisions.isEmpty() && currentDecisions.isNotEmpty()
             val shouldJump = pendingJumpToFirstUnprocessed || _uiState.value.assets.isEmpty() || isResetting
@@ -577,8 +581,8 @@ class SwipeViewModel(
 
                 // 4. Update local work pile to remove deleted assets permanently for this session
                 if (toDelete.isNotEmpty()) {
+                    masterWorkPile = masterWorkPile.filter { it.id !in toDelete }
                     val updatedWorkPile = allAssetsFoundFlow.value.filter { it.id !in toDelete }
-                    masterWorkPile = updatedWorkPile
                     allAssetsFoundFlow.value = updatedWorkPile
                     
                     // Update the total count to reflect deletions
@@ -586,14 +590,23 @@ class SwipeViewModel(
                 }
 
                 // 5. Success state
+                val remainingDecisions = currentState.decisions.filterKeys { id -> id !in toDelete }
                 _uiState.update { it.copy(
                     isSyncing = false, 
                     showSummary = false, 
                     showSuccessAnimation = true,
                     // Remove deleted assets from current UI decisions too
-                    decisions = it.decisions.filterKeys { id -> id !in toDelete },
+                    decisions = remainingDecisions,
                     history = emptyList() // Reset history for undo after sync
                 ) }
+
+                // Force refresh sorted work pile so `_uiState.value.assets` and `currentIndex` are updated immediately
+                pendingJumpToFirstUnprocessed = true
+                refreshSortedWorkPile(
+                    jumpToFirstUnprocessed = true,
+                    overrideDecisions = remainingDecisions,
+                    overrideHistory = emptyList()
+                )
 
                 delay(2000)
                 _uiState.update { it.copy(showSuccessAnimation = false) }

@@ -133,6 +133,7 @@
     <string name="swipe_favorite">Favoris</string>
     <string name="swipe_archive">Archiver</string>
     <string name="swipe_locked">Verrouiller</string>
+    <string name="swipe_undo">Annuler</string>
     <string name="swipe_summary_title">Résumé du tri</string>
     <string name="swipe_sync_success">Synchronisé !</string>
     <string name="swipe_sync_success_desc">Vos changements sont sur Immich</string>

@@ -130,6 +130,7 @@
     <string name="swipe_favorite">Favoritos</string>
     <string name="swipe_archive">Archivar</string>
     <string name="swipe_locked">Bloquear</string>
+    <string name="swipe_undo">Deshacer</string>
     <string name="swipe_summary_title">Resumen de ordenación</string>
     <string name="swipe_sync_success">¡Sincronizado!</string>
     <string name="swipe_sync_success_desc">Tus cambios están en Immich</string>

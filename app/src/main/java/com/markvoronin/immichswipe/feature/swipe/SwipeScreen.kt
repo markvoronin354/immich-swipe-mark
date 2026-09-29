@@ -66,6 +66,7 @@ import com.markvoronin.immichswipe.feature.swipe.components.ResetConfirmationDia
 import com.markvoronin.immichswipe.feature.swipe.components.SwipeActionBar
 import com.markvoronin.immichswipe.feature.swipe.components.SwipeBulkOverlay
 import com.markvoronin.immichswipe.feature.swipe.components.SwipeCardDeck
+import androidx.activity.compose.BackHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
@@ -83,12 +84,24 @@ fun SwipeScreen(
     sessionKey: String,
     resetSignal: SharedFlow<Unit>,
     modifier: Modifier = Modifier,
-    userQuotaBytes: Long? = null
+    userQuotaBytes: Long? = null,
+    onBack: () -> Unit = {}
 ) {
     val viewModel: SwipeViewModel = viewModel(
         key = "$sessionKey-${album.id}",
         factory = SwipeViewModelFactory(assetRepository, sessionRepository, swipeDecisionRepository, album, userQuotaBytes)
     )
+
+    BackHandler(enabled = true) {
+        val state = viewModel.uiState.value
+        when {
+            state.showSummary -> viewModel.toggleSummary(false)
+            state.isFullscreenMode -> viewModel.toggleFullscreen(false)
+            state.showResetConfirmation -> viewModel.toggleResetConfirmation(false)
+            state.isBulkDeleteMode || state.isBulkKeepMode -> viewModel.exitBulkMode()
+            else -> onBack()
+        }
+    }
     
     LaunchedEffect(resetSignal) {
         resetSignal.collect {

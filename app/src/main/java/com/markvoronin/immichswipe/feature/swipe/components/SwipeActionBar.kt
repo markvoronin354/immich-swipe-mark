@@ -136,12 +136,12 @@ fun SwipeActionBar(
 
         IconButton(
             onClick = { viewModel.undo() },
-            enabled = uiState.currentIndex > 0 || uiState.history.isNotEmpty(),
+            enabled = uiState.history.isNotEmpty(),
             modifier = Modifier.size(if (uiState.showSwipeButtons) 36.dp else 44.dp)
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Undo,
-                contentDescription = stringResource(R.string.nav_back),
+                contentDescription = stringResource(R.string.swipe_undo),
                 modifier = Modifier.size(if (uiState.showSwipeButtons) 22.dp else 26.dp)
             )
         }

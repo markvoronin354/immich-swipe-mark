@@ -132,6 +132,7 @@
     <string name="swipe_favorite">Favorites</string>
     <string name="swipe_archive">Archive</string>
     <string name="swipe_locked">Lock</string>
+    <string name="swipe_undo">Undo</string>
     <string name="swipe_summary_title">Sorting summary</string>
     <string name="swipe_sync_success">Synced!</string>
     <string name="swipe_sync_success_desc">Your changes are on Immich</string>
