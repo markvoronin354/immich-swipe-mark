@@ -162,6 +162,7 @@
     <string name="common_retry">Retry</string>
     <string name="common_close">Close</string>
     <string name="common_loading">Loading…</string>
+    <string name="common_beta">BETA</string>
     <string name="backup_warning_title">Storage Sync</string>
     <string name="backup_warning_msg">To prevent Immich from automatically re-uploading photos you delete, you can now enable **\"Sync deletion with device\"** in Settings.\n\nThis will attempt to remove the local copy from your phone whenever you delete a photo from the server.</string>
     <string name="backup_warning_settings">Go to Settings</string>

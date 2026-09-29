@@ -27,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.markvoronin.immichswipe.R
@@ -96,7 +98,8 @@ fun ActionButtonsDialog(
                     selectedPosition = uiState.rotationButtonPosition,
                     onPositionSelected = { viewModel.setRotationButtonPosition(it) },
                     showIcon = uiState.showRotationButton,
-                    onShowIconChange = { viewModel.setShowRotationButton(it) }
+                    onShowIconChange = { viewModel.setShowRotationButton(it) },
+                    isBeta = true
                 )
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
@@ -144,7 +147,8 @@ fun IconPositionPicker(
     selectedPosition: IconPosition,
     onPositionSelected: (IconPosition) -> Unit,
     showIcon: Boolean,
-    onShowIconChange: (Boolean) -> Unit
+    onShowIconChange: (Boolean) -> Unit,
+    isBeta: Boolean = false
 ) {
     Column(modifier = Modifier.padding(16.dp)) {
         Row(
@@ -152,12 +156,19 @@ fun IconPositionPicker(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
+            Column(
                 modifier = Modifier.weight(1f)
-            )
+            ) {
+                if (isBeta) {
+                    BetaBadge()
+                    Spacer(Modifier.height(4.dp))
+                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
             Switch(
                 checked = showIcon,
                 onCheckedChange = onShowIconChange,
@@ -239,3 +250,23 @@ fun CornerButton(
         }
     }
 }
+
+@Composable
+fun BetaBadge(
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(6.dp),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+    ) {
+        Text(
+            text = stringResource(R.string.common_beta),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+        )
+    }
+}
+

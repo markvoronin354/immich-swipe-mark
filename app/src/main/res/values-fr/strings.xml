@@ -163,6 +163,7 @@
     <string name="common_retry">Réessayer</string>
     <string name="common_close">Fermer</string>
     <string name="common_loading">Chargement…</string>
+    <string name="common_beta">BETA</string>
     <string name="backup_warning_title">Synchro Stockage</string>
     <string name="backup_warning_msg">Pour éviter qu\'Immich ne re-sauvegarde les photos supprimées, vous pouvez activer la **\"Synchro. suppression locale\"** dans les Paramètres.\n\nCela tentera de supprimer la copie locale de votre téléphone à chaque fois que vous supprimez une photo du serveur.</string>
     <string name="backup_warning_settings">Aller aux Paramètres</string>
