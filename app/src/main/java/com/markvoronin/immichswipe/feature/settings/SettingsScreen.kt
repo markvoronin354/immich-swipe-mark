@@ -87,7 +87,8 @@ import com.markvoronin.immichswipe.core.AppTheme
 import com.markvoronin.immichswipe.core.CardDisplayMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SortOrder
-import com.markvoronin.immichswipe.feature.settings.components.ActionButtonsDialog
+import androidx.compose.animation.AnimatedContent
+import com.markvoronin.immichswipe.feature.settings.components.ActionButtonsScreen
 import com.markvoronin.immichswipe.feature.settings.components.ClearCacheDialog
 import com.markvoronin.immichswipe.feature.settings.components.DatabaseActionDialog
 import com.markvoronin.immichswipe.feature.settings.components.LogsDialog
@@ -144,13 +145,25 @@ fun SettingsScreen(
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState())
-    ) {
+    AnimatedContent(
+        targetState = uiState.showActionButtonsDialog,
+        label = "settings_menu_transition"
+    ) { showActionButtonsSubMenu ->
+        if (showActionButtonsSubMenu) {
+            ActionButtonsScreen(
+                uiState = uiState,
+                viewModel = viewModel,
+                onBack = { viewModel.setShowActionButtonsDialog(false) },
+                modifier = modifier
+            )
+        } else {
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
         SettingsSection(title = stringResource(R.string.settings_section_appearance), icon = Icons.Default.Palette) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -645,6 +658,8 @@ fun SettingsScreen(
         }
 
         Spacer(Modifier.height(88.dp))
+            }
+        }
     }
 
     if (uiState.showLogsDialog) {
@@ -676,14 +691,6 @@ fun SettingsScreen(
                 }
             },
             onDismiss = { viewModel.dismissDatabaseConfirmation() }
-        )
-    }
-
-    if (uiState.showActionButtonsDialog) {
-        ActionButtonsDialog(
-            uiState = uiState,
-            viewModel = viewModel,
-            onDismiss = { viewModel.setShowActionButtonsDialog(false) }
         )
     }
 

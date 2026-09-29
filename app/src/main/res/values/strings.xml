@@ -161,6 +161,7 @@
     <string name="common_cancel">Cancel</string>
     <string name="common_retry">Retry</string>
     <string name="common_close">Close</string>
+    <string name="common_back">Back</string>
     <string name="common_loading">Loading…</string>
     <string name="common_beta">BETA</string>
     <string name="backup_warning_title">Storage Sync</string>

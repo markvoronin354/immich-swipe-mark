@@ -159,6 +159,7 @@
     <string name="common_cancel">Cancelar</string>
     <string name="common_retry">Reintentar</string>
     <string name="common_close">Cerrar</string>
+    <string name="common_back">Volver</string>
     <string name="common_loading">Cargando…</string>
     <string name="common_beta">BETA</string>
     <string name="backup_warning_title">Sincronización de almacenamiento</string>

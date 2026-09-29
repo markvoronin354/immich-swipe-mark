@@ -162,6 +162,7 @@
     <string name="common_cancel">Annuler</string>
     <string name="common_retry">Réessayer</string>
     <string name="common_close">Fermer</string>
+    <string name="common_back">Retour</string>
     <string name="common_loading">Chargement…</string>
     <string name="common_beta">BETA</string>
     <string name="backup_warning_title">Synchro Stockage</string>
