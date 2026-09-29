@@ -368,7 +368,7 @@ fun ProfilePopup(
                         null
                     }
                 }
-                val versionName = packageInfo?.versionName ?: "3.0.2"
+                val versionName = packageInfo?.versionName ?: "3.1.0"
                 
                 Text(
                     text = "v$versionName",
