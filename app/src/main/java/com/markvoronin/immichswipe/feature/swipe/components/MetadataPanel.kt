@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -52,19 +53,19 @@ fun MetadataPanel(
     onClose: () -> Unit,
     onDrag: (Float) -> Unit = {},
     onDragEnd: () -> Unit = {},
-    offsetYValue: Float = 0f,
+    panelProgress: Float = 0f,
     maxHeightPx: Float = 0f
 ) {
     val scrollState = rememberScrollState()
 
-    LaunchedEffect(offsetYValue) {
-        if (offsetYValue == 0f) {
+    LaunchedEffect(panelProgress) {
+        if (panelProgress == 0f) {
             scrollState.scrollTo(0)
         }
     }
 
     // Connection to pass downward drags to the parent when at the top of the scroll
-    val nestedScrollConnection = remember(scrollState, offsetYValue, maxHeightPx) {
+    val nestedScrollConnection = remember(scrollState, panelProgress, maxHeightPx) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 // If dragging DOWN (available.y > 0) and at top of scroll, consume to move panel down
@@ -72,7 +73,7 @@ fun MetadataPanel(
                 if (available.y > 0 && scrollState.value == 0) {
                     onDrag(available.y)
                     return Offset(0f, available.y)
-                } else if (available.y < 0 && scrollState.value == 0 && maxHeightPx > 0f && offsetYValue > -maxHeightPx + 1f) {
+                } else if (available.y < 0 && scrollState.value == 0 && panelProgress < 1f) {
                     onDrag(available.y)
                     return Offset(0f, available.y)
                 }
@@ -101,14 +102,15 @@ fun MetadataPanel(
 
     Card(
         modifier = Modifier
-            .wrapContentHeight()
+            .fillMaxWidth()
             .nestedScroll(nestedScrollConnection),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)),
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
     ) {
         Column(
             modifier = Modifier
-                .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 48.dp)
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp)
                 .verticalScroll(scrollState)
         ) {
             Box(modifier = Modifier.size(40.dp, 4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.outlineVariant).align(Alignment.CenterHorizontally))

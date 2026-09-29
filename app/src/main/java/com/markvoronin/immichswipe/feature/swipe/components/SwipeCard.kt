@@ -48,6 +48,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,16 +60,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
@@ -119,8 +122,8 @@ fun SwipeCard(
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val scope = rememberCoroutineScope()
-    val offsetX = remember { Animatable(0f) }
-    val offsetY = remember { Animatable(0f) }
+    val offsetX = remember(asset.id) { Animatable(0f) }
+    val panelProgress = remember(asset.id) { Animatable(0f) }
 
     // Directional lock for gestures
     var dragDirection by remember { mutableIntStateOf(0) } // 0: undecided, 1: horizontal, 2: vertical
@@ -148,9 +151,8 @@ fun SwipeCard(
         }
     }
 
-    var metadataHeightPx by remember { mutableStateOf(0f) }
-    val configuration = LocalConfiguration.current
-    val maxHeightPx = with(density) { (configuration.screenHeightDp * 0.6f).dp.toPx() }
+    var metadataHeightPx by remember(asset.id) { mutableFloatStateOf(0f) }
+    val maxHeightPx = with(density) { 300.dp.toPx() }
 
     val internalExoPlayer = remember(asset.id, isNext, isFullscreenOpen) {
         if (asset.type == "VIDEO" && !isNext && providedPlayer == null && !isFullscreenOpen) {
@@ -306,28 +308,28 @@ fun SwipeCard(
                         rotationZ = offsetX.value / 40f
                     }
                 }
-                .pointerInput(isNext) {
+                .pointerInput(isNext, asset.id) {
                     if (isNext) return@pointerInput
-                    var dragStartY = 0f
                     var dragStartX = 0f
+                    var startProgress = 0f
                     detectDragGestures(
                         onDragStart = { 
                             dragDirection = 0
-                            dragStartY = offsetY.value
                             dragStartX = offsetX.value
+                            startProgress = panelProgress.value
                         },
                         onDragEnd = {
                             scope.launch {
                                 if (currentIsHolding) {
                                     offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
-                                    offsetY.animateTo(dragStartY, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    panelProgress.animateTo(startProgress, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     dragDirection = 0
                                     wasHoldDetected = false
                                     pausedByHoldState = false
                                     return@launch
                                 }
                                 val currentX = offsetX.value
-                                val currentY = offsetY.value
+                                val currentProgress = panelProgress.value
 
                                 if (dragDirection == 1) { // Horizontal swipe
                                     if (currentX > 250) {
@@ -342,16 +344,16 @@ fun SwipeCard(
                                 } else if (dragDirection == 2) { // Vertical metadata
                                     // Reset horizontal offset so card doesn't stay shifted/rotated
                                     offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
-                                    // Snap based on final position
-                                    if (currentY <= -metadataHeightPx * 0.4f) {
-                                        offsetY.animateTo(-metadataHeightPx, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    // Snap based on final progress
+                                    if (currentProgress >= 0.4f) {
+                                        panelProgress.animateTo(1f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     } else {
-                                        offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                        panelProgress.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     }
                                 } else {
                                     // Small movement, reset both
                                     offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
-                                    offsetY.animateTo(dragStartY, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    panelProgress.animateTo(startProgress, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                 }
                                 dragDirection = 0
                             }
@@ -360,23 +362,23 @@ fun SwipeCard(
                             scope.launch {
                                 if (currentIsHolding) {
                                     offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
-                                    offsetY.animateTo(dragStartY, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    panelProgress.animateTo(startProgress, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     dragDirection = 0
                                     wasHoldDetected = false
                                     pausedByHoldState = false
                                     return@launch
                                 }
-                                val currentY = offsetY.value
+                                val currentProgress = panelProgress.value
                                 // Always reset horizontal offset when canceling or in vertical mode
                                 offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
-                                if (dragDirection == 2 || currentY < -10f) {
-                                    if (currentY <= -metadataHeightPx * 0.4f) {
-                                        offsetY.animateTo(-metadataHeightPx, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                if (dragDirection == 2 || currentProgress > 0.1f) {
+                                    if (currentProgress >= 0.4f) {
+                                        panelProgress.animateTo(1f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     } else {
-                                        offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                        panelProgress.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     }
                                 } else {
-                                    offsetY.animateTo(dragStartY, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                    panelProgress.animateTo(startProgress, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                 }
                                 dragDirection = 0
                             }
@@ -389,12 +391,12 @@ fun SwipeCard(
                             
                             if (dragDirection == 0) {
                                 val accumulatedDX = abs(offsetX.value - dragStartX)
-                                val accumulatedDY = abs(offsetY.value - dragStartY)
+                                val accumulatedDY = abs(dragAmount.y)
                                 
                                 // Decision threshold: 20 pixels of movement
                                 if (accumulatedDX > 20 || accumulatedDY > 20) {
-                                    // If panel is open or moving (dragStartY < -10f), strictly lock to vertical drag
-                                    if (dragStartY < -10f && accumulatedDY > 5) {
+                                    // If panel is open or moving, strictly lock to vertical drag
+                                    if (startProgress > 0.1f && accumulatedDY > 5) {
                                         dragDirection = 2
                                     } else {
                                         dragDirection = if (accumulatedDX > accumulatedDY) 1 else 2
@@ -402,7 +404,7 @@ fun SwipeCard(
 
                                     // Immediately animate back the non-chosen axis when direction locks
                                     if (dragDirection == 1) {
-                                        scope.launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                        scope.launch { panelProgress.animateTo(startProgress, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
                                     } else {
                                         scope.launch { offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
                                     }
@@ -413,11 +415,17 @@ fun SwipeCard(
                                 if (dragDirection == 1) {
                                     offsetX.snapTo(offsetX.value + dragAmount.x)
                                 } else if (dragDirection == 2) {
-                                    offsetY.snapTo((offsetY.value + dragAmount.y).coerceIn(-metadataHeightPx, 0f))
+                                    if (metadataHeightPx > 0f) {
+                                        val deltaProgress = -dragAmount.y / metadataHeightPx
+                                        panelProgress.snapTo((panelProgress.value + deltaProgress).coerceIn(0f, 1f))
+                                    }
                                 } else {
                                     // Track both until locked
                                     offsetX.snapTo(offsetX.value + dragAmount.x)
-                                    offsetY.snapTo((offsetY.value + dragAmount.y).coerceIn(-metadataHeightPx, 0f))
+                                    if (metadataHeightPx > 0f) {
+                                        val deltaProgress = -dragAmount.y / metadataHeightPx
+                                        panelProgress.snapTo((panelProgress.value + deltaProgress).coerceIn(0f, 1f))
+                                    }
                                 }
                             }
                         }
@@ -469,8 +477,8 @@ fun SwipeCard(
                                     modifier = Modifier.fillMaxSize(),
                                     resetOnRelease = true,
                                     onTap = { offset, size ->
-                                        if (offsetY.value < -20f) {
-                                            scope.launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                        if (panelProgress.value > 0.1f) {
+                                            scope.launch { panelProgress.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
                                         } else if (!ignoreNextTap) {
                                             val width = size.width.toFloat()
                                             if (config.tapToSwipeEnabled) {
@@ -499,8 +507,8 @@ fun SwipeCard(
                                         }
                                         if (wasReleased == true) {
                                             // Fast tap detected
-                                            if (offsetY.value < -20f) {
-                                                scope.launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                            if (panelProgress.value > 0.1f) {
+                                                scope.launch { panelProgress.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
                                                 ignoreNextTap = true
                                             } else if (config.tapToSwipeEnabled) {
                                                 val width = size.width.toFloat()
@@ -574,8 +582,8 @@ fun SwipeCard(
                         aspectRatio = asset.exifInfo?.let { it.imageWidth?.toFloat()?.div(it.imageHeight?.toFloat() ?: 1f) },
                         isFillMode = config.cardDisplayMode == CardDisplayMode.FILL,
                         onTap = { offset, size ->
-                            if (offsetY.value < -20f) {
-                                scope.launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                            if (panelProgress.value > 0.1f) {
+                                scope.launch { panelProgress.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
                             } else if (!ignoreNextTap) {
                                 val width = size.width.toFloat()
                                 if (config.tapToSwipeEnabled) {
@@ -598,8 +606,8 @@ fun SwipeCard(
                             }
                             if (wasReleased == true) {
                                 // Fast tap detected
-                                if (offsetY.value < -20f) {
-                                    scope.launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                if (panelProgress.value > 0.1f) {
+                                    scope.launch { panelProgress.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
                                     ignoreNextTap = true
                                 } else if (config.tapToSwipeEnabled) {
                                     val width = size.width.toFloat()
@@ -795,42 +803,50 @@ fun SwipeCard(
                 if (!isNext) {
                     Box(
                         modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .zIndex(1f)
-                            .heightIn(max = with(density) { maxHeightPx.toDp() })
-                            .onSizeChanged { metadataHeightPx = it.height.toFloat() }
-                            .graphicsLayer { translationY = metadataHeightPx + offsetY.value }
+                            .fillMaxSize()
+                            .zIndex(1f),
+                        contentAlignment = Alignment.BottomCenter
                     ) {
-                        MetadataPanel(
-                            asset = asset,
-                            onClose = {
-                                scope.launch {
-                                    offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
-                                    offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 300.dp)
+                                .onSizeChanged { metadataHeightPx = it.height.toFloat() }
+                                .offset {
+                                    val yOffset = (metadataHeightPx * (1f - panelProgress.value)).toInt()
+                                    IntOffset(0, yOffset)
                                 }
-                            },
-                            onDrag = { delta ->
-                                scope.launch {
-                                    if (offsetX.value != 0f) {
-                                        offsetX.snapTo(0f)
+                        ) {
+                            MetadataPanel(
+                                asset = asset,
+                                onClose = {
+                                    scope.launch {
+                                        offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                        panelProgress.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     }
-                                    offsetY.snapTo((offsetY.value + delta).coerceIn(-metadataHeightPx, 0f))
-                                }
-                            },
-                            onDragEnd = {
-                                scope.launch {
-                                    val currentY = offsetY.value
-                                    offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
-                                    // Snap based on position
-                                    if (currentY <= -metadataHeightPx * 0.4f) {
-                                        offsetY.animateTo(-metadataHeightPx, spring(dampingRatio = Spring.DampingRatioLowBouncy))
-                                    } else {
-                                        offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                },
+                                onDrag = { deltaY ->
+                                    scope.launch {
+                                        if (offsetX.value != 0f) {
+                                            offsetX.snapTo(0f)
+                                        }
+                                        if (metadataHeightPx > 0f) {
+                                            val deltaProgress = -deltaY / metadataHeightPx
+                                            panelProgress.snapTo((panelProgress.value + deltaProgress).coerceIn(0f, 1f))
+                                        }
+                                    }
+                                },
+                                onDragEnd = {
+                                    scope.launch {
+                                        offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                        if (panelProgress.value >= 0.4f) {
+                                            panelProgress.animateTo(1f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                        } else {
+                                            panelProgress.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     }
                                 }
                             },
-                            offsetYValue = offsetY.value,
+                            panelProgress = panelProgress.value,
                             maxHeightPx = metadataHeightPx
                         )
                     }
@@ -868,6 +884,7 @@ fun SwipeCard(
             }
         }
     }
+}
 }
 }
 }
