@@ -3,7 +3,6 @@ package com.markvoronin.immichswipe.feature.swipe
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markvoronin.immichswipe.core.AppLogger
-import com.markvoronin.immichswipe.core.CardDisplayMode
 import com.markvoronin.immichswipe.core.IconPosition
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SessionManager
@@ -105,11 +104,11 @@ class SwipeViewModel(
             playbackBehavior = values[0] as PlaybackBehavior,
             fullscreenButtonPosition = values[1] as IconPosition,
             immichButtonPosition = values[2] as IconPosition,
-            cardDisplayButtonPosition = values[3] as IconPosition,
+            rotationButtonPosition = values[3] as IconPosition,
             muteButtonPosition = values[4] as IconPosition,
             showFullscreenButton = values[5] as Boolean,
             showImmichButton = values[6] as Boolean,
-            showCardDisplayButton = values[7] as Boolean,
+            showRotationButton = values[7] as Boolean,
             showMuteButton = values[8] as Boolean,
             showDownloadButton = values[9] as Boolean,
             downloadButtonPosition = values[10] as IconPosition,
@@ -425,10 +424,20 @@ class SwipeViewModel(
     fun toggleFullscreen(visible: Boolean) { _uiState.update { it.copy(isFullscreenMode = visible) } }
     fun toggleResetConfirmation(visible: Boolean) { _uiState.update { it.copy(showResetConfirmation = visible) } }
     fun toggleMute() { _uiState.update { it.copy(isMuted = !_uiState.value.isMuted) } }
-    fun toggleDisplayMode() {
-        val next = if (_uiState.value.cardDisplayMode == CardDisplayMode.FILL) CardDisplayMode.FIT else CardDisplayMode.FILL
-        _uiState.update { it.copy(cardDisplayMode = next) }
+    fun rotateCurrentAsset() {
+        val asset = _uiState.value.currentAsset ?: return
+        val currentRot = _uiState.value.getRotation(asset.id)
+        val nextRot = (currentRot + 90) % 360
+        val newRotations = _uiState.value.localRotations.toMutableMap()
+        newRotations[asset.id] = nextRot
+        _uiState.update { it.copy(localRotations = newRotations) }
+
+        viewModelScope.launch {
+            val config = sessionRepository.sessionConfig.first() ?: return@launch
+            assetRepository.updateAssetRotation(asset.id, config.userId, nextRot)
+        }
     }
+    fun toggleDisplayMode() { rotateCurrentAsset() }
     fun toggleArchive() { onSwipe(SwipeDecision.ARCHIVE) }
     fun toggleLock() { onSwipe(SwipeDecision.LOCK) }
     fun enterBulkMode(isDelete: Boolean) { _uiState.update { it.copy(isBulkDeleteMode = isDelete, isBulkKeepMode = !isDelete, bulkSelection = emptySet()) } }
@@ -548,6 +557,12 @@ class SwipeViewModel(
                 val toMarkSynced = allSwipedIds.filter { it !in toDelete }
                 if (toMarkSynced.isNotEmpty()) {
                     swipeDecisionRepository.markAsSynced(toMarkSynced, config.userId)
+                }
+
+                // 2b. Persist rotation changes permanently locally and sync to Immich server
+                currentState.localRotations.forEach { (assetId, rot) ->
+                    assetRepository.updateAssetRotation(assetId, config.userId, rot)
+                    assetRepository.syncAssetRotationToServer(assetId, rot)
                 }
                 
                 // 3. Save sync history

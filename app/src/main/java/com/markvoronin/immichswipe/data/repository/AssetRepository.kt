@@ -4,7 +4,9 @@ import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.data.api.DeleteAssetsRequest
 import com.markvoronin.immichswipe.data.api.ImmichApi
+import com.markvoronin.immichswipe.data.api.RotateAssetRequest
 import com.markvoronin.immichswipe.data.api.SearchAssetsRequest
+import com.markvoronin.immichswipe.data.api.UpdateAssetDetailRequest
 import com.markvoronin.immichswipe.data.api.UpdateAssetsRequest
 import com.markvoronin.immichswipe.data.local.dao.AlbumAssetDao
 import com.markvoronin.immichswipe.data.local.entity.AlbumAssetEntity
@@ -16,8 +18,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import retrofit2.HttpException
 
 data class AssetBatch(
     val assets: List<Asset>,
@@ -67,7 +69,8 @@ class AssetRepository(
                         fileSizeInBytes = entity.fileSizeInBytes,
                         imageWidth = entity.imageWidth,
                         imageHeight = entity.imageHeight
-                    )
+                    ),
+                    rotation = entity.rotation
                 )
             }
         }
@@ -225,7 +228,8 @@ class AssetRepository(
                         fileSizeInBytes = entity.fileSizeInBytes,
                         imageWidth = entity.imageWidth,
                         imageHeight = entity.imageHeight
-                    )
+                    ),
+                    rotation = entity.rotation
                 )
             }
         }
@@ -353,6 +357,54 @@ class AssetRepository(
             )
         }
     }
+
+    suspend fun updateAssetRotation(assetId: String, userId: String, rotation: Int) {
+        albumAssetDao?.updateRotation(assetId, userId, rotation)
+    }
+
+    suspend fun syncAssetRotationToServer(assetId: String, rotation: Int) {
+        val normalizedRotation = ((rotation % 360) + 360) % 360
+        val cwSteps = (normalizedRotation / 90) % 4
+        if (cwSteps == 0) return
+
+        AppLogger.d("AssetRepo", "Syncing rotation to Immich server: assetId=$assetId, rotation=$normalizedRotation°, steps=$cwSteps")
+
+        var success = false
+        try {
+            repeat(cwSteps) {
+                api.rotateAsset(assetId, RotateAssetRequest(direction = "cw"))
+            }
+            success = true
+            AppLogger.i("AssetRepo", "Successfully rotated asset $assetId on Immich server ($cwSteps x 90° cw)")
+        } catch (e: Exception) {
+            val errBody = (e as? HttpException)?.response()?.errorBody()?.string()
+            AppLogger.w("AssetRepo", "POST /api/assets/{id}/rotate failed for asset $assetId: ${e.message} body=$errBody")
+        }
+
+        if (!success) {
+            try {
+                api.updateAssetDetail(
+                    assetId = assetId,
+                    request = UpdateAssetDetailRequest(rotation = normalizedRotation)
+                )
+                AppLogger.i("AssetRepo", "Successfully updated asset rotation via PUT /api/assets/{id} for $assetId")
+            } catch (e: Exception) {
+                try {
+                    api.updateAssets(
+                        UpdateAssetsRequest(
+                            ids = listOf(assetId),
+                            rotation = normalizedRotation
+                        )
+                    )
+                    AppLogger.i("AssetRepo", "Successfully updated asset rotation via PUT /api/assets for $assetId")
+                } catch (e2: Exception) {
+                    val errBody = (e2 as? HttpException)?.response()?.errorBody()?.string()
+                    AppLogger.e("AssetRepo", "Failed to sync rotation to Immich server for asset $assetId: ${e2.message} body=$errBody", e2)
+                }
+            }
+        }
+    }
+
     suspend fun getDuplicatesCount(): Int {
         return try {
             val clusters = api.getDuplicates()

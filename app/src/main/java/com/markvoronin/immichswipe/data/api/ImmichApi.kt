@@ -40,7 +40,26 @@ interface ImmichApi {
 
     @PUT("api/assets")
     suspend fun updateAssets(@Body request: UpdateAssetsRequest)
+
+    @PUT("api/assets/{id}")
+    suspend fun updateAssetDetail(
+        @Path("id") assetId: String,
+        @Body request: UpdateAssetDetailRequest
+    )
+
+    @POST("api/assets/{id}/rotate")
+    suspend fun rotateAsset(
+        @Path("id") assetId: String,
+        @Body request: RotateAssetRequest
+    )
 }
+
+/**
+ * Corps de la requête pour la rotation d'un asset.
+ */
+data class RotateAssetRequest(
+    val direction: String = "cw"
+)
 
 /**
  * Corps de la requête pour mettre à jour des assets.
@@ -48,7 +67,17 @@ interface ImmichApi {
 data class UpdateAssetsRequest(
     val ids: List<String>,
     val isFavorite: Boolean? = null,
-    val visibility: String? = null // archive, timeline, hidden, locked
+    val visibility: String? = null, // archive, timeline, hidden, locked
+    val rotation: Int? = null
+)
+
+/**
+ * Corps de la requête pour mettre à jour un asset individuel.
+ */
+data class UpdateAssetDetailRequest(
+    val rotation: Int? = null,
+    val isFavorite: Boolean? = null,
+    val isArchived: Boolean? = null
 )
 
 /**

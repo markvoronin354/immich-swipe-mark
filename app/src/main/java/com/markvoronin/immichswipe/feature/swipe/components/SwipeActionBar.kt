@@ -48,11 +48,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.SortOrder
+import com.markvoronin.immichswipe.feature.swipe.MaterialGreen
+import com.markvoronin.immichswipe.feature.swipe.MaterialRed
 import com.markvoronin.immichswipe.feature.swipe.SwipeDecision
 import com.markvoronin.immichswipe.feature.swipe.SwipeUiState
 import com.markvoronin.immichswipe.feature.swipe.SwipeViewModel
-import com.markvoronin.immichswipe.feature.swipe.MaterialGreen
-import com.markvoronin.immichswipe.feature.swipe.MaterialRed
 
 @Composable
 fun SwipeActionBar(

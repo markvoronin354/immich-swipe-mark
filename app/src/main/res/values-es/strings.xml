@@ -109,7 +109,7 @@
     <string name="settings_display_mode_label">Visualización predeterminada de los medios</string>
     <string name="settings_display_mode_fill">Rellenar</string>
     <string name="settings_display_mode_fit">Ajustar</string>
-    <string name="settings_display_mode_pos_label">Posición del botón de modo de visualización</string>
+    <string name="settings_rotation_pos_label">Posición del botón de rotación</string>
     <string name="settings_mute_pos_label">Posición del botón Mute</string>
     <string name="settings_download_pos_label">Posición del botón Descargar</string>
     <string name="settings_share_pos_label">Posición del botón Compartir</string>
@@ -119,7 +119,7 @@
     <string name="settings_swap_summary_archive_desc">Reemplaza el botón Archivar por un botón Resumen en la barra de clasificación</string>
     <string name="settings_sync_local_deletion_label">Sincronizar eliminación local</string>
     <string name="settings_sync_local_deletion_desc">Cuando eliminas una foto de Immich, también intenta eliminar el archivo local de tu dispositivo para evitar que se vuelva a subir.</string>
-    <string name="swipe_toggle_display">Cambiar modo de visualización</string>
+    <string name="swipe_rotate_asset">Rotar recurso 90°</string>
 
     <!-- Pantalla de swipe -->
     <string name="swipe_keep">Conservar</string>

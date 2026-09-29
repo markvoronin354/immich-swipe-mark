@@ -111,7 +111,7 @@
     <string name="settings_display_mode_label">Default media display</string>
     <string name="settings_display_mode_fill">Fill</string>
     <string name="settings_display_mode_fit">Fit</string>
-    <string name="settings_display_mode_pos_label">Display mode button position</string>
+    <string name="settings_rotation_pos_label">Rotate asset button position</string>
     <string name="settings_mute_pos_label">Mute button position</string>
     <string name="settings_download_pos_label">Download button position</string>
     <string name="settings_share_pos_label">Share button position</string>
@@ -121,7 +121,7 @@
     <string name="settings_swap_summary_archive_desc">Replace the Archive button with a Summary button in the sorting bar</string>
     <string name="settings_sync_local_deletion_label">Sync deletion with device</string>
     <string name="settings_sync_local_deletion_desc">When you delete a photo from Immich, also attempt to delete the local file from your device storage to prevent re-uploading.</string>
-    <string name="swipe_toggle_display">Toggle display mode</string>
+    <string name="swipe_rotate_asset">Rotate asset 90° clockwise</string>
 
     <!-- Swipe Screen -->
     <string name="swipe_keep">Keep</string>

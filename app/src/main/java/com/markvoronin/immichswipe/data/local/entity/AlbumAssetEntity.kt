@@ -22,5 +22,6 @@ data class AlbumAssetEntity(
     val originalFileName: String? = null,
     val fileSizeInBytes: Long? = null,
     val imageWidth: Int? = null,
-    val imageHeight: Int? = null
+    val imageHeight: Int? = null,
+    val rotation: Int = 0
 )

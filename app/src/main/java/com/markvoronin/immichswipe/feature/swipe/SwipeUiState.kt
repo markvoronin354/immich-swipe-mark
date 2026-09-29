@@ -36,13 +36,13 @@ data class SwipeUiState(
     val playbackBehavior: PlaybackBehavior = PlaybackBehavior.PAUSE_OTHERS,
     val fullscreenButtonPosition: IconPosition = IconPosition.TOP_RIGHT,
     val immichButtonPosition: IconPosition = IconPosition.TOP_LEFT,
-    val cardDisplayButtonPosition: IconPosition = IconPosition.BOTTOM_LEFT,
+    val rotationButtonPosition: IconPosition = IconPosition.BOTTOM_LEFT,
     val muteButtonPosition: IconPosition = IconPosition.BOTTOM_RIGHT,
     val downloadButtonPosition: IconPosition = IconPosition.BOTTOM_LEFT,
     val shareButtonPosition: IconPosition = IconPosition.BOTTOM_RIGHT,
     val showFullscreenButton: Boolean = true,
     val showImmichButton: Boolean = true,
-    val showCardDisplayButton: Boolean = false,
+    val showRotationButton: Boolean = false,
     val showMuteButton: Boolean = false,
     val showDownloadButton: Boolean = true,
     val showShareButton: Boolean = true,
@@ -53,6 +53,7 @@ data class SwipeUiState(
     val sortCategory: com.markvoronin.immichswipe.core.SortCategory = com.markvoronin.immichswipe.core.SortCategory.TIME,
     val sortOrder: SortOrder = SortOrder.CHRONOLOGICAL_DESC,
     val localFavorites: Map<String, Boolean> = emptyMap(), // Map de AssetID -> Nouveau statut favori
+    val localRotations: Map<String, Int> = emptyMap(), // Map de AssetID -> Rotation cumulative (0, 90, 180, 270)
     val cardDisplayMode: CardDisplayMode = CardDisplayMode.FIT,
     val showSwipeButtons: Boolean = false,
     val swapSummaryArchive: Boolean = false,
@@ -70,6 +71,15 @@ data class SwipeUiState(
     val bulkLastIndex: Int? = null
 ) {
     val currentAsset: Asset? get() = assets.getOrNull(bulkLastIndex ?: currentIndex)
+    val cardDisplayButtonPosition: IconPosition get() = rotationButtonPosition
+    val showCardDisplayButton: Boolean get() = showRotationButton
+
+    /**
+     * Retourne la rotation d'un asset (0, 90, 180, 270) en tenant compte des modifs locales.
+     */
+    fun getRotation(assetId: String): Int {
+        return localRotations[assetId] ?: assets.find { it.id == assetId }?.rotation ?: 0
+    }
     
     /**
      * Retourne si un asset est favori en tenant compte des modifs locales.

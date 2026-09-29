@@ -112,7 +112,7 @@
     <string name="settings_display_mode_label">Affichage par défaut des médias</string>
     <string name="settings_display_mode_fill">Remplir</string>
     <string name="settings_display_mode_fit">Ajuster</string>
-    <string name="settings_display_mode_pos_label">Position du bouton Mode d\'affichage</string>
+    <string name="settings_rotation_pos_label">Position du bouton de rotation du média</string>
     <string name="settings_mute_pos_label">Position du bouton Mute</string>
     <string name="settings_download_pos_label">Position du bouton Téléchargement</string>
     <string name="settings_share_pos_label">Position du bouton Partage</string>
@@ -122,7 +122,7 @@
     <string name="settings_swap_summary_archive_desc">Remplace le bouton Archiver par un bouton Résumé dans la barre de tri</string>
     <string name="settings_sync_local_deletion_label">Sycnhro. suppression locale</string>
     <string name="settings_sync_local_deletion_desc">Lorsque vous supprimez une photo d\'Immich, tente également de supprimer le fichier local de votre téléphone pour éviter qu\'il ne soit re-sauvegardé.</string>
-    <string name="swipe_toggle_display">Changer le mode d\'affichage</string>
+    <string name="swipe_rotate_asset">Pivoter le média à 90°</string>
 
     <!-- Écran Swipe -->
     <string name="swipe_keep">Garder</string>

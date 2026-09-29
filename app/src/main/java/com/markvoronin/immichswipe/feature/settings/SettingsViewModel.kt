@@ -81,8 +81,8 @@ class SettingsViewModel(
             }
         }
         viewModelScope.launch {
-            sessionRepository.cardDisplayButtonPosition.collect { pos ->
-                _uiState.value = _uiState.value.copy(cardDisplayButtonPosition = pos)
+            sessionRepository.rotationButtonPosition.collect { pos ->
+                _uiState.value = _uiState.value.copy(rotationButtonPosition = pos)
             }
         }
         viewModelScope.launch {
@@ -111,8 +111,8 @@ class SettingsViewModel(
             }
         }
         viewModelScope.launch {
-            sessionRepository.showCardDisplayButton.collect { show ->
-                _uiState.value = _uiState.value.copy(showCardDisplayButton = show)
+            sessionRepository.showRotationButton.collect { show ->
+                _uiState.value = _uiState.value.copy(showRotationButton = show)
             }
         }
         viewModelScope.launch {
@@ -217,11 +217,12 @@ class SettingsViewModel(
         }
     }
 
-    fun setCardDisplayButtonPosition(pos: IconPosition) {
+    fun setRotationButtonPosition(pos: IconPosition) {
         viewModelScope.launch {
-            sessionRepository.saveCardDisplayButtonPosition(pos)
+            sessionRepository.saveRotationButtonPosition(pos)
         }
     }
+    fun setCardDisplayButtonPosition(pos: IconPosition) { setRotationButtonPosition(pos) }
 
     fun setMuteButtonPosition(pos: IconPosition) {
         viewModelScope.launch {
@@ -249,9 +250,10 @@ class SettingsViewModel(
         viewModelScope.launch { sessionRepository.saveShowImmichButton(show) }
     }
 
-    fun setShowCardDisplayButton(show: Boolean) {
-        viewModelScope.launch { sessionRepository.saveShowCardDisplayButton(show) }
+    fun setShowRotationButton(show: Boolean) {
+        viewModelScope.launch { sessionRepository.saveShowRotationButton(show) }
     }
+    fun setShowCardDisplayButton(show: Boolean) { setShowRotationButton(show) }
 
     fun setShowMuteButton(show: Boolean) {
         viewModelScope.launch { sessionRepository.saveShowMuteButton(show) }

@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -46,11 +45,11 @@ import androidx.compose.ui.zIndex
 import androidx.media3.exoplayer.ExoPlayer
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.SortOrder
+import com.markvoronin.immichswipe.feature.swipe.SwipeCard
+import com.markvoronin.immichswipe.feature.swipe.SwipeCardActions
+import com.markvoronin.immichswipe.feature.swipe.SwipeCardConfig
 import com.markvoronin.immichswipe.feature.swipe.SwipeUiState
 import com.markvoronin.immichswipe.feature.swipe.SwipeViewModel
-import com.markvoronin.immichswipe.feature.swipe.SwipeCardConfig
-import com.markvoronin.immichswipe.feature.swipe.SwipeCardActions
-import com.markvoronin.immichswipe.feature.swipe.SwipeCard
 
 @Composable
 fun SwipeCardDeck(
@@ -130,23 +129,24 @@ fun SwipeCardDeck(
                             playbackBehavior = uiState.playbackBehavior,
                             fullscreenButtonPosition = uiState.fullscreenButtonPosition,
                             immichButtonPosition = uiState.immichButtonPosition,
-                            cardDisplayButtonPosition = uiState.cardDisplayButtonPosition,
+                            rotationButtonPosition = uiState.rotationButtonPosition,
                             muteButtonPosition = uiState.muteButtonPosition,
                             downloadButtonPosition = uiState.downloadButtonPosition,
                             shareButtonPosition = uiState.shareButtonPosition,
                             showFullscreenButton = uiState.showFullscreenButton,
                             showImmichButton = uiState.showImmichButton,
-                            showCardDisplayButton = uiState.showCardDisplayButton,
+                            showRotationButton = uiState.showRotationButton,
                             showMuteButton = uiState.showMuteButton,
                             showDownloadButton = uiState.showDownloadButton,
                             showShareButton = uiState.showShareButton,
                             cardDisplayMode = uiState.cardDisplayMode,
                             tapToSwipeEnabled = uiState.tapToSwipeEnabled,
-                            showSizeIndicator = (uiState.sortOrder == SortOrder.SIZE_DESC) || (uiState.sortOrder == SortOrder.SIZE_ASC)
+                            showSizeIndicator = (uiState.sortOrder == SortOrder.SIZE_DESC) || (uiState.sortOrder == SortOrder.SIZE_ASC),
+                            rotationAngle = uiState.getRotation(asset.id)
                         ),
                         actions = SwipeCardActions(
                             onSwipe = { viewModel.onSwipe(it) },
-                            onToggleDisplayMode = { viewModel.toggleDisplayMode() },
+                            onRotateAsset = { viewModel.rotateCurrentAsset() },
                             onDoubleTap = { viewModel.toggleFavorite() },
                             onOpenFullscreen = { viewModel.toggleFullscreen(true) },
                             onDownload = { viewModel.downloadAsset(it) },

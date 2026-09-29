@@ -3,8 +3,8 @@ package com.markvoronin.immichswipe.feature.swipe
 
 import android.content.Intent
 import androidx.annotation.OptIn
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,11 +30,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.FileDownload
-import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
@@ -58,7 +56,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -72,6 +69,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -427,7 +425,12 @@ fun SwipeCard(
             elevation = CardDefaults.cardElevation(defaultElevation = if (isNext) 0.dp else 8.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Box(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))) {
+            val animatedRotation by animateFloatAsState(targetValue = config.rotationAngle.toFloat(), label = "rotationZ")
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(16.dp))
+            ) {
                 if (asset.type == "VIDEO") {
                     val placeholderRequest = remember(asset.id, baseUrl, apiKey) {
                         ImageRequest.Builder(context)
@@ -443,7 +446,9 @@ fun SwipeCard(
                         model = placeholderRequest,
                         contentDescription = null,
                         contentScale = if (config.cardDisplayMode == CardDisplayMode.FILL) ContentScale.Crop else ContentScale.Fit,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer { rotationZ = animatedRotation }
                     )
 
                     if (!isNext && exoPlayer != null && !isFullscreenOpen) {
@@ -526,7 +531,13 @@ fun SwipeCard(
                                         }
                                     }
                                 ) {
-                                    surface()
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .graphicsLayer { rotationZ = animatedRotation }
+                                    ) {
+                                        surface()
+                                    }
 
                                     if (showLoadingIndicator) {
                                         Box(
@@ -621,20 +632,27 @@ fun SwipeCard(
                             model = photoRequest,
                             contentDescription = null,
                             contentScale = ContentScale.Fit,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer { rotationZ = animatedRotation }
                         )
                     }
+                }
 
-                    if (config.showSizeIndicator && !isNext) {
-                        androidx.compose.animation.AnimatedVisibility(
+                if (config.showSizeIndicator && !isNext && asset.type != "VIDEO") {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(bottom = 12.dp),
+                        verticalArrangement = Arrangement.Bottom,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        AnimatedVisibility(
                             visible = !isHoldingByPress && !wasHoldDetected,
                             enter = fadeIn(),
-                            exit = fadeOut(),
-                            modifier = Modifier.align(Alignment.BottomCenter)
+                            exit = fadeOut()
                         ) {
                             Surface(
-                                modifier = Modifier
-                                    .padding(bottom = 12.dp),
                                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                                 shape = RoundedCornerShape(4.dp)
                             ) {
@@ -657,7 +675,8 @@ fun SwipeCard(
                         exit = fadeOut(),
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        listOf(Alignment.Start, Alignment.End).forEach { side ->
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            listOf(Alignment.Start, Alignment.End).forEach { side ->
                             Column(
                                 modifier = Modifier
                                     .align(if (side == Alignment.Start) Alignment.TopStart else Alignment.TopEnd)
@@ -673,12 +692,11 @@ fun SwipeCard(
                                             onClick = actions.onOpenFullscreen
                                         )
                                     }
-                                    if (config.showCardDisplayButton && config.cardDisplayButtonPosition.toHorizontalAlignment() == side && (config.cardDisplayButtonPosition == IconPosition.TOP_LEFT || config.cardDisplayButtonPosition == IconPosition.TOP_RIGHT)) {
+                                    if (config.showRotationButton && config.rotationButtonPosition.toHorizontalAlignment() == side && (config.rotationButtonPosition == IconPosition.TOP_LEFT || config.rotationButtonPosition == IconPosition.TOP_RIGHT)) {
                                         SwipeActionIconButton(
-                                            icon = if (config.cardDisplayMode == CardDisplayMode.FILL)
-                                                Icons.Default.FitScreen else Icons.Default.AspectRatio,
-                                            contentDescription = stringResource(R.string.swipe_toggle_display),
-                                            onClick = actions.onToggleDisplayMode
+                                            icon = Icons.AutoMirrored.Filled.RotateRight,
+                                            contentDescription = stringResource(R.string.swipe_rotate_asset),
+                                            onClick = actions.onRotateAsset
                                         )
                                     }
                                     if (config.showImmichButton && config.immichButtonPosition.toHorizontalAlignment() == side && (config.immichButtonPosition == IconPosition.TOP_LEFT || config.immichButtonPosition == IconPosition.TOP_RIGHT)) {
@@ -727,12 +745,11 @@ fun SwipeCard(
                                             onClick = actions.onOpenFullscreen
                                         )
                                     }
-                                    if (config.showCardDisplayButton && config.cardDisplayButtonPosition.toHorizontalAlignment() == side && (config.cardDisplayButtonPosition == IconPosition.BOTTOM_LEFT || config.cardDisplayButtonPosition == IconPosition.BOTTOM_RIGHT)) {
+                                    if (config.showRotationButton && config.rotationButtonPosition.toHorizontalAlignment() == side && (config.rotationButtonPosition == IconPosition.BOTTOM_LEFT || config.rotationButtonPosition == IconPosition.BOTTOM_RIGHT)) {
                                         SwipeActionIconButton(
-                                            icon = if (config.cardDisplayMode == CardDisplayMode.FILL)
-                                                Icons.Default.FitScreen else Icons.Default.AspectRatio,
-                                            contentDescription = stringResource(R.string.swipe_toggle_display),
-                                            onClick = actions.onToggleDisplayMode
+                                            icon = Icons.AutoMirrored.Filled.RotateRight,
+                                            contentDescription = stringResource(R.string.swipe_rotate_asset),
+                                            onClick = actions.onRotateAsset
                                         )
                                     }
                                     if (config.showImmichButton && config.immichButtonPosition.toHorizontalAlignment() == side && (config.immichButtonPosition == IconPosition.BOTTOM_LEFT || config.immichButtonPosition == IconPosition.BOTTOM_RIGHT)) {
@@ -773,7 +790,6 @@ fun SwipeCard(
                             }
                         }
                     }
-                }
 
                 if (!isNext) {
                     Box(
@@ -851,6 +867,8 @@ fun SwipeCard(
             }
         }
     }
+}
+}
 }
 
 

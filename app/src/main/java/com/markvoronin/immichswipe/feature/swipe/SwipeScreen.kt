@@ -10,7 +10,6 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -52,10 +51,6 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import coil.imageLoader
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import com.markvoronin.immichswipe.feature.swipe.components.ResetConfirmationDialog
-import com.markvoronin.immichswipe.feature.swipe.components.SwipeActionBar
-import com.markvoronin.immichswipe.feature.swipe.components.SwipeBulkOverlay
-import com.markvoronin.immichswipe.feature.swipe.components.SwipeCardDeck
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.ConnectionLevel
 import com.markvoronin.immichswipe.core.PlaybackBehavior
@@ -67,6 +62,10 @@ import com.markvoronin.immichswipe.data.repository.AssetRepository
 import com.markvoronin.immichswipe.data.repository.SessionRepository
 import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
 import com.markvoronin.immichswipe.domain.model.Album
+import com.markvoronin.immichswipe.feature.swipe.components.ResetConfirmationDialog
+import com.markvoronin.immichswipe.feature.swipe.components.SwipeActionBar
+import com.markvoronin.immichswipe.feature.swipe.components.SwipeBulkOverlay
+import com.markvoronin.immichswipe.feature.swipe.components.SwipeCardDeck
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch

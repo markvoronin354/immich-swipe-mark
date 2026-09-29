@@ -19,7 +19,8 @@ data class Asset(
     val checksum: String? = null,
     @SerializedName("extension")
     val fileExtension: String? = null,
-    val exifInfo: ExifInfo? = null
+    val exifInfo: ExifInfo? = null,
+    val rotation: Int = 0
 )
 
 data class ExifInfo(

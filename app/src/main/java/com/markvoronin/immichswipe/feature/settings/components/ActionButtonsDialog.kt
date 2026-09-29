@@ -92,11 +92,11 @@ fun ActionButtonsDialog(
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
 
                 IconPositionPicker(
-                    title = stringResource(R.string.settings_display_mode_pos_label),
-                    selectedPosition = uiState.cardDisplayButtonPosition,
-                    onPositionSelected = { viewModel.setCardDisplayButtonPosition(it) },
-                    showIcon = uiState.showCardDisplayButton,
-                    onShowIconChange = { viewModel.setShowCardDisplayButton(it) }
+                    title = stringResource(R.string.settings_rotation_pos_label),
+                    selectedPosition = uiState.rotationButtonPosition,
+                    onPositionSelected = { viewModel.setRotationButtonPosition(it) },
+                    showIcon = uiState.showRotationButton,
+                    onShowIconChange = { viewModel.setShowRotationButton(it) }
                 )
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
