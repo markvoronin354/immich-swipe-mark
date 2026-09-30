@@ -2,21 +2,16 @@ package com.markvoronin.immichswipe.feature.settings.components
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Forward
 import androidx.compose.material.icons.filled.AdsClick
 import androidx.compose.material.icons.filled.Archive
@@ -24,16 +19,12 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.feature.settings.SettingsUiState
@@ -56,49 +47,7 @@ fun InteractionsScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
     ) {
-        // Sub-menu Header Bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.common_back),
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            Spacer(Modifier.width(4.dp))
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(38.dp)
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.TouchApp,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-            Spacer(Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = stringResource(R.string.settings_interactions_dialog_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(16.dp))
 
         Surface(
             shape = RoundedCornerShape(20.dp),
@@ -138,7 +87,7 @@ fun InteractionsScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
 
-                // 3. Favorite
+                // 4. Favorite
                 SettingsToggleItemSmall(
                     title = stringResource(R.string.settings_tri_favorite),
                     checked = uiState.showFavoriteButton,
@@ -148,7 +97,7 @@ fun InteractionsScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
 
-                // 4. Auto-advance
+                // 5. Auto-advance
                 SettingsToggleItemSmall(
                     title = stringResource(R.string.settings_auto_next_label),
                     checked = uiState.autoNextOnFav,
@@ -164,7 +113,7 @@ fun InteractionsScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
 
-                // 5. Tap to swipe
+                // 6. Tap to swipe
                 SettingsToggleItemSmall(
                     title = stringResource(R.string.settings_tap_to_swipe_label),
                     checked = uiState.tapToSwipeEnabled,

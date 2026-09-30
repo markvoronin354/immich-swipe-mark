@@ -87,6 +87,7 @@ import com.markvoronin.immichswipe.feature.home.components.ProfilePopup
 import com.markvoronin.immichswipe.feature.home.components.StatsPopup
 import com.markvoronin.immichswipe.feature.home.components.SwipePlaceholder
 import com.markvoronin.immichswipe.feature.settings.SettingsScreen
+import com.markvoronin.immichswipe.feature.settings.SettingsSubMenu
 import com.markvoronin.immichswipe.feature.settings.SettingsViewModel
 import com.markvoronin.immichswipe.feature.settings.SettingsViewModelFactory
 import com.markvoronin.immichswipe.feature.swipe.SwipeScreen
@@ -124,6 +125,22 @@ fun HomeScreen(
         viewModel.goBack()
     }
 
+    val settingsViewModel: SettingsViewModel = viewModel(
+        key = "settings-$sessionKey",
+        factory = SettingsViewModelFactory(
+            viewModel.getSessionRepository(),
+            swipeDecisionRepository
+        )
+    )
+    val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+
+    val activeSubMenu = when {
+        uiState.currentTab != HomeTab.SETTINGS -> SettingsSubMenu.NONE
+        settingsUiState.showInteractionsDialog -> SettingsSubMenu.INTERACTIONS
+        settingsUiState.showActionButtonsDialog -> SettingsSubMenu.ACTION_BUTTONS
+        else -> SettingsSubMenu.NONE
+    }
+
     Scaffold(
         modifier = modifier,
         containerColor = Color.Transparent,
@@ -131,6 +148,8 @@ fun HomeScreen(
             HomeTopBar(
                 isHome = isHome,
                 isSwipeTab = uiState.currentTab == HomeTab.SWIPE,
+                isSettingsTab = uiState.currentTab == HomeTab.SETTINGS,
+                activeSubMenu = activeSubMenu,
                 user = uiState.user,
                 connectionStatus = uiState.connectionStatus,
                 searchQuery = uiState.searchQuery,
@@ -138,7 +157,15 @@ fun HomeScreen(
                 onOpenStats = { viewModel.toggleStatsPopup(visible = true) },
                 onGlobalReset = { viewModel.toggleGlobalResetConfirmation(true) },
                 onSwipeReset = { viewModel.requestReset() },
-                onOpenProfile = { viewModel.toggleProfilePopup(visible = true) }
+                onOpenProfile = { viewModel.toggleProfilePopup(visible = true) },
+                onBack = {
+                    if (activeSubMenu != SettingsSubMenu.NONE) {
+                        settingsViewModel.setShowInteractionsDialog(false)
+                        settingsViewModel.setShowActionButtonsDialog(false)
+                    } else {
+                        viewModel.goBack()
+                    }
+                }
             )
         },
         bottomBar = {}
@@ -245,13 +272,6 @@ fun HomeScreen(
                             }
                         }
                         HomeTab.SETTINGS -> {
-                            val settingsViewModel: SettingsViewModel = viewModel(
-                                key = "settings-$sessionKey",
-                                factory = SettingsViewModelFactory(
-                                    viewModel.getSessionRepository(),
-                                    swipeDecisionRepository
-                                )
-                            )
                             SettingsScreen(
                                 viewModel = settingsViewModel
                             )
