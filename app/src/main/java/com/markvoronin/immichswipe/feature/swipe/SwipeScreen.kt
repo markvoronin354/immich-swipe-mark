@@ -249,11 +249,13 @@ fun SwipeScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentType by rememberUpdatedState(currentAsset?.type)
     DisposableEffect(lifecycleOwner) {
+        var wasPlayingBeforeAppPause = false
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_PAUSE) {
+                wasPlayingBeforeAppPause = sharedPlayer.playWhenReady
                 sharedPlayer.playWhenReady = false
             } else if (event == Lifecycle.Event.ON_RESUME) {
-                if (currentType == "VIDEO") {
+                if (currentType == "VIDEO" && wasPlayingBeforeAppPause) {
                     sharedPlayer.playWhenReady = true
                 }
             }

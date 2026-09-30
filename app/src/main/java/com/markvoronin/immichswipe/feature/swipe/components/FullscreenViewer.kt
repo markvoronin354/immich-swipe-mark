@@ -191,8 +191,15 @@ fun FullscreenViewer(
         exoPlayer?.volume = if (isMuted) 0f else 1f
     }
 
-    LaunchedEffect(pausedByHoldState, exoPlayer, asset.id) {
-        if (pausedByHoldState) exoPlayer?.pause() else exoPlayer?.play()
+    var wasPlayingBeforeHold by remember(asset.id) { mutableStateOf(false) }
+
+    LaunchedEffect(pausedByHoldState) {
+        if (pausedByHoldState) {
+            wasPlayingBeforeHold = exoPlayer?.playWhenReady == true
+            exoPlayer?.pause()
+        } else if (wasPlayingBeforeHold) {
+            exoPlayer?.play()
+        }
     }
 
     // Manage orientation for the lifetime of the FullscreenViewer

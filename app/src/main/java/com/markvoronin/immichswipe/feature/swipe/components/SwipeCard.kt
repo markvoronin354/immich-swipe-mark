@@ -210,11 +210,13 @@ fun SwipeCard(
         internalExoPlayer?.volume = if (isMuted) 0f else 1f
     }
 
-    LaunchedEffect(pausedByHoldState, exoPlayer, asset.id) {
-        // Log to verify if state is changing
+    var wasPlayingBeforeHold by remember(asset.id) { mutableStateOf(false) }
+
+    LaunchedEffect(pausedByHoldState) {
         if (pausedByHoldState) {
+            wasPlayingBeforeHold = exoPlayer?.playWhenReady == true
             exoPlayer?.pause()
-        } else if (!isNext && !isFullscreenOpen) {
+        } else if (wasPlayingBeforeHold) {
             exoPlayer?.play()
         }
     }
@@ -247,14 +249,19 @@ fun SwipeCard(
             isVideoReady = true
         }
         exoPlayer?.addListener(listener)
+        var wasPlayingBeforeAppPause = false
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_PAUSE -> {
-                    // Si on est en fullscreen, on laisse le fullscreenViewer gérer la pause
-                    if (!isFullscreenOpen) exoPlayer?.playWhenReady = false
+                    if (!isFullscreenOpen) {
+                        wasPlayingBeforeAppPause = exoPlayer?.playWhenReady == true
+                        exoPlayer?.playWhenReady = false
+                    }
                 }
                 Lifecycle.Event.ON_RESUME -> {
-                    if (!isNext && !isFullscreenOpen) exoPlayer?.playWhenReady = true
+                    if (!isNext && !isFullscreenOpen && wasPlayingBeforeAppPause) {
+                        exoPlayer?.playWhenReady = true
+                    }
                 }
                 else -> {}
             }
@@ -262,7 +269,6 @@ fun SwipeCard(
         lifecycleOwner.lifecycle.addObserver(observer)
 
         exoPlayer?.volume = if (isMuted) 0f else 1f
-        if (pausedByHoldState) exoPlayer?.pause() else if (!isNext && !isFullscreenOpen) exoPlayer?.play()
 
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)

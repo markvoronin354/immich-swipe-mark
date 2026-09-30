@@ -95,17 +95,17 @@ fun SharedVideoPlayer(
     key(assetId) {
         var currentTime by remember { mutableLongStateOf(0L) }
         var duration by remember { mutableLongStateOf(0L) }
-        var isVideoPlaying by remember { mutableStateOf(player.isPlaying) }
-        var userPaused by remember { mutableStateOf(false) }
+        var isVideoPlaying by remember(player) { mutableStateOf(player.isPlaying) }
         var isScrubbing by remember { mutableStateOf(false) }
         var scrubValue by remember { mutableLongStateOf(0L) }
 
         val togglePlayPause = {
-            if (player.isPlaying) {
-                userPaused = true
+            if (player.playWhenReady && player.playbackState != Player.STATE_ENDED) {
                 player.pause()
             } else {
-                userPaused = false
+                if (player.playbackState == Player.STATE_ENDED) {
+                    player.seekTo(0)
+                }
                 player.play()
             }
         }
@@ -131,9 +131,6 @@ fun SharedVideoPlayer(
             if (isPaused) {
                 player.pause()
             } else {
-                if (!userPaused && player.playbackState == Player.STATE_READY && !player.isPlaying) {
-                    player.play()
-                }
                 while (true) {
                     if (!isScrubbing) {
                         currentTime = player.currentPosition
