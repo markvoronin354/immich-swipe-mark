@@ -84,6 +84,7 @@ import com.markvoronin.immichswipe.feature.settings.components.SettingsClickable
 import com.markvoronin.immichswipe.feature.settings.components.SettingsSection
 import com.markvoronin.immichswipe.feature.settings.components.SettingsToggleItemSmall
 import com.markvoronin.immichswipe.feature.settings.components.ThemeButton
+import com.markvoronin.immichswipe.feature.settings.components.verticalFadingEdges
 
 enum class SettingsSubMenu {
     NONE, INTERACTIONS, ACTION_BUTTONS
@@ -183,10 +184,12 @@ fun SettingsScreen(
                     modifier = modifier
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
-                        .padding(16.dp)
+                        .verticalFadingEdges(settingsScrollState, length = 32.dp)
+                        .padding(horizontal = 16.dp)
                         .verticalScroll(settingsScrollState)
                 ) {
-        SettingsSection(title = stringResource(R.string.settings_section_appearance), icon = Icons.Default.Palette) {
+                    Spacer(Modifier.height(16.dp))
+                    SettingsSection(title = stringResource(R.string.settings_section_appearance), icon = Icons.Default.Palette) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = stringResource(R.string.settings_theme_label),

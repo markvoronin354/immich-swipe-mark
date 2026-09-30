@@ -74,11 +74,14 @@ fun ActionButtonsScreen(
         onBack()
     }
 
+    val scrollState = rememberScrollState()
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalFadingEdges(scrollState, length = 32.dp)
             .padding(horizontal = 16.dp)
+            .verticalScroll(scrollState)
     ) {
         Spacer(Modifier.height(16.dp))
 

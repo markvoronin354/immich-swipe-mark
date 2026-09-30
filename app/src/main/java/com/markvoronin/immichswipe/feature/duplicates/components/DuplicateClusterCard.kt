@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.feature.duplicates.DuplicateClusterUiModel
 import com.markvoronin.immichswipe.feature.duplicates.DuplicateDecision
+import com.markvoronin.immichswipe.feature.settings.components.horizontalFadingEdges
 
 @Composable
 fun DuplicateClusterCard(
@@ -111,9 +113,13 @@ fun DuplicateClusterCard(
                     }
                 }
             } else {
+                val rowState = rememberLazyListState()
                 LazyRow(
+                    state = rowState,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalFadingEdges(rowState, length = 24.dp)
                 ) {
                     items(cluster.assets, key = { it.id }) { asset ->
                         val decision = decisions[asset.id] ?: DuplicateDecision.NONE

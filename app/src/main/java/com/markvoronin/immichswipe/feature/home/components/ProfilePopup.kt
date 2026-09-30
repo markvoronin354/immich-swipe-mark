@@ -64,6 +64,7 @@ import com.markvoronin.immichswipe.core.ConnectionStatus
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.data.local.entity.UserAccountEntity
 import com.markvoronin.immichswipe.domain.model.User
+import com.markvoronin.immichswipe.feature.settings.components.verticalFadingEdges
 
 @Composable
 fun ProfilePopup(
@@ -93,13 +94,17 @@ fun ProfilePopup(
             shape = RoundedCornerShape(24.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
+            val scrollState = rememberScrollState()
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
+                    .verticalFadingEdges(scrollState, length = 32.dp)
+                    .padding(horizontal = 24.dp)
+                    .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Spacer(Modifier.height(24.dp))
                 // Header avec logo et bouton fermer
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -376,6 +381,7 @@ fun ProfilePopup(
                     color = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
                     modifier = Modifier.padding(top = 4.dp)
                 )
+                Spacer(Modifier.height(24.dp))
             }
         }
     }

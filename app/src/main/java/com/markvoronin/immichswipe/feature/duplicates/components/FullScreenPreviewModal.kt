@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.markvoronin.immichswipe.feature.settings.components.horizontalFadingEdges
 import androidx.core.net.toUri
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -497,6 +498,7 @@ fun FullScreenPreviewModal(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(72.dp)
+                            .horizontalFadingEdges(carouselState, length = 24.dp)
                             .onSizeChanged { size ->
                                 carouselWidthPx = size.width
                             },

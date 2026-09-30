@@ -67,6 +67,7 @@ import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.feature.home.AlbumStatus
+import com.markvoronin.immichswipe.feature.settings.components.verticalFadingEdges
 import com.markvoronin.immichswipe.ui.theme.VirtualGold
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,7 +92,9 @@ fun AlbumList(
         ) {
             LazyColumn(
                 state = state,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalFadingEdges(state, length = 32.dp),
                 contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {

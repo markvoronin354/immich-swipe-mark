@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -56,6 +57,7 @@ import com.markvoronin.immichswipe.feature.duplicates.components.FullScreenPrevi
 import com.markvoronin.immichswipe.feature.duplicates.components.InstagramZoomOverlay
 import com.markvoronin.immichswipe.feature.duplicates.components.ZoomData
 import com.markvoronin.immichswipe.feature.duplicates.components.formatSizeStr
+import com.markvoronin.immichswipe.feature.settings.components.verticalFadingEdges
 import com.markvoronin.immichswipe.ui.theme.VirtualGold
 import kotlinx.coroutines.flow.SharedFlow
 
@@ -166,10 +168,14 @@ fun DuplicatesScreen(
                     }
                 }
 
+                val listState = rememberLazyListState()
+
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxSize()
-                        .weight(1f),
+                        .weight(1f)
+                        .verticalFadingEdges(listState, length = 32.dp),
                     contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 120.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {

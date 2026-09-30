@@ -44,6 +44,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.feature.home.StatsUiData
+import com.markvoronin.immichswipe.feature.settings.components.verticalFadingEdges
 
 @Composable
 fun StatsPopup(
@@ -62,13 +63,17 @@ fun StatsPopup(
             shape = RoundedCornerShape(24.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
+            val scrollState = rememberScrollState()
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
+                    .verticalFadingEdges(scrollState, length = 32.dp)
+                    .padding(horizontal = 24.dp)
+                    .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Spacer(Modifier.height(24.dp))
                 // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),

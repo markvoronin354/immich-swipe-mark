@@ -1,6 +1,7 @@
 package com.markvoronin.immichswipe.feature.settings.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
@@ -23,10 +26,200 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+
+fun Modifier.verticalFadingEdges(
+    scrollState: ScrollState,
+    length: Dp = 32.dp
+): Modifier = this
+    .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+    .drawWithContent {
+        drawContent()
+
+        val lengthPx = length.toPx()
+        if (lengthPx <= 0f) return@drawWithContent
+
+        val topFadePx = minOf(scrollState.value.toFloat(), lengthPx)
+
+        val remainingScroll = (scrollState.maxValue - scrollState.value).toFloat().coerceAtLeast(0f)
+        val bottomFadePx = if (scrollState.maxValue > 0 && scrollState.maxValue != Int.MAX_VALUE) {
+            minOf(remainingScroll, lengthPx)
+        } else if (scrollState.maxValue == Int.MAX_VALUE) {
+            lengthPx
+        } else {
+            0f
+        }
+
+        if (topFadePx > 0f) {
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color.Black, Color.Transparent),
+                    startY = 0f,
+                    endY = topFadePx
+                ),
+                blendMode = BlendMode.DstOut
+            )
+        }
+
+        if (bottomFadePx > 0f) {
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color.Transparent, Color.Black),
+                    startY = size.height - bottomFadePx,
+                    endY = size.height
+                ),
+                blendMode = BlendMode.DstOut
+            )
+        }
+    }
+
+fun Modifier.verticalFadingEdges(
+    lazyListState: LazyListState,
+    length: Dp = 32.dp
+): Modifier = this
+    .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+    .drawWithContent {
+        drawContent()
+
+        val lengthPx = length.toPx()
+        if (lengthPx <= 0f) return@drawWithContent
+
+        val topFadePx = if (lazyListState.firstVisibleItemIndex == 0) {
+            minOf(lazyListState.firstVisibleItemScrollOffset.toFloat(), lengthPx)
+        } else {
+            lengthPx
+        }
+
+        val bottomFadePx = if (lazyListState.canScrollForward) {
+            lengthPx
+        } else {
+            0f
+        }
+
+        if (topFadePx > 0f) {
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color.Black, Color.Transparent),
+                    startY = 0f,
+                    endY = topFadePx
+                ),
+                blendMode = BlendMode.DstOut
+            )
+        }
+
+        if (bottomFadePx > 0f) {
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color.Transparent, Color.Black),
+                    startY = size.height - bottomFadePx,
+                    endY = size.height
+                ),
+                blendMode = BlendMode.DstOut
+            )
+        }
+    }
+
+fun Modifier.verticalFadingEdges(
+    lazyGridState: LazyGridState,
+    length: Dp = 32.dp
+): Modifier = this
+    .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+    .drawWithContent {
+        drawContent()
+
+        val lengthPx = length.toPx()
+        if (lengthPx <= 0f) return@drawWithContent
+
+        val topFadePx = if (lazyGridState.firstVisibleItemIndex == 0) {
+            minOf(lazyGridState.firstVisibleItemScrollOffset.toFloat(), lengthPx)
+        } else {
+            lengthPx
+        }
+
+        val bottomFadePx = if (lazyGridState.canScrollForward) {
+            lengthPx
+        } else {
+            0f
+        }
+
+        if (topFadePx > 0f) {
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color.Black, Color.Transparent),
+                    startY = 0f,
+                    endY = topFadePx
+                ),
+                blendMode = BlendMode.DstOut
+            )
+        }
+
+        if (bottomFadePx > 0f) {
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color.Transparent, Color.Black),
+                    startY = size.height - bottomFadePx,
+                    endY = size.height
+                ),
+                blendMode = BlendMode.DstOut
+            )
+        }
+    }
+
+fun Modifier.horizontalFadingEdges(
+    lazyListState: LazyListState,
+    length: Dp = 24.dp
+): Modifier = this
+    .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+    .drawWithContent {
+        drawContent()
+
+        val lengthPx = length.toPx()
+        if (lengthPx <= 0f) return@drawWithContent
+
+        val leftFadePx = if (lazyListState.firstVisibleItemIndex == 0) {
+            minOf(lazyListState.firstVisibleItemScrollOffset.toFloat(), lengthPx)
+        } else {
+            lengthPx
+        }
+
+        val rightFadePx = if (lazyListState.canScrollForward) {
+            lengthPx
+        } else {
+            0f
+        }
+
+        if (leftFadePx > 0f) {
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(Color.Black, Color.Transparent),
+                    startX = 0f,
+                    endX = leftFadePx
+                ),
+                blendMode = BlendMode.DstOut
+            )
+        }
+
+        if (rightFadePx > 0f) {
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(Color.Transparent, Color.Black),
+                    startX = size.width - rightFadePx,
+                    endX = size.width
+                ),
+                blendMode = BlendMode.DstOut
+            )
+        }
+    }
 
 @Composable
 fun SettingsSection(
