@@ -121,8 +121,8 @@
     <string name="settings_share_pos_label">Posición del botón Compartir</string>
     <string name="settings_show_swipe_buttons_label">Mostrar botones Keep/Delete</string>
     <string name="settings_show_swipe_buttons_desc">Mostrar grandes botones rojo y verde para clasificar con un solo toque</string>
-    <string name="settings_swap_summary_archive_label">Cambiar Archivar por Resumen</string>
-    <string name="settings_swap_summary_archive_desc">Reemplaza el botón Archivar por un botón Resumen en la barra de clasificación</string>
+    <string name="settings_show_archive_label">Botón Archivar</string>
+    <string name="settings_show_archive_desc">Mostrar un botón Archivar en la barra de clasificación para archivar elementos rápidamente</string>
     <string name="settings_sync_local_deletion_label">Sincronizar eliminación local</string>
     <string name="settings_sync_local_deletion_desc">Cuando eliminas una foto de Immich, también intenta eliminar el archivo local de tu dispositivo para evitar que se vuelva a subir.</string>
     <string name="swipe_rotate_asset">Rotar recurso 90°</string>

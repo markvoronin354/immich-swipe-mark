@@ -47,7 +47,7 @@ data class SettingsUiState(
     val showLogsDialog: Boolean = false,
     val defaultCardDisplayMode: CardDisplayMode = CardDisplayMode.FIT,
     val showSwipeButtons: Boolean = false,
-    val swapSummaryArchive: Boolean = false,
+    val showArchiveButton: Boolean = true,
     val syncLocalDeletion: Boolean = false,
     val trashLocalDeletion: Boolean = true,
     val tapToSwipeEnabled: Boolean = false,

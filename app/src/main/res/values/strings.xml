@@ -123,8 +123,8 @@
     <string name="settings_share_pos_label">Share button position</string>
     <string name="settings_show_swipe_buttons_label">Show Keep/Delete buttons</string>
     <string name="settings_show_swipe_buttons_desc">Display large red and green buttons for one-tap sorting</string>
-    <string name="settings_swap_summary_archive_label">Swap Archive for Summary</string>
-    <string name="settings_swap_summary_archive_desc">Replace the Archive button with a Summary button in the sorting bar</string>
+    <string name="settings_show_archive_label">Archive button</string>
+    <string name="settings_show_archive_desc">Display an Archive button in the sorting bar to quickly archive assets</string>
     <string name="settings_sync_local_deletion_label">Sync deletion with device</string>
     <string name="settings_sync_local_deletion_desc">When you delete a photo from Immich, also attempt to delete the local file from your device storage to prevent re-uploading.</string>
     <string name="swipe_rotate_asset">Rotate asset 90° clockwise</string>

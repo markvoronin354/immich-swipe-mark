@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.IconPosition
-import com.markvoronin.immichswipe.core.ImmichOpenMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.core.SortCategory
@@ -82,7 +81,7 @@ class SwipeViewModel(
                 sessionRepository.shareButtonPosition,
                 sessionRepository.showSwipeButtons,
                 sessionRepository.autoNextOnFav,
-                sessionRepository.swapSummaryArchive,
+                sessionRepository.showArchiveButton,
                 sessionRepository.syncLocalDeletion,
                 sessionRepository.trashLocalDeletion,
                 sessionRepository.sortOrder,
@@ -127,7 +126,7 @@ class SwipeViewModel(
             shareButtonPosition = values[12] as IconPosition,
             showSwipeButtons = values[13] as Boolean,
             autoNextOnFav = values[14] as Boolean,
-            swapSummaryArchive = values[15] as Boolean,
+            showArchiveButton = values[15] as Boolean,
             syncLocalDeletion = values[16] as Boolean,
             trashLocalDeletion = values[17] as Boolean,
             sortOrder = order,

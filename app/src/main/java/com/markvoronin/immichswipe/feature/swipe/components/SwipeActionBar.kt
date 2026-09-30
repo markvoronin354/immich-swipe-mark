@@ -13,7 +13,6 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
@@ -146,19 +145,18 @@ fun SwipeActionBar(
             )
         }
 
-        IconButton(
-            onClick = {
-                if (!uiState.swapSummaryArchive) viewModel.toggleArchive()
-                else viewModel.toggleSummary(true)
-            },
-            modifier = Modifier.size(if (uiState.showSwipeButtons) 36.dp else 44.dp)
-        ) {
-            Icon(
-                imageVector = if (!uiState.swapSummaryArchive) Icons.Default.Archive else Icons.Default.Assessment,
-                contentDescription = if (!uiState.swapSummaryArchive) stringResource(R.string.swipe_archive) else stringResource(R.string.swipe_summary_title),
-                tint = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.size(if (uiState.showSwipeButtons) 22.dp else 26.dp)
-            )
+        if (uiState.showArchiveButton) {
+            IconButton(
+                onClick = { viewModel.toggleArchive() },
+                modifier = Modifier.size(if (uiState.showSwipeButtons) 36.dp else 44.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Archive,
+                    contentDescription = stringResource(R.string.swipe_archive),
+                    tint = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.size(if (uiState.showSwipeButtons) 22.dp else 26.dp)
+                )
+            }
         }
 
         if (uiState.showFavoriteButton) {

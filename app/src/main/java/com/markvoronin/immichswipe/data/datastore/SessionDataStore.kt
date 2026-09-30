@@ -41,7 +41,7 @@ class SessionDataStore(private val context: Context) {
         private val KEY_SORT_ORDER = stringPreferencesKey("sort_order")
         private val KEY_DEFAULT_CARD_DISPLAY_MODE = stringPreferencesKey("default_card_display_mode")
         private val KEY_SHOW_SWIPE_BUTTONS = androidx.datastore.preferences.core.booleanPreferencesKey("show_swipe_buttons")
-        private val KEY_SWAP_SUMMARY_ARCHIVE = androidx.datastore.preferences.core.booleanPreferencesKey("swap_summary_archive")
+        private val KEY_SHOW_ARCHIVE = booleanPreferencesKey("show_archive")
         private val KEY_BACKUP_WARNING_SHOWN = androidx.datastore.preferences.core.booleanPreferencesKey("backup_warning_shown")
         private val KEY_SYNC_LOCAL_DELETION = androidx.datastore.preferences.core.booleanPreferencesKey("sync_local_deletion")
         private val KEY_TRASH_LOCAL_DELETION = androidx.datastore.preferences.core.booleanPreferencesKey("trash_local_deletion")
@@ -180,8 +180,8 @@ class SessionDataStore(private val context: Context) {
     fun isShowSwipeButtons(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_SWIPE_BUTTONS] ?: false }
     suspend fun saveShowSwipeButtons(show: Boolean) { context.dataStore.edit { it[KEY_SHOW_SWIPE_BUTTONS] = show } }
 
-    fun isSwapSummaryArchive(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SWAP_SUMMARY_ARCHIVE] ?: false }
-    suspend fun saveSwapSummaryArchive(swap: Boolean) { context.dataStore.edit { it[KEY_SWAP_SUMMARY_ARCHIVE] = swap } }
+    fun isShowArchiveButton(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_ARCHIVE] ?: true }
+    suspend fun saveShowArchiveButton(show: Boolean) { context.dataStore.edit { it[KEY_SHOW_ARCHIVE] = show } }
 
     fun isBackupWarningShown(): Flow<Boolean> = context.dataStore.data.map { it[KEY_BACKUP_WARNING_SHOWN] ?: false }
     suspend fun saveBackupWarningShown(shown: Boolean) { context.dataStore.edit { it[KEY_BACKUP_WARNING_SHOWN] = shown } }

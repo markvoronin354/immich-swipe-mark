@@ -180,8 +180,8 @@ class SettingsViewModel(
             }
         }
         viewModelScope.launch {
-            sessionRepository.swapSummaryArchive.collect { swap ->
-                _uiState.update { it.copy(swapSummaryArchive = swap) }
+            sessionRepository.showArchiveButton.collect { show ->
+                _uiState.update { it.copy(showArchiveButton = show) }
             }
         }
         viewModelScope.launch {
@@ -327,9 +327,9 @@ class SettingsViewModel(
         }
     }
 
-    fun setSwapSummaryArchive(swap: Boolean) {
+    fun setShowArchiveButton(show: Boolean) {
         viewModelScope.launch {
-            sessionRepository.saveSwapSummaryArchive(swap)
+            sessionRepository.saveShowArchiveButton(show)
         }
     }
 

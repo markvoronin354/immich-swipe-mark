@@ -31,8 +31,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Forward
 import androidx.compose.material.icons.filled.AdsClick
 import androidx.compose.material.icons.filled.PhonelinkErase
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -205,13 +205,13 @@ fun InteractionsScreen(
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
 
                 SettingsToggleItemSmall(
-                    title = stringResource(R.string.settings_swap_summary_archive_label),
-                    checked = uiState.swapSummaryArchive,
-                    onCheckedChange = { viewModel.setSwapSummaryArchive(it) },
-                    icon = Icons.Default.SwapHoriz
+                    title = stringResource(R.string.settings_show_archive_label),
+                    checked = uiState.showArchiveButton,
+                    onCheckedChange = { viewModel.setShowArchiveButton(it) },
+                    icon = Icons.Default.Archive
                 )
                 Text(
-                    text = stringResource(R.string.settings_swap_summary_archive_desc),
+                    text = stringResource(R.string.settings_show_archive_desc),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)

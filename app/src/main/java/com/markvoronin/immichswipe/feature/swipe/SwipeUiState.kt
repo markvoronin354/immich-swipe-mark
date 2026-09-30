@@ -59,7 +59,7 @@ data class SwipeUiState(
     val localRotations: Map<String, Int> = emptyMap(), // Map de AssetID -> Rotation cumulative (0, 90, 180, 270)
     val cardDisplayMode: CardDisplayMode = CardDisplayMode.FIT,
     val showSwipeButtons: Boolean = false,
-    val swapSummaryArchive: Boolean = false,
+    val showArchiveButton: Boolean = true,
     val isFullscreenMode: Boolean = false,
     val showResetConfirmation: Boolean = false,
     val syncLocalDeletion: Boolean = false,

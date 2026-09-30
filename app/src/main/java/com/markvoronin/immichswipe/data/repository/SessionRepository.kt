@@ -130,7 +130,7 @@ class SessionRepository(context: Context) {
     val autoNextOnFav: Flow<Boolean> = dataStore.isAutoNextOnFav()
     val includeArchived: Flow<Boolean> = dataStore.isIncludeArchived()
     val showSwipeButtons: Flow<Boolean> = dataStore.isShowSwipeButtons()
-    val swapSummaryArchive: Flow<Boolean> = dataStore.isSwapSummaryArchive()
+    val showArchiveButton: Flow<Boolean> = dataStore.isShowArchiveButton()
     val backupWarningShown: Flow<Boolean> = dataStore.isBackupWarningShown()
     val syncLocalDeletion: Flow<Boolean> = dataStore.isSyncLocalDeletion()
     val trashLocalDeletion: Flow<Boolean> = dataStore.isTrashLocalDeletion()
@@ -245,7 +245,7 @@ class SessionRepository(context: Context) {
     suspend fun saveAutoNextOnFav(autoNextOnFav: Boolean) { dataStore.saveAutoNextOnFav(autoNextOnFav) }
     suspend fun saveIncludeArchived(include: Boolean) { dataStore.saveIncludeArchived(include) }
     suspend fun saveShowSwipeButtons(show: Boolean) { dataStore.saveShowSwipeButtons(show) }
-    suspend fun saveSwapSummaryArchive(swap: Boolean) { dataStore.saveSwapSummaryArchive(swap) }
+    suspend fun saveShowArchiveButton(show: Boolean) { dataStore.saveShowArchiveButton(show) }
     suspend fun saveBackupWarningShown(shown: Boolean) { dataStore.saveBackupWarningShown(shown) }
     suspend fun saveSyncLocalDeletion(sync: Boolean) { dataStore.saveSyncLocalDeletion(sync) }
     suspend fun saveTapToSwipeEnabled(enabled: Boolean) { dataStore.saveTapToSwipeEnabled(enabled) }
