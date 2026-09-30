@@ -30,7 +30,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.markvoronin.immichswipe.R
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
@@ -67,6 +69,7 @@ import com.markvoronin.immichswipe.feature.swipe.components.SwipeActionBar
 import com.markvoronin.immichswipe.feature.swipe.components.SwipeBulkOverlay
 import com.markvoronin.immichswipe.feature.swipe.components.SwipeCardDeck
 import androidx.activity.compose.BackHandler
+import com.markvoronin.immichswipe.feature.swipe.components.AddToAlbumDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
@@ -498,6 +501,28 @@ fun SwipeScreen(
             isDelete = isDelete,
             selectionCount = uiState.bulkSelection.size,
             onDismiss = { viewModel.exitBulkMode() }
+        )
+    }
+
+    if (uiState.showAddToAlbumDialog) {
+        val successTemplate = stringResource(R.string.add_to_album_success)
+        val errorTemplate = stringResource(R.string.add_to_album_error)
+
+        AddToAlbumDialog(
+            albums = uiState.albumsForAddToAlbum,
+            isLoading = uiState.isFetchingAlbumsForDialog,
+            onAlbumSelect = { targetAlbum ->
+                viewModel.addCurrentAssetToAlbum(targetAlbum) { success, albumName ->
+                    viewModel.dismissAddToAlbumDialog()
+                    val message = if (success) {
+                        successTemplate.format(albumName)
+                    } else {
+                        errorTemplate.format(albumName)
+                    }
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                }
+            },
+            onDismiss = { viewModel.dismissAddToAlbumDialog() }
         )
     }
 }

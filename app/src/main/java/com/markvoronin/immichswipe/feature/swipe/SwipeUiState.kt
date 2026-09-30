@@ -5,6 +5,7 @@ import com.markvoronin.immichswipe.core.IconPosition
 import com.markvoronin.immichswipe.core.ImmichOpenMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SortOrder
+import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.domain.model.Asset
 
 /**
@@ -61,6 +62,10 @@ data class SwipeUiState(
     val showSwipeButtons: Boolean = false,
     val showArchiveButton: Boolean = true,
     val showLockButton: Boolean = true,
+    val showAddToAlbumButton: Boolean = true,
+    val showAddToAlbumDialog: Boolean = false,
+    val albumsForAddToAlbum: List<Album> = emptyList(),
+    val isFetchingAlbumsForDialog: Boolean = false,
     val isFullscreenMode: Boolean = false,
     val showResetConfirmation: Boolean = false,
     val syncLocalDeletion: Boolean = false,

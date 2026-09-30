@@ -3,6 +3,7 @@ package com.markvoronin.immichswipe.data.api
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.domain.model.User
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.HTTP
@@ -17,6 +18,12 @@ interface ImmichApi {
 
     @GET("api/albums")
     suspend fun getAlbums(): List<Album>
+
+    @PUT("api/albums/{id}/assets")
+    suspend fun addAssetsToAlbum(
+        @Path("id") albumId: String,
+        @Body request: AddAssetsToAlbumRequest
+    ): Response<Unit>
 
     @GET("api/duplicates")
     suspend fun getDuplicates(): List<DuplicateCluster>
@@ -149,4 +156,11 @@ data class SearchAssetResult(
  */
 data class DuplicateCluster(
     val assets: List<Asset>
+)
+
+/**
+ * Corps de la requête pour ajouter des assets à un album.
+ */
+data class AddAssetsToAlbumRequest(
+    val ids: List<String>
 )

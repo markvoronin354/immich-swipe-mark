@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.LibraryAdd
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Videocam
@@ -169,6 +170,20 @@ fun SwipeActionBar(
                     imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                     contentDescription = stringResource(R.string.swipe_favorite),
                     tint = if (isFav) Color.Red else MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.size(if (uiState.showSwipeButtons) 22.dp else 26.dp)
+                )
+            }
+        }
+
+        if (uiState.showAddToAlbumButton) {
+            IconButton(
+                onClick = { viewModel.openAddToAlbumDialog() },
+                modifier = Modifier.size(if (uiState.showSwipeButtons) 36.dp else 44.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LibraryAdd,
+                    contentDescription = stringResource(R.string.add_to_album_title),
+                    tint = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.size(if (uiState.showSwipeButtons) 22.dp else 26.dp)
                 )
             }

@@ -122,6 +122,7 @@
     <string name="settings_mute_pos_label">Mute</string>
     <string name="settings_download_pos_label">Download </string>
     <string name="settings_share_pos_label">Share</string>
+    <string name="settings_show_add_to_album_label">Add to album button</string>
     <string name="settings_show_swipe_buttons_label">Keep/Delete buttons</string>
     <string name="settings_show_archive_label">Archive button</string>
     <string name="settings_show_lock_label">Lock button</string>
@@ -139,6 +140,12 @@
     <string name="swipe_archive">Archive</string>
     <string name="swipe_locked">Lock</string>
     <string name="swipe_undo">Undo</string>
+    <string name="add_to_album_title">Add to album</string>
+    <string name="add_to_album_search_placeholder">Search an album…</string>
+    <string name="add_to_album_no_albums">No albums found</string>
+    <string name="add_to_album_success">Added to %1$s</string>
+    <string name="add_to_album_error">Error adding to album: %1$s</string>
+    <string name="add_to_album_items_count" tools:ignore="PluralsCandidate">%1$d items</string>
     <string name="swipe_summary_title">Sorting summary</string>
     <string name="swipe_sync_success">Synced!</string>
     <string name="swipe_sync_success_desc">Your changes are on Immich</string>

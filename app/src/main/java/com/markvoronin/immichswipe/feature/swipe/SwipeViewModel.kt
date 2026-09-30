@@ -8,6 +8,7 @@ import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.core.SortCategory
 import com.markvoronin.immichswipe.core.SortOrder
+import com.markvoronin.immichswipe.data.repository.AlbumRepository
 import com.markvoronin.immichswipe.data.repository.AssetRepository
 import com.markvoronin.immichswipe.data.repository.SessionRepository
 import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
@@ -100,6 +101,11 @@ class SwipeViewModel(
         viewModelScope.launch {
             sessionRepository.immichLongPressWeb.collect { enabled ->
                 _uiState.update { it.copy(immichLongPressWeb = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            sessionRepository.showAddToAlbumButton.collect { show ->
+                _uiState.update { it.copy(showAddToAlbumButton = show) }
             }
         }
     }
@@ -447,6 +453,46 @@ class SwipeViewModel(
     fun toggleFullscreen(visible: Boolean) { _uiState.update { it.copy(isFullscreenMode = visible) } }
     fun toggleResetConfirmation(visible: Boolean) { _uiState.update { it.copy(showResetConfirmation = visible) } }
     fun toggleMute() { _uiState.update { it.copy(isMuted = !_uiState.value.isMuted) } }
+
+    private val albumRepository by lazy {
+        AlbumRepository(
+            SessionManager.api ?: throw IllegalStateException("Session not initialized")
+        )
+    }
+
+    fun openAddToAlbumDialog() {
+        _uiState.update { it.copy(showAddToAlbumDialog = true, isFetchingAlbumsForDialog = true) }
+        viewModelScope.launch {
+            try {
+                val albums = albumRepository.getAlbumsRaw().filter { album ->
+                    album.id != Album.VIRTUAL_ALL_ID &&
+                    album.id != Album.VIRTUAL_ORPHANS_ID &&
+                    album.id != Album.VIRTUAL_DUPLICATES_ID
+                }
+                _uiState.update { it.copy(albumsForAddToAlbum = albums, isFetchingAlbumsForDialog = false) }
+            } catch (e: Exception) {
+                AppLogger.e("SwipeViewModel", "Error loading albums for dialog", e)
+                _uiState.update { it.copy(isFetchingAlbumsForDialog = false) }
+            }
+        }
+    }
+
+    fun dismissAddToAlbumDialog() {
+        _uiState.update { it.copy(showAddToAlbumDialog = false) }
+    }
+
+    fun addCurrentAssetToAlbum(targetAlbum: Album, onResult: (Boolean, String) -> Unit) {
+        val asset = _uiState.value.currentAsset ?: return
+        viewModelScope.launch {
+            try {
+                val success = albumRepository.addAssetToAlbum(targetAlbum.id, asset.id)
+                onResult(success, targetAlbum.albumName)
+            } catch (e: Exception) {
+                AppLogger.e("SwipeViewModel", "Error adding asset to album ${targetAlbum.albumName}", e)
+                onResult(false, targetAlbum.albumName)
+            }
+        }
+    }
     private val assetsEditedThisSession = mutableSetOf<String>()
 
     fun rotateCurrentAsset() {

@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.Forward
 import androidx.compose.material.icons.filled.AdsClick
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.LibraryAdd
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.HorizontalDivider
@@ -60,6 +61,16 @@ fun InteractionsScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
+                // 0. Add to album
+                SettingsToggleItemSmall(
+                    title = stringResource(R.string.settings_show_add_to_album_label),
+                    checked = uiState.showAddToAlbumButton,
+                    onCheckedChange = { viewModel.setShowAddToAlbumButton(it) },
+                    icon = Icons.Default.LibraryAdd
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
+
                 // 1. Keep/Delete
                 SettingsToggleItemSmall(
                     title = stringResource(R.string.settings_show_swipe_buttons_label),

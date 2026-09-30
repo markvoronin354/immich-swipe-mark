@@ -1,5 +1,7 @@
 package com.markvoronin.immichswipe.data.repository
 
+import com.markvoronin.immichswipe.core.AppLogger
+import com.markvoronin.immichswipe.data.api.AddAssetsToAlbumRequest
 import com.markvoronin.immichswipe.data.api.ImmichApi
 import com.markvoronin.immichswipe.data.api.SearchAssetsRequest
 import com.markvoronin.immichswipe.domain.model.Album
@@ -55,5 +57,20 @@ class AlbumRepository(
         val albums = getAlbumsRaw()
         if (includeArchived) return albums
         return refineAlbumCounts(albums)
+    }
+
+    /**
+     * Ajoute un asset à un album spécifié.
+     */
+    suspend fun addAssetToAlbum(albumId: String, assetId: String): Boolean {
+        return try {
+            val response = api.addAssetsToAlbum(albumId,
+                AddAssetsToAlbumRequest(ids = listOf(assetId))
+            )
+            response.isSuccessful
+        } catch (e: Exception) {
+            AppLogger.e("AlbumRepository", "Erreur ajout asset à l'album $albumId", e)
+            false
+        }
     }
 }

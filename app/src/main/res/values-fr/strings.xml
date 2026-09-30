@@ -123,6 +123,7 @@
     <string name="settings_mute_pos_label">Position du bouton Mute</string>
     <string name="settings_download_pos_label">Position du bouton Téléchargement</string>
     <string name="settings_share_pos_label">Position du bouton Partage</string>
+    <string name="settings_show_add_to_album_label">Bouton Ajouter à un album</string>
     <string name="settings_show_swipe_buttons_label">Afficher les boutons Keep/Delete</string>
     <string name="settings_show_archive_label">Bouton Archiver</string>
     <string name="settings_show_lock_label">Bouton Verrouiller</string>
@@ -138,6 +139,12 @@
     <string name="swipe_remaining">Restant</string>
     <string name="swipe_favorite">Favoris</string>
     <string name="swipe_archive">Archiver</string>
+    <string name="add_to_album_title">Ajouter à un album</string>
+    <string name="add_to_album_search_placeholder">Rechercher un album…</string>
+    <string name="add_to_album_no_albums">Aucun album trouvé</string>
+    <string name="add_to_album_success">Ajouté à %1$s</string>
+    <string name="add_to_album_error">Erreur lors de l\'ajout à l\'album : %1$s</string>
+    <string name="add_to_album_items_count">%1$d éléments</string>
     <string name="swipe_locked">Verrouiller</string>
     <string name="swipe_undo">Annuler</string>
     <string name="swipe_summary_title">Résumé du tri</string>

@@ -190,6 +190,11 @@ class SettingsViewModel(
             }
         }
         viewModelScope.launch {
+            sessionRepository.showAddToAlbumButton.collect { show ->
+                _uiState.update { it.copy(showAddToAlbumButton = show) }
+            }
+        }
+        viewModelScope.launch {
             sessionRepository.syncLocalDeletion.collect { sync ->
                 _uiState.update { it.copy(syncLocalDeletion = sync) }
             }
@@ -341,6 +346,12 @@ class SettingsViewModel(
     fun setShowLockButton(show: Boolean) {
         viewModelScope.launch {
             sessionRepository.saveShowLockButton(show)
+        }
+    }
+
+    fun setShowAddToAlbumButton(show: Boolean) {
+        viewModelScope.launch {
+            sessionRepository.saveShowAddToAlbumButton(show)
         }
     }
 

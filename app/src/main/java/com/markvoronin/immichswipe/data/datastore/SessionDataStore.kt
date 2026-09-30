@@ -43,6 +43,7 @@ class SessionDataStore(private val context: Context) {
         private val KEY_SHOW_SWIPE_BUTTONS = androidx.datastore.preferences.core.booleanPreferencesKey("show_swipe_buttons")
         private val KEY_SHOW_ARCHIVE = booleanPreferencesKey("show_archive")
         private val KEY_SHOW_LOCK = booleanPreferencesKey("show_lock")
+        private val KEY_SHOW_ADD_TO_ALBUM = booleanPreferencesKey("show_add_to_album")
         private val KEY_BACKUP_WARNING_SHOWN = androidx.datastore.preferences.core.booleanPreferencesKey("backup_warning_shown")
         private val KEY_SYNC_LOCAL_DELETION = androidx.datastore.preferences.core.booleanPreferencesKey("sync_local_deletion")
         private val KEY_TRASH_LOCAL_DELETION = androidx.datastore.preferences.core.booleanPreferencesKey("trash_local_deletion")
@@ -186,6 +187,9 @@ class SessionDataStore(private val context: Context) {
 
     fun isShowLockButton(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_LOCK] ?: true }
     suspend fun saveShowLockButton(show: Boolean) { context.dataStore.edit { it[KEY_SHOW_LOCK] = show } }
+
+    fun isShowAddToAlbumButton(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_ADD_TO_ALBUM] ?: true }
+    suspend fun saveShowAddToAlbumButton(show: Boolean) { context.dataStore.edit { it[KEY_SHOW_ADD_TO_ALBUM] = show } }
 
     fun isBackupWarningShown(): Flow<Boolean> = context.dataStore.data.map { it[KEY_BACKUP_WARNING_SHOWN] ?: false }
     suspend fun saveBackupWarningShown(shown: Boolean) { context.dataStore.edit { it[KEY_BACKUP_WARNING_SHOWN] = shown } }
