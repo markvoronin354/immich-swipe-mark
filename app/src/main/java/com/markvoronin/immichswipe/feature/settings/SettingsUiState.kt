@@ -3,6 +3,7 @@ package com.markvoronin.immichswipe.feature.settings
 import com.markvoronin.immichswipe.core.AppTheme
 import com.markvoronin.immichswipe.core.CardDisplayMode
 import com.markvoronin.immichswipe.core.IconPosition
+import com.markvoronin.immichswipe.core.ImmichOpenMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SortOrder
 
@@ -26,6 +27,8 @@ data class SettingsUiState(
     val dynamicColor: Boolean = true,
     val fullscreenButtonPosition: IconPosition = IconPosition.TOP_RIGHT,
     val immichButtonPosition: IconPosition = IconPosition.TOP_LEFT,
+    val immichOpenMode: ImmichOpenMode = ImmichOpenMode.APP,
+    val immichLongPressWeb: Boolean = false,
     val rotationButtonPosition: IconPosition = IconPosition.BOTTOM_LEFT,
     val muteButtonPosition: IconPosition = IconPosition.BOTTOM_RIGHT,
     val downloadButtonPosition: IconPosition = IconPosition.BOTTOM_LEFT,

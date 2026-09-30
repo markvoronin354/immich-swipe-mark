@@ -2,6 +2,7 @@ package com.markvoronin.immichswipe.feature.swipe
 
 import com.markvoronin.immichswipe.core.CardDisplayMode
 import com.markvoronin.immichswipe.core.IconPosition
+import com.markvoronin.immichswipe.core.ImmichOpenMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.domain.model.Asset
@@ -36,6 +37,8 @@ data class SwipeUiState(
     val playbackBehavior: PlaybackBehavior = PlaybackBehavior.PAUSE_OTHERS,
     val fullscreenButtonPosition: IconPosition = IconPosition.TOP_RIGHT,
     val immichButtonPosition: IconPosition = IconPosition.TOP_LEFT,
+    val immichOpenMode: ImmichOpenMode = ImmichOpenMode.APP,
+    val immichLongPressWeb: Boolean = false,
     val rotationButtonPosition: IconPosition = IconPosition.BOTTOM_LEFT,
     val muteButtonPosition: IconPosition = IconPosition.BOTTOM_RIGHT,
     val downloadButtonPosition: IconPosition = IconPosition.BOTTOM_LEFT,

@@ -2,6 +2,7 @@ package com.markvoronin.immichswipe.feature.swipe
 
 import com.markvoronin.immichswipe.core.CardDisplayMode
 import com.markvoronin.immichswipe.core.IconPosition
+import com.markvoronin.immichswipe.core.ImmichOpenMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.domain.model.Asset
 
@@ -19,6 +20,8 @@ data class SwipeCardConfig(
     val showMuteButton: Boolean = true,
     val showDownloadButton: Boolean = false,
     val showShareButton: Boolean = false,
+    val immichOpenMode: ImmichOpenMode = ImmichOpenMode.APP,
+    val immichLongPressWeb: Boolean = false,
     val cardDisplayMode: CardDisplayMode,
     val tapToSwipeEnabled: Boolean = false,
     val showSizeIndicator: Boolean = false,

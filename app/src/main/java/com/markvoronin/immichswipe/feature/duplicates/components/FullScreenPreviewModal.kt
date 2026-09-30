@@ -1,6 +1,7 @@
 package com.markvoronin.immichswipe.feature.duplicates.components
 
 import android.content.Intent
+import com.markvoronin.immichswipe.core.ImmichLauncher
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -273,10 +274,7 @@ fun FullScreenPreviewModal(
 
                         IconButton(
                             onClick = {
-                                if (baseUrl != null) {
-                                    val intent = Intent(Intent.ACTION_VIEW, "$baseUrl/photos/${currentAsset.id}".toUri())
-                                    context.startActivity(intent)
-                                }
+                                ImmichLauncher.openAssetInImmich(context, baseUrl, currentAsset.id)
                             },
                             modifier = Modifier
                                 .padding(end = 8.dp)

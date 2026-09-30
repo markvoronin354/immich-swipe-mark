@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.IconPosition
+import com.markvoronin.immichswipe.core.ImmichOpenMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.core.SortCategory
@@ -89,6 +90,16 @@ class SwipeViewModel(
             ) { values ->
                 updateSettingsState(values)
             }.collect {}
+        }
+        viewModelScope.launch {
+            sessionRepository.immichOpenMode.collect { mode ->
+                _uiState.update { it.copy(immichOpenMode = mode) }
+            }
+        }
+        viewModelScope.launch {
+            sessionRepository.immichLongPressWeb.collect { enabled ->
+                _uiState.update { it.copy(immichLongPressWeb = enabled) }
+            }
         }
     }
 

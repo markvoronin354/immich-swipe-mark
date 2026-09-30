@@ -1,6 +1,7 @@
 package com.markvoronin.immichswipe.data.datastore
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -21,6 +22,8 @@ class SessionDataStore(private val context: Context) {
         private val KEY_DYNAMIC_COLOR = androidx.datastore.preferences.core.booleanPreferencesKey("dynamic_color")
         private val KEY_FULLSCREEN_ICON_POS = stringPreferencesKey("fullscreen_icon_pos")
         private val KEY_IMMICH_ICON_POS = stringPreferencesKey("immich_icon_pos")
+        private val KEY_IMMICH_OPEN_MODE = stringPreferencesKey("immich_open_mode")
+        private val KEY_IMMICH_LONG_PRESS_WEB = booleanPreferencesKey("immich_long_press_web")
         private val KEY_CARD_DISPLAY_ICON_POS = stringPreferencesKey("card_display_icon_pos")
         private val KEY_MUTE_ICON_POS = stringPreferencesKey("mute_icon_pos")
         private val KEY_DOWNLOAD_ICON_POS = stringPreferencesKey("download_icon_pos")
@@ -97,6 +100,18 @@ class SessionDataStore(private val context: Context) {
 
     suspend fun saveImmichIconPosition(pos: String) {
         context.dataStore.edit { it[KEY_IMMICH_ICON_POS] = pos }
+    }
+
+    fun getImmichOpenMode(): Flow<String?> = context.dataStore.data.map { it[KEY_IMMICH_OPEN_MODE] }
+
+    suspend fun saveImmichOpenMode(mode: String) {
+        context.dataStore.edit { it[KEY_IMMICH_OPEN_MODE] = mode }
+    }
+
+    fun getImmichLongPressWeb(): Flow<Boolean> = context.dataStore.data.map { it[KEY_IMMICH_LONG_PRESS_WEB] ?: false }
+
+    suspend fun saveImmichLongPressWeb(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_IMMICH_LONG_PRESS_WEB] = enabled }
     }
 
     fun getCardDisplayIconPosition(): Flow<String?> = context.dataStore.data.map { it[KEY_CARD_DISPLAY_ICON_POS] }

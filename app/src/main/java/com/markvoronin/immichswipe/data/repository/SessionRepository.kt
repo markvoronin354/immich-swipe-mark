@@ -5,6 +5,7 @@ import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.AppTheme
 import com.markvoronin.immichswipe.core.CardDisplayMode
 import com.markvoronin.immichswipe.core.IconPosition
+import com.markvoronin.immichswipe.core.ImmichOpenMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SessionConfig
 import com.markvoronin.immichswipe.core.SortOrder
@@ -76,6 +77,12 @@ class SessionRepository(context: Context) {
     val immichButtonPosition: Flow<IconPosition> = dataStore.getImmichIconPosition().map {
         it?.let { try { IconPosition.valueOf(it) } catch(e: Exception) { IconPosition.TOP_LEFT } } ?: IconPosition.TOP_LEFT
     }
+
+    val immichOpenMode: Flow<ImmichOpenMode> = dataStore.getImmichOpenMode().map {
+        it?.let { try { ImmichOpenMode.valueOf(it) } catch(e: Exception) { ImmichOpenMode.APP } } ?: ImmichOpenMode.APP
+    }
+
+    val immichLongPressWeb: Flow<Boolean> = dataStore.getImmichLongPressWeb()
 
     /**
      * Expose la position de l'icône de rotation d'asset.
@@ -181,6 +188,14 @@ class SessionRepository(context: Context) {
      */
     suspend fun saveImmichButtonPosition(pos: IconPosition) {
         dataStore.saveImmichIconPosition(pos.name)
+    }
+
+    suspend fun saveImmichOpenMode(mode: ImmichOpenMode) {
+        dataStore.saveImmichOpenMode(mode.name)
+    }
+
+    suspend fun saveImmichLongPressWeb(enabled: Boolean) {
+        dataStore.saveImmichLongPressWeb(enabled)
     }
 
     suspend fun saveRotationButtonPosition(pos: IconPosition) {

@@ -7,6 +7,7 @@ import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.AppTheme
 import com.markvoronin.immichswipe.core.IconPosition
+import com.markvoronin.immichswipe.core.ImmichOpenMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.core.SortOrder
@@ -78,6 +79,16 @@ class SettingsViewModel(
         viewModelScope.launch {
             sessionRepository.immichButtonPosition.collect { pos ->
                 _uiState.value = _uiState.value.copy(immichButtonPosition = pos)
+            }
+        }
+        viewModelScope.launch {
+            sessionRepository.immichOpenMode.collect { mode ->
+                _uiState.value = _uiState.value.copy(immichOpenMode = mode)
+            }
+        }
+        viewModelScope.launch {
+            sessionRepository.immichLongPressWeb.collect { enabled ->
+                _uiState.value = _uiState.value.copy(immichLongPressWeb = enabled)
             }
         }
         viewModelScope.launch {
@@ -214,6 +225,18 @@ class SettingsViewModel(
     fun setImmichButtonPosition(pos: IconPosition) {
         viewModelScope.launch {
             sessionRepository.saveImmichButtonPosition(pos)
+        }
+    }
+
+    fun setImmichOpenMode(mode: ImmichOpenMode) {
+        viewModelScope.launch {
+            sessionRepository.saveImmichOpenMode(mode)
+        }
+    }
+
+    fun setImmichLongPressWeb(enabled: Boolean) {
+        viewModelScope.launch {
+            sessionRepository.saveImmichLongPressWeb(enabled)
         }
     }
 

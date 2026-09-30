@@ -1,7 +1,8 @@
 package com.markvoronin.immichswipe.feature.swipe
 
-
 import android.content.Intent
+import com.markvoronin.immichswipe.core.ImmichLauncher
+import com.markvoronin.immichswipe.feature.swipe.components.SwipeActionIconButton
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -713,9 +714,11 @@ fun SwipeCard(
                                             icon = Icons.AutoMirrored.Filled.OpenInNew,
                                             contentDescription = stringResource(R.string.settings_immich_pos_label),
                                             onClick = {
-                                                val intent = Intent(Intent.ACTION_VIEW, "$baseUrl/photos/${asset.id}".toUri())
-                                                context.startActivity(intent)
-                                            }
+                                                ImmichLauncher.openAssetInImmich(context, baseUrl, asset.id, mode = config.immichOpenMode)
+                                            },
+                                            onLongClick = if (config.immichLongPressWeb && !baseUrl.isNullOrBlank()) {
+                                                { ImmichLauncher.openInWeb(context, baseUrl, asset.id) }
+                                            } else null
                                         )
                                     }
                                     if (config.showMuteButton && config.muteButtonPosition.toHorizontalAlignment() == side && (config.muteButtonPosition == IconPosition.TOP_LEFT || config.muteButtonPosition == IconPosition.TOP_RIGHT) && asset.type == "VIDEO") {
@@ -766,9 +769,11 @@ fun SwipeCard(
                                             icon = Icons.AutoMirrored.Filled.OpenInNew,
                                             contentDescription = stringResource(R.string.settings_immich_pos_label),
                                             onClick = {
-                                                val intent = Intent(Intent.ACTION_VIEW, "$baseUrl/photos/${asset.id}".toUri())
-                                                context.startActivity(intent)
-                                            }
+                                                ImmichLauncher.openAssetInImmich(context, baseUrl, asset.id, mode = config.immichOpenMode)
+                                            },
+                                            onLongClick = if (config.immichLongPressWeb && !baseUrl.isNullOrBlank()) {
+                                                { ImmichLauncher.openInWeb(context, baseUrl, asset.id) }
+                                            } else null
                                         )
                                     }
                                     if (config.showMuteButton && config.muteButtonPosition.toHorizontalAlignment() == side && (config.muteButtonPosition == IconPosition.BOTTOM_LEFT || config.muteButtonPosition == IconPosition.BOTTOM_RIGHT) && asset.type == "VIDEO") {
