@@ -340,13 +340,13 @@ fun SwipeCard(
                 }
                 .pointerInput(isNext, asset.id) {
                     if (isNext) return@pointerInput
-                    var dragStartX = 0f
                     var startProgress = 0f
+                    var startTouchPos = Offset.Zero
                     detectDragGestures(
-                        onDragStart = { 
+                        onDragStart = { offset ->
                             dragDirection = 0
-                            dragStartX = offsetX.value
                             startProgress = panelProgress.value
+                            startTouchPos = offset
                         },
                         onDragEnd = {
                             scope.launch {
@@ -419,24 +419,34 @@ fun SwipeCard(
                                 return@detectDragGestures
                             }
                             
+                            val totalDX = change.position.x - startTouchPos.x
+                            val totalDY = change.position.y - startTouchPos.y
+                            val accumulatedDX = abs(totalDX)
+                            val accumulatedDY = abs(totalDY)
+
                             if (dragDirection == 0) {
-                                val accumulatedDX = abs(offsetX.value - dragStartX)
-                                val accumulatedDY = abs(dragAmount.y)
-                                
                                 // Decision threshold: 20 pixels of movement
-                                if (accumulatedDX > 20 || accumulatedDY > 20) {
-                                    // If panel is open or moving, strictly lock to vertical drag
-                                    if (startProgress > 0.1f && accumulatedDY > 5) {
+                                if (accumulatedDX > 20f || accumulatedDY > 20f) {
+                                    // If panel is open or moving, strictly lock to vertical drag if user is moving vertically
+                                    if (startProgress > 0.1f && accumulatedDY > 5f) {
                                         dragDirection = 2
                                     } else {
-                                        dragDirection = if (accumulatedDX > accumulatedDY) 1 else 2
+                                        // Require accumulatedDY > 1.73f * accumulatedDX (angle within ~30° of vertical / > 60° from horizontal)
+                                        // to lock to vertical drag (metadata panel). Otherwise, lock to horizontal swipe.
+                                        dragDirection = if (accumulatedDY > 1.73f * accumulatedDX) 2 else 1
                                     }
 
                                     // Immediately animate back the non-chosen axis when direction locks
                                     if (dragDirection == 1) {
                                         scope.launch { panelProgress.animateTo(startProgress, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
                                     } else {
-                                        scope.launch { offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                        scope.launch {
+                                            offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                            if (metadataHeightPx > 0f) {
+                                                val initialProgress = (startProgress - totalDY / metadataHeightPx).coerceIn(0f, 1f)
+                                                panelProgress.snapTo(initialProgress)
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -450,12 +460,8 @@ fun SwipeCard(
                                         panelProgress.snapTo((panelProgress.value + deltaProgress).coerceIn(0f, 1f))
                                     }
                                 } else {
-                                    // Track both until locked
+                                    // While direction is undecided, only update horizontal offset so metadata panel doesn't twitch
                                     offsetX.snapTo(offsetX.value + dragAmount.x)
-                                    if (metadataHeightPx > 0f) {
-                                        val deltaProgress = -dragAmount.y / metadataHeightPx
-                                        panelProgress.snapTo((panelProgress.value + deltaProgress).coerceIn(0f, 1f))
-                                    }
                                 }
                             }
                         }
