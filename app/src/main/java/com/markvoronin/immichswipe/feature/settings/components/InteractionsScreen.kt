@@ -1,11 +1,6 @@
 package com.markvoronin.immichswipe.feature.settings.components
 
-import android.Manifest
-import android.os.Build
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Forward
 import androidx.compose.material.icons.filled.AdsClick
-import androidx.compose.material.icons.filled.PhonelinkErase
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.TouchApp
@@ -37,7 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,18 +47,6 @@ fun InteractionsScreen(
 ) {
     BackHandler(enabled = true) {
         onBack()
-    }
-
-    val context = LocalContext.current
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val allGranted = permissions.entries.all { it.value }
-        if (!allGranted) {
-            viewModel.setSyncLocalDeletion(sync = false)
-            Toast.makeText(context, "Permission denied. Local sync disabled.", Toast.LENGTH_SHORT).show()
-        }
     }
 
     Column(
@@ -113,11 +94,6 @@ fun InteractionsScreen(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-                Text(
-                    text = stringResource(R.string.settings_interactions_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
             }
         }
 
@@ -131,6 +107,27 @@ fun InteractionsScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
+                // 1. Keep/Delete
+                SettingsToggleItemSmall(
+                    title = stringResource(R.string.settings_show_swipe_buttons_label),
+                    checked = uiState.showSwipeButtons,
+                    onCheckedChange = { viewModel.setShowSwipeButtons(it) },
+                    icon = Icons.Default.AdsClick
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
+
+                // 2. Archive
+                SettingsToggleItemSmall(
+                    title = stringResource(R.string.settings_show_archive_label),
+                    checked = uiState.showArchiveButton,
+                    onCheckedChange = { viewModel.setShowArchiveButton(it) },
+                    icon = Icons.Default.Archive
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
+
+                // 3. Favorite
                 SettingsToggleItemSmall(
                     title = stringResource(R.string.settings_tri_favorite),
                     checked = uiState.showFavoriteButton,
@@ -140,6 +137,7 @@ fun InteractionsScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
 
+                // 4. Auto-advance
                 SettingsToggleItemSmall(
                     title = stringResource(R.string.settings_auto_next_label),
                     checked = uiState.autoNextOnFav,
@@ -155,21 +153,7 @@ fun InteractionsScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
 
-                SettingsToggleItemSmall(
-                    title = stringResource(R.string.settings_show_swipe_buttons_label),
-                    checked = uiState.showSwipeButtons,
-                    onCheckedChange = { viewModel.setShowSwipeButtons(it) },
-                    icon = Icons.Default.AdsClick
-                )
-                Text(
-                    text = stringResource(R.string.settings_show_swipe_buttons_desc),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-
+                // 5. Tap to swipe
                 SettingsToggleItemSmall(
                     title = stringResource(R.string.settings_tap_to_swipe_label),
                     checked = uiState.tapToSwipeEnabled,
@@ -178,49 +162,6 @@ fun InteractionsScreen(
                 )
                 Text(
                     text = stringResource(R.string.settings_tap_to_swipe_desc),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-
-                SettingsToggleItemSmall(
-                    title = stringResource(R.string.settings_show_archive_label),
-                    checked = uiState.showArchiveButton,
-                    onCheckedChange = { viewModel.setShowArchiveButton(it) },
-                    icon = Icons.Default.Archive
-                )
-                Text(
-                    text = stringResource(R.string.settings_show_archive_desc),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-
-                SettingsToggleItemSmall(
-                    title = stringResource(R.string.settings_sync_local_deletion_label),
-                    checked = uiState.syncLocalDeletion,
-                    onCheckedChange = { checked ->
-                        if (checked) {
-                            val perms = if (Build.VERSION.SDK_INT >= 33) {
-                                arrayOf(
-                                    Manifest.permission.READ_MEDIA_IMAGES,
-                                    Manifest.permission.READ_MEDIA_VIDEO
-                                )
-                            } else {
-                                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
-                            }
-                            permissionLauncher.launch(perms)
-                        }
-                        viewModel.setSyncLocalDeletion(checked)
-                    },
-                    icon = Icons.Default.PhonelinkErase
-                )
-                Text(
-                    text = stringResource(R.string.settings_sync_local_deletion_desc),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)

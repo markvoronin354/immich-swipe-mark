@@ -1,5 +1,6 @@
 package com.markvoronin.immichswipe.feature.settings
 
+import android.Manifest
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -45,6 +46,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PhonelinkErase
 import androidx.compose.material.icons.filled.SettingsSuggest
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TouchApp
@@ -91,6 +93,16 @@ fun SettingsScreen(
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.entries.all { it.value }
+        if (!allGranted) {
+            viewModel.setSyncLocalDeletion(sync = false)
+            Toast.makeText(context, "Permission denied. Local sync disabled.", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -270,6 +282,36 @@ fun SettingsScreen(
                     icon = Icons.Default.AdsClick,
                     onClick = { viewModel.setShowActionButtonsDialog(true) }
                 )
+
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
+
+                Column(modifier = Modifier.padding(16.dp)) {
+                    SettingsToggleItemSmall(
+                        title = stringResource(R.string.settings_sync_local_deletion_label),
+                        checked = uiState.syncLocalDeletion,
+                        onCheckedChange = { checked ->
+                            if (checked) {
+                                val perms = if (Build.VERSION.SDK_INT >= 33) {
+                                    arrayOf(
+                                        Manifest.permission.READ_MEDIA_IMAGES,
+                                        Manifest.permission.READ_MEDIA_VIDEO
+                                    )
+                                } else {
+                                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+                                }
+                                permissionLauncher.launch(perms)
+                            }
+                            viewModel.setSyncLocalDeletion(checked)
+                        },
+                        icon = Icons.Default.PhonelinkErase
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_sync_local_deletion_desc),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.padding(start = 40.dp, end = 16.dp)
+                    )
+                }
 
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
 
