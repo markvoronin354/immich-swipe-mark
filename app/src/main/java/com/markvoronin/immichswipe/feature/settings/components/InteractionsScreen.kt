@@ -6,13 +6,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -144,33 +138,20 @@ fun InteractionsScreen(
                     icon = Icons.Default.Favorite
                 )
 
-                AnimatedVisibility(
-                    visible = uiState.showFavoriteButton,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(start = 32.dp, top = 8.dp, end = 8.dp, bottom = 8.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                RoundedCornerShape(12.dp)
-                            )
-                    ) {
-                        SettingsToggleItemSmall(
-                            title = stringResource(R.string.settings_auto_next_label),
-                            checked = uiState.autoNextOnFav,
-                            onCheckedChange = { viewModel.setAutoNextOnFav(it) },
-                            icon = Icons.AutoMirrored.Filled.Forward
-                        )
-                        Text(
-                            text = stringResource(R.string.settings_auto_next_desc),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)
-                        )
-                    }
-                }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
+
+                SettingsToggleItemSmall(
+                    title = stringResource(R.string.settings_auto_next_label),
+                    checked = uiState.autoNextOnFav,
+                    onCheckedChange = { viewModel.setAutoNextOnFav(it) },
+                    icon = Icons.AutoMirrored.Filled.Forward
+                )
+                Text(
+                    text = stringResource(R.string.settings_auto_next_desc),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)
+                )
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
 
