@@ -10,30 +10,63 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = Blue80,
+    onPrimary = Color(0xFF00315B),
+    primaryContainer = Color(0xff1a5487),
+    onPrimaryContainer = Color(0xFFD3E3FD),
+    secondary = BlueGrey80,
+    onSecondary = Color(0xFF253140),
+    secondaryContainer = Color(0xFF3B4758),
+    onSecondaryContainer = Color(0xFFD7E3F8),
+    tertiary = LightBlue80,
+    onTertiary = Color(0xFF3B2948),
+    tertiaryContainer = Color(0xFF523F5F),
+    onTertiaryContainer = Color(0xFFF3DAFF),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+    background = Color(0xFF111318),
+    onBackground = Color(0xFFE1E2E8),
+    surface = Color(0xff111318),
+    onSurface = Color(0xFFE1E2E8),
+    surfaceVariant = Color(0xFF43474E),
+    onSurfaceVariant = Color(0xFFC4C6CF),
+    outline = Color(0xFF8E9099),
+    outlineVariant = Color(0xFF43474E)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = Blue40,
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xff94b9f4),
+    onPrimaryContainer = Color(0xFF001C3B),
+    secondary = BlueGrey40,
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFD7E3F8),
+    onSecondaryContainer = Color(0xFF101C2B),
+    tertiary = LightBlue40,
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFF3DAFF),
+    onTertiaryContainer = Color(0xFF251431),
+    error = Color(0xFFBA1A1A),
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color(0xFF410002),
+    background = Color(0xFFF8F9FE),
+    onBackground = Color(0xFF191C20),
+    surface = Color(0xfff8f9fe),
+    onSurface = Color(0xFF191C20),
+    surfaceVariant = Color(0xFFE0E2EC),
+    onSurfaceVariant = Color(0xFF43474E),
+    outline = Color(0xFF74777F),
+    outlineVariant = Color(0xFFC4C6CF)
 )
 
 @Composable
@@ -63,7 +96,7 @@ fun ImmichSwipeTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = com.markvoronin.immichswipe.ui.theme.Typography,
+        typography = Typography,
         content = content
     )
 }
