@@ -72,6 +72,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -103,6 +105,28 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.abs
 
+
+private fun Modifier.rotateLayout(rotation: Int) = layout { measurable, constraints ->
+    val isRotated = rotation % 180 != 0
+    val newConstraints = if (isRotated) {
+        Constraints(
+            minWidth = constraints.minHeight,
+            maxWidth = constraints.maxHeight,
+            minHeight = constraints.minWidth,
+            maxHeight = constraints.maxWidth
+        )
+    } else constraints
+    val placeable = measurable.measure(newConstraints)
+    if (isRotated) {
+        layout(placeable.height, placeable.width) {
+            placeable.place((placeable.height - placeable.width) / 2, (placeable.width - placeable.height) / 2)
+        }
+    } else {
+        layout(placeable.width, placeable.height) {
+            placeable.place(0, 0)
+        }
+    }
+}
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -465,6 +489,7 @@ fun SwipeCard(
                         modifier = Modifier
                             .fillMaxSize()
                             .graphicsLayer { rotationZ = animatedRotation }
+                            .rotateLayout(config.rotationAngle)
                     )
 
                     if (!isNext && exoPlayer != null && !isFullscreenOpen) {
@@ -483,6 +508,11 @@ fun SwipeCard(
                                 ZoomableBox(
                                     modifier = Modifier.fillMaxSize(),
                                     resetOnRelease = true,
+                                    aspectRatio = asset.exifInfo?.let {
+                                        val baseAR = (it.imageWidth?.toFloat() ?: 1f) / (it.imageHeight?.toFloat() ?: 1f)
+                                        if (config.rotationAngle % 180 != 0) 1f / baseAR else baseAR
+                                    },
+                                    isFillMode = config.cardDisplayMode == CardDisplayMode.FILL,
                                     onTap = { offset, size ->
                                         if (panelProgress.value > 0.1f) {
                                             scope.launch { panelProgress.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
@@ -551,6 +581,7 @@ fun SwipeCard(
                                         modifier = Modifier
                                             .fillMaxSize()
                                             .graphicsLayer { rotationZ = animatedRotation }
+                                            .rotateLayout(config.rotationAngle)
                                     ) {
                                         surface()
                                     }
@@ -576,7 +607,7 @@ fun SwipeCard(
                 } else {
                     val photoRequest = remember(asset.id, baseUrl, apiKey) {
                         ImageRequest.Builder(context)
-                            .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                            .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview&edited=true")
                             .addHeader("x-api-key", apiKey)
                             .crossfade(false)
                             .precision(Precision.INEXACT)
@@ -586,7 +617,10 @@ fun SwipeCard(
                         modifier = Modifier.fillMaxSize(),
                         resetOnRelease = true,
                         enabled = !isNext,
-                        aspectRatio = asset.exifInfo?.let { it.imageWidth?.toFloat()?.div(it.imageHeight?.toFloat() ?: 1f) },
+                        aspectRatio = asset.exifInfo?.let {
+                            val baseAR = (it.imageWidth?.toFloat() ?: 1f) / (it.imageHeight?.toFloat() ?: 1f)
+                            if (config.rotationAngle % 180 != 0) 1f / baseAR else baseAR
+                        },
                         isFillMode = config.cardDisplayMode == CardDisplayMode.FILL,
                         onTap = { offset, size ->
                             if (panelProgress.value > 0.1f) {
@@ -651,6 +685,7 @@ fun SwipeCard(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer { rotationZ = animatedRotation }
+                                .rotateLayout(config.rotationAngle)
                         )
                     }
                 }
@@ -708,7 +743,7 @@ fun SwipeCard(
                                             onClick = actions.onOpenFullscreen
                                         )
                                     }
-                                    if (config.showRotationButton && config.rotationButtonPosition.toHorizontalAlignment() == side && (config.rotationButtonPosition == IconPosition.TOP_LEFT || config.rotationButtonPosition == IconPosition.TOP_RIGHT)) {
+                                    if (config.showRotationButton && asset.type != "VIDEO" && config.rotationButtonPosition.toHorizontalAlignment() == side && (config.rotationButtonPosition == IconPosition.TOP_LEFT || config.rotationButtonPosition == IconPosition.TOP_RIGHT)) {
                                         SwipeActionIconButton(
                                             icon = Icons.AutoMirrored.Filled.RotateRight,
                                             contentDescription = stringResource(R.string.swipe_rotate_asset),
@@ -763,7 +798,7 @@ fun SwipeCard(
                                             onClick = actions.onOpenFullscreen
                                         )
                                     }
-                                    if (config.showRotationButton && config.rotationButtonPosition.toHorizontalAlignment() == side && (config.rotationButtonPosition == IconPosition.BOTTOM_LEFT || config.rotationButtonPosition == IconPosition.BOTTOM_RIGHT)) {
+                                    if (config.showRotationButton && asset.type != "VIDEO" && config.rotationButtonPosition.toHorizontalAlignment() == side && (config.rotationButtonPosition == IconPosition.BOTTOM_LEFT || config.rotationButtonPosition == IconPosition.BOTTOM_RIGHT)) {
                                         SwipeActionIconButton(
                                             icon = Icons.AutoMirrored.Filled.RotateRight,
                                             contentDescription = stringResource(R.string.swipe_rotate_asset),

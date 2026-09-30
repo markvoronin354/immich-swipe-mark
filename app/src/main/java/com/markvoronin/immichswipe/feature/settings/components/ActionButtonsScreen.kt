@@ -161,8 +161,7 @@ fun ActionButtonsScreen(
                 selectedPosition = uiState.rotationButtonPosition,
                 onPositionSelected = { viewModel.setRotationButtonPosition(it) },
                 showIcon = uiState.showRotationButton,
-                onShowIconChange = { viewModel.setShowRotationButton(it) },
-                isBeta = true
+                onShowIconChange = { viewModel.setShowRotationButton(it) }
             )
 
             IconPositionPickerCard(
@@ -205,7 +204,8 @@ fun IconPositionPickerCard(
     onPositionSelected: (IconPosition) -> Unit,
     showIcon: Boolean,
     onShowIconChange: (Boolean) -> Unit,
-    isBeta: Boolean = false
+    isBeta: Boolean = false,
+    extraContent: (@Composable () -> Unit)? = null
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -314,6 +314,16 @@ fun IconPositionPickerCard(
                                 modifier = Modifier.weight(1f)
                             )
                         }
+                    }
+
+                    if (extraContent != null) {
+                        Spacer(Modifier.height(12.dp))
+                        HorizontalDivider(
+                            thickness = 0.5.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        extraContent()
                     }
                 }
             }

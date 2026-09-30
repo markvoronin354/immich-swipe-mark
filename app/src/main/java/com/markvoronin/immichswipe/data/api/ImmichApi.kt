@@ -47,6 +47,12 @@ interface ImmichApi {
         @Body request: UpdateAssetDetailRequest
     )
 
+    @PUT("api/assets/{id}/edits")
+    suspend fun editAsset(
+        @Path("id") assetId: String,
+        @Body request: EditAssetRequest
+    )
+
     @POST("api/assets/{id}/rotate")
     suspend fun rotateAsset(
         @Path("id") assetId: String,
@@ -55,7 +61,23 @@ interface ImmichApi {
 }
 
 /**
- * Corps de la requête pour la rotation d'un asset.
+ * Corps de la requête pour éditer un asset (rotation, etc).
+ */
+data class EditAssetRequest(
+    val edits: List<AssetEditActionItem>
+)
+
+data class AssetEditActionItem(
+    val action: AssetEditAction,
+    val parameters: Map<String, Any>
+)
+
+enum class AssetEditAction {
+    crop, rotate, mirror
+}
+
+/**
+ * Corps de la requête pour la rotation d'un asset (legacy).
  */
 data class RotateAssetRequest(
     val direction: String = "cw"

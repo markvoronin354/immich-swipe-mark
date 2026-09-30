@@ -2,7 +2,10 @@ package com.markvoronin.immichswipe.data.repository
 
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.SortOrder
+import com.markvoronin.immichswipe.data.api.AssetEditAction
+import com.markvoronin.immichswipe.data.api.AssetEditActionItem
 import com.markvoronin.immichswipe.data.api.DeleteAssetsRequest
+import com.markvoronin.immichswipe.data.api.EditAssetRequest
 import com.markvoronin.immichswipe.data.api.ImmichApi
 import com.markvoronin.immichswipe.data.api.RotateAssetRequest
 import com.markvoronin.immichswipe.data.api.SearchAssetsRequest
@@ -358,50 +361,29 @@ class AssetRepository(
         }
     }
 
+    /**
+     * Met à jour les édits d'un asset (rotation).
+     */
+    suspend fun updateAssetEdits(assetId: String, rotation: Int) {
+        val normalizedRotation = ((rotation % 360) + 360) % 360
+        val edit = AssetEditActionItem(
+            action = AssetEditAction.rotate,
+            parameters = mapOf("angle" to normalizedRotation)
+        )
+        api.editAsset(assetId, EditAssetRequest(edits = listOf(edit)))
+    }
+
     suspend fun updateAssetRotation(assetId: String, userId: String, rotation: Int) {
         albumAssetDao?.updateRotation(assetId, userId, rotation)
     }
 
     suspend fun syncAssetRotationToServer(assetId: String, rotation: Int) {
-        val normalizedRotation = ((rotation % 360) + 360) % 360
-        val cwSteps = (normalizedRotation / 90) % 4
-        if (cwSteps == 0) return
-
-        AppLogger.d("AssetRepo", "Syncing rotation to Immich server: assetId=$assetId, rotation=$normalizedRotation°, steps=$cwSteps")
-
-        var success = false
         try {
-            repeat(cwSteps) {
-                api.rotateAsset(assetId, RotateAssetRequest(direction = "cw"))
-            }
-            success = true
-            AppLogger.i("AssetRepo", "Successfully rotated asset $assetId on Immich server ($cwSteps x 90° cw)")
+            updateAssetEdits(assetId, rotation)
+            AppLogger.i("AssetRepo", "Successfully synced asset rotation edits to Immich server for asset $assetId")
         } catch (e: Exception) {
             val errBody = (e as? HttpException)?.response()?.errorBody()?.string()
-            AppLogger.w("AssetRepo", "POST /api/assets/{id}/rotate failed for asset $assetId: ${e.message} body=$errBody")
-        }
-
-        if (!success) {
-            try {
-                api.updateAssetDetail(
-                    assetId = assetId,
-                    request = UpdateAssetDetailRequest(rotation = normalizedRotation)
-                )
-                AppLogger.i("AssetRepo", "Successfully updated asset rotation via PUT /api/assets/{id} for $assetId")
-            } catch (e: Exception) {
-                try {
-                    api.updateAssets(
-                        UpdateAssetsRequest(
-                            ids = listOf(assetId),
-                            rotation = normalizedRotation
-                        )
-                    )
-                    AppLogger.i("AssetRepo", "Successfully updated asset rotation via PUT /api/assets for $assetId")
-                } catch (e2: Exception) {
-                    val errBody = (e2 as? HttpException)?.response()?.errorBody()?.string()
-                    AppLogger.e("AssetRepo", "Failed to sync rotation to Immich server for asset $assetId: ${e2.message} body=$errBody", e2)
-                }
-            }
+            AppLogger.e("AssetRepo", "Failed to sync rotation edits to Immich server for asset $assetId: ${e.message} body=$errBody", e)
         }
     }
 

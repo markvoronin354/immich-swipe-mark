@@ -400,7 +400,8 @@ fun SwipeScreen(
             onAssetClick = { viewModel.onMoveToAsset(it) },
             isBulkMode = uiState.isBulkDeleteMode || uiState.isBulkKeepMode,
             bulkSelection = uiState.bulkSelection,
-            isBulkDelete = uiState.isBulkDeleteMode
+            isBulkDelete = uiState.isBulkDeleteMode,
+            getRotation = { uiState.getRotation(it) }
         )
 
         SwipeCardDeck(
@@ -470,7 +471,8 @@ fun SwipeScreen(
             onDownload = { viewModel.downloadAsset(it) },
             shareButtonPosition = uiState.shareButtonPosition,
             showShareButton = false, // Share button hidden in fullscreen mode for consistency
-            onShare = { viewModel.shareAsset(it) }
+            onShare = { viewModel.shareAsset(it) },
+            rotation = uiState.getRotation(currentAsset.id)
         )
     }
 

@@ -444,6 +444,8 @@ class SwipeViewModel(
     fun toggleFullscreen(visible: Boolean) { _uiState.update { it.copy(isFullscreenMode = visible) } }
     fun toggleResetConfirmation(visible: Boolean) { _uiState.update { it.copy(showResetConfirmation = visible) } }
     fun toggleMute() { _uiState.update { it.copy(isMuted = !_uiState.value.isMuted) } }
+    private val assetsEditedThisSession = mutableSetOf<String>()
+
     fun rotateCurrentAsset() {
         val asset = _uiState.value.currentAsset ?: return
         val currentRot = _uiState.value.getRotation(asset.id)
@@ -451,6 +453,7 @@ class SwipeViewModel(
         val newRotations = _uiState.value.localRotations.toMutableMap()
         newRotations[asset.id] = nextRot
         _uiState.update { it.copy(localRotations = newRotations) }
+        assetsEditedThisSession.add(asset.id)
 
         viewModelScope.launch {
             val config = sessionRepository.sessionConfig.first() ?: return@launch
@@ -582,7 +585,13 @@ class SwipeViewModel(
                 // 2b. Persist rotation changes permanently locally and sync to Immich server
                 currentState.localRotations.forEach { (assetId, rot) ->
                     assetRepository.updateAssetRotation(assetId, config.userId, rot)
-                    assetRepository.syncAssetRotationToServer(assetId, rot)
+                    val asset = currentState.assets.find { it.id == assetId }
+                    val canSync = asset == null || !asset.isEdited || assetsEditedThisSession.contains(assetId)
+                    if (canSync) {
+                        assetRepository.syncAssetRotationToServer(assetId, rot)
+                    } else {
+                        AppLogger.d("SwipeViewModel", "Sync rotation skipped to protect existing edits on $assetId")
+                    }
                 }
                 
                 // 2c. Sync favorite changes to Immich server

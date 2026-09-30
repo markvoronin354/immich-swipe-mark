@@ -60,6 +60,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -92,6 +94,28 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 
+private fun Modifier.rotateLayout(rotation: Int) = layout { measurable, constraints ->
+    val isRotated = rotation % 180 != 0
+    val newConstraints = if (isRotated) {
+        Constraints(
+            minWidth = constraints.minHeight,
+            maxWidth = constraints.maxHeight,
+            minHeight = constraints.minWidth,
+            maxHeight = constraints.maxWidth
+        )
+    } else constraints
+    val placeable = measurable.measure(newConstraints)
+    if (isRotated) {
+        layout(placeable.height, placeable.width) {
+            placeable.place((placeable.height - placeable.width) / 2, (placeable.width - placeable.height) / 2)
+        }
+    } else {
+        layout(placeable.width, placeable.height) {
+            placeable.place(0, 0)
+        }
+    }
+}
+
 @OptIn(UnstableApi::class)
 @Composable
 fun FullscreenViewer(
@@ -113,7 +137,8 @@ fun FullscreenViewer(
     shareButtonPosition: IconPosition = IconPosition.TOP_RIGHT,
     showShareButton: Boolean = false,
     onDownload: (Asset) -> Unit = {},
-    onShare: (Asset) -> Unit = {}
+    onShare: (Asset) -> Unit = {},
+    rotation: Int = 0
 ) {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
@@ -450,9 +475,21 @@ fun FullscreenViewer(
                                     }
                                 }
                             },
-                            aspectRatio = asset.exifInfo?.let { it.imageWidth?.toFloat()?.div(it.imageHeight?.toFloat() ?: 1f) }
+                            aspectRatio = asset.exifInfo?.let {
+                                val baseAR = (it.imageWidth?.toFloat() ?: 1f) / (it.imageHeight?.toFloat() ?: 1f)
+                                if (rotation % 180 != 0) 1f / baseAR else baseAR
+                            }
                         ) {
-                            surface()
+                            val animatedRotation by animateFloatAsState(targetValue = rotation.toFloat(), label = "FullscreenVideoRotation")
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer { rotationZ = animatedRotation }
+                                    .rotateLayout(rotation)
+                            ) {
+                                surface()
+                            }
 
                             if (showLoadingIndicator) {
                                 Box(
@@ -523,14 +560,19 @@ fun FullscreenViewer(
                             }
                         }
                     },
-                    aspectRatio = asset.exifInfo?.let { it.imageWidth?.toFloat()?.div(it.imageHeight?.toFloat() ?: 1f) }
+                    aspectRatio = asset.exifInfo?.let {
+                        val baseAR = (it.imageWidth?.toFloat() ?: 1f) / (it.imageHeight?.toFloat() ?: 1f)
+                        if (rotation % 180 != 0) 1f / baseAR else baseAR
+                    }
                 ) {
                     val baseUrlClean = SessionManager.getBaseUrl()?.removeSuffix("/")
                     val apiKeyLocal = SessionManager.getApiKey() ?: ""
 
+                    val animatedRotation by animateFloatAsState(targetValue = rotation.toFloat(), label = "FullscreenRotation")
+
                     val photoRequest = remember(asset.id, baseUrlClean, apiKeyLocal) {
                         ImageRequest.Builder(context)
-                            .data("$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                            .data("$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview&edited=true")
                             .addHeader("x-api-key", apiKeyLocal)
                             .crossfade(false)
                             .precision(Precision.INEXACT)
@@ -540,7 +582,10 @@ fun FullscreenViewer(
                     AsyncImage(
                         model = photoRequest,
                         contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer { rotationZ = animatedRotation }
+                            .rotateLayout(rotation),
                         contentScale = ContentScale.Fit
                     )
                 }

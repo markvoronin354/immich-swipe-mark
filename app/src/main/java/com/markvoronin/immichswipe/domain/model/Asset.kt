@@ -20,7 +20,8 @@ data class Asset(
     @SerializedName("extension")
     val fileExtension: String? = null,
     val exifInfo: ExifInfo? = null,
-    val rotation: Int = 0
+    val rotation: Int = 0,
+    val isEdited: Boolean = false
 )
 
 data class ExifInfo(

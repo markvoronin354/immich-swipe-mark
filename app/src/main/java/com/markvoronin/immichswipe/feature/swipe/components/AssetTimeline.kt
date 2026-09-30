@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,8 +36,14 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
@@ -45,6 +52,28 @@ import coil.size.Precision
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.domain.model.Asset
 import kotlin.math.abs
+
+private fun Modifier.rotateLayout(rotation: Int) = layout { measurable, constraints ->
+    val isRotated = rotation % 180 != 0
+    val newConstraints = if (isRotated) {
+        Constraints(
+            minWidth = constraints.minHeight,
+            maxWidth = constraints.maxHeight,
+            minHeight = constraints.minWidth,
+            maxHeight = constraints.maxWidth
+        )
+    } else constraints
+    val placeable = measurable.measure(newConstraints)
+    if (isRotated) {
+        layout(placeable.height, placeable.width) {
+            placeable.place((placeable.height - placeable.width) / 2, (placeable.width - placeable.height) / 2)
+        }
+    } else {
+        layout(placeable.width, placeable.height) {
+            placeable.place(0, 0)
+        }
+    }
+}
 
 @Composable
 fun AssetTimeline(
@@ -57,7 +86,8 @@ fun AssetTimeline(
     onAssetClick: (Int) -> Unit,
     isBulkMode: Boolean = false,
     bulkSelection: Set<String> = emptySet(),
-    isBulkDelete: Boolean = false
+    isBulkDelete: Boolean = false,
+    getRotation: (String) -> Int = { 0 }
 ) {
     val listState = rememberLazyListState()
     val baseUrl = remember { SessionManager.getBaseUrl()?.removeSuffix("/") }
@@ -102,6 +132,7 @@ fun AssetTimeline(
                 hasArchive = isArchived(asset.id),
                 hasLock = isLocked(asset.id),
                 isBulkDelete = isBulkDelete,
+                rotation = getRotation(asset.id),
                 baseUrl = baseUrl,
                 apiKey = apiKey,
                 onAssetClick = onAssetClick
@@ -121,11 +152,18 @@ private fun AssetTimelineItem(
     hasArchive: Boolean,
     hasLock: Boolean,
     isBulkDelete: Boolean,
+    rotation: Int,
     baseUrl: String?,
     apiKey: String,
     onAssetClick: (Int) -> Unit
 ) {
     val context = LocalContext.current
+    val animatedRotation by animateFloatAsState(
+        targetValue = rotation.toFloat(),
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "TimelineRotation"
+    )
+
     Box(
         modifier = Modifier
             .size(48.dp)
@@ -141,9 +179,9 @@ private fun AssetTimelineItem(
             .clickable { onAssetClick(index) }
     ) {
         if (baseUrl != null) {
-            val thumbnailRequest = remember(asset.id, baseUrl, apiKey) {
+            val thumbnailRequest = remember(asset.id, baseUrl, apiKey, rotation) {
                 ImageRequest.Builder(context)
-                    .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=thumbnail")
+                    .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=thumbnail&edited=true")
                     .addHeader("x-api-key", apiKey)
                     .crossfade(true)
                     .precision(Precision.INEXACT)
@@ -155,7 +193,11 @@ private fun AssetTimelineItem(
                 model = thumbnailRequest,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().alpha(if (isCurrent) 1f else 0.6f)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { rotationZ = animatedRotation }
+                    .rotateLayout(rotation)
+                    .alpha(if (isCurrent) 1f else 0.6f)
             )
         }
 
