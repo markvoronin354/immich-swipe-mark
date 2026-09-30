@@ -1,6 +1,8 @@
 package com.markvoronin.immichswipe.data.repository
 
+import android.content.Context
 import com.markvoronin.immichswipe.core.AppLogger
+import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.data.api.AssetEditAction
 import com.markvoronin.immichswipe.data.api.AssetEditActionItem
@@ -16,6 +18,9 @@ import com.markvoronin.immichswipe.data.local.entity.AlbumAssetEntity
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.domain.model.ExifInfo
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -31,11 +36,14 @@ data class AssetBatch(
     val isSyncing: Boolean = false
 )
 
-class AssetRepository(
-    private val context: android.content.Context,
-    private val api: ImmichApi,
+@Singleton
+class AssetRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val customApi: ImmichApi? = null,
     private val albumAssetDao: AlbumAssetDao? = null
 ) {
+    private val api: ImmichApi
+        get() = customApi ?: SessionManager.api ?: error("No active API session")
     fun getAssetsByAlbum(
         albumId: String,
         includeArchived: Boolean = false,

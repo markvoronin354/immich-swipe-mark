@@ -5,13 +5,16 @@ import com.markvoronin.immichswipe.data.local.dao.SwipeDecisionDao
 import com.markvoronin.immichswipe.data.local.dao.UnsyncedDecisionCounts
 import com.markvoronin.immichswipe.data.local.entity.SwipeDecisionEntity
 import com.markvoronin.immichswipe.data.local.entity.SyncHistoryEntity
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Repository qui gère les décisions de swipe.
  * Il fait le lien entre le ViewModel et le DAO (la base Room).
  */
-class SwipeDecisionRepository(
+@Singleton
+class SwipeDecisionRepository @Inject constructor(
     private val swipeDecisionDao: SwipeDecisionDao
 ) {
     /**

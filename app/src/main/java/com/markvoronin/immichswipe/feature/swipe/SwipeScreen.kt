@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import com.markvoronin.immichswipe.R
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -81,19 +82,17 @@ import java.io.File
 @Composable
 fun SwipeScreen(
     album: Album,
-    assetRepository: AssetRepository,
-    swipeDecisionRepository: SwipeDecisionRepository,
-    sessionRepository: SessionRepository,
     sessionKey: String,
     resetSignal: SharedFlow<Unit>,
     modifier: Modifier = Modifier,
     userQuotaBytes: Long? = null,
     onBack: () -> Unit = {}
 ) {
-    val viewModel: SwipeViewModel = viewModel(
-        key = "$sessionKey-${album.id}",
-        factory = SwipeViewModelFactory(assetRepository, sessionRepository, swipeDecisionRepository, album, userQuotaBytes)
-    )
+    val viewModel: SwipeViewModel = hiltViewModel(key = "$sessionKey-${album.id}")
+
+    LaunchedEffect(album, userQuotaBytes) {
+        viewModel.initAlbum(album, userQuotaBytes)
+    }
 
     BackHandler(enabled = true) {
         val state = viewModel.uiState.value

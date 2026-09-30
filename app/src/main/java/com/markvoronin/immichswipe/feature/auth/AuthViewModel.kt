@@ -8,6 +8,8 @@ import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.data.repository.AccountRepository
 import com.markvoronin.immichswipe.data.repository.AuthRepository
 import com.markvoronin.immichswipe.data.repository.SessionRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +19,8 @@ import kotlinx.coroutines.launch
  * ViewModel gérant la logique de l'écran de connexion.
  * Il délègue les appels réseau au AuthRepository.
  */
-class AuthViewModel(
+@HiltViewModel
+class AuthViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val authRepository: AuthRepository,
     private val accountRepository: AccountRepository

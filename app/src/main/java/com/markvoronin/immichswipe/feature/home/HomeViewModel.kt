@@ -12,6 +12,8 @@ import com.markvoronin.immichswipe.data.repository.SessionRepository
 import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
 import com.markvoronin.immichswipe.data.repository.UserRepository
 import com.markvoronin.immichswipe.domain.model.Album
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -30,17 +32,18 @@ import kotlin.time.Duration.Companion.milliseconds
 /**
  * ViewModel de l'écran d'accueil.
  */
-class HomeViewModel(
+@HiltViewModel
+class HomeViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val albumRepository: AlbumRepository,
     private val swipeDecisionRepository: SwipeDecisionRepository,
     private val assetRepository: AssetRepository,
     private val accountRepository: AccountRepository,
-    private val activeUserId: String,
-    private val api: ImmichApi
+    private val userRepository: UserRepository
 ) : ViewModel() {
-    
-    private val userRepository = UserRepository(api)
+
+    private val activeUserId: String
+        get() = SessionManager.getUserId() ?: ""
     
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()

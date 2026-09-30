@@ -14,6 +14,8 @@ import com.markvoronin.immichswipe.data.repository.SessionRepository
 import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.domain.model.Asset
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -29,21 +31,32 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class SwipeViewModel(
+@HiltViewModel
+class SwipeViewModel @Inject constructor(
     private val assetRepository: AssetRepository,
     private val sessionRepository: SessionRepository,
     private val swipeDecisionRepository: SwipeDecisionRepository,
-    private val album: Album,
-    private val userQuotaBytes: Long? = null
+    private val albumRepository: AlbumRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SwipeUiState(
-        albumName = album.albumName,
-        albumId = album.id,
-        userQuotaBytes = userQuotaBytes,
-        remoteTotalCount = album.assetCount
-    ))
+    private val _uiState = MutableStateFlow(SwipeUiState())
     val uiState: StateFlow<SwipeUiState> = _uiState.asStateFlow()
+
+    private var currentAlbum: Album? = null
+
+    fun initAlbum(album: Album, userQuotaBytes: Long? = null) {
+        if (this.currentAlbum?.id == album.id) return
+        this.currentAlbum = album
+        _uiState.update {
+            it.copy(
+                albumName = album.albumName,
+                albumId = album.id,
+                userQuotaBytes = userQuotaBytes,
+                remoteTotalCount = album.assetCount
+            )
+        }
+        loadAssetsAndDecisions()
+    }
 
     private var masterWorkPile: List<Asset> = emptyList()
     private val allAssetsFoundFlow = MutableStateFlow<List<Asset>>(emptyList())
@@ -176,7 +189,7 @@ class SwipeViewModel(
         try {
             sessionRepository.sortOrder.flatMapLatest { sortOrder ->
                 assetRepository.getAssetsByAlbum(
-                    albumId = album.id,
+                    albumId = _uiState.value.albumId,
                     userId = userId,
                     sortOrder = sortOrder,
                     shuffleSeed = SessionManager.globalShuffleSeed
@@ -209,7 +222,7 @@ class SwipeViewModel(
 
     private suspend fun observeDecisionsAndAssets(userId: String) {
         combine(
-            swipeDecisionRepository.getDecisionsForAlbum(album.id, userId),
+            swipeDecisionRepository.getDecisionsForAlbum(_uiState.value.albumId, userId),
             allAssetsFoundFlow,
             isAssetsLoadingFlow,
             isFetchingAssetsFlow
@@ -370,7 +383,7 @@ class SwipeViewModel(
 
         viewModelScope.launch {
             val config = sessionRepository.sessionConfig.first() ?: return@launch
-            swipeDecisionRepository.saveDecision(currentAsset.id, album.id, config.userId, decision.name, currentAsset.exifInfo?.fileSizeInBytes)
+            swipeDecisionRepository.saveDecision(currentAsset.id, _uiState.value.albumId, config.userId, decision.name, currentAsset.exifInfo?.fileSizeInBytes)
         }
         
         if (nextIndex < currentState.assets.size) {
@@ -454,12 +467,6 @@ class SwipeViewModel(
     fun toggleResetConfirmation(visible: Boolean) { _uiState.update { it.copy(showResetConfirmation = visible) } }
     fun toggleMute() { _uiState.update { it.copy(isMuted = !_uiState.value.isMuted) } }
 
-    private val albumRepository by lazy {
-        AlbumRepository(
-            SessionManager.api ?: throw IllegalStateException("Session not initialized")
-        )
-    }
-
     fun openAddToAlbumDialog() {
         _uiState.update { it.copy(showAddToAlbumDialog = true, isFetchingAlbumsForDialog = true) }
         viewModelScope.launch {
@@ -535,7 +542,7 @@ class SwipeViewModel(
                 val config = sessionRepository.sessionConfig.first() ?: return@launch
                 
                 // 1. Delete ALL decisions for this album from SQLite Room DB
-                swipeDecisionRepository.deleteDecisionsForAlbum(album.id, config.userId)
+                swipeDecisionRepository.deleteDecisionsForAlbum(_uiState.value.albumId, config.userId)
                 
                 // 2. Also delete decisions for any assets currently in masterWorkPile
                 val currentIds = masterWorkPile.map { it.id }
@@ -603,7 +610,7 @@ class SwipeViewModel(
             val config = sessionRepository.sessionConfig.first() ?: return@launch
             selection.forEach { id ->
                 val asset = s.assets.find { it.id == id }
-                swipeDecisionRepository.saveDecision(id, album.id, config.userId, decision.name, asset?.exifInfo?.fileSizeInBytes)
+                swipeDecisionRepository.saveDecision(id, _uiState.value.albumId, config.userId, decision.name, asset?.exifInfo?.fileSizeInBytes)
             }
         }
     }

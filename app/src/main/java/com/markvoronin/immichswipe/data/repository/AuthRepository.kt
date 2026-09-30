@@ -3,13 +3,16 @@ package com.markvoronin.immichswipe.data.repository
 import com.markvoronin.immichswipe.core.SessionConfig
 import com.markvoronin.immichswipe.data.api.RetrofitFactory
 import com.markvoronin.immichswipe.domain.model.User
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Repository responsable de l'authentification.
- * Il ne dépend pas d'une API déjà initialisée car son rôle est justement 
+ * Il ne dépend pas d'une API déjà initialisée car son rôle est justamente 
  * de vérifier si les identifiants fournis permettent de créer une session.
  */
-class AuthRepository {
+@Singleton
+class AuthRepository @Inject constructor() {
 
     /**
      * Vérifie si les identifiants fournis sont valides en tentant un appel à l'API.

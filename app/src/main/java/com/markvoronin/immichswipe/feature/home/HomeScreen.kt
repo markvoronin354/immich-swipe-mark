@@ -62,23 +62,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markvoronin.immichswipe.R
-import com.markvoronin.immichswipe.core.SessionConfig
 import com.markvoronin.immichswipe.core.SessionManager
-import com.markvoronin.immichswipe.data.api.RetrofitFactory
-import com.markvoronin.immichswipe.data.local.AppDatabase
-import com.markvoronin.immichswipe.data.repository.AccountRepository
-import com.markvoronin.immichswipe.data.repository.AssetRepository
-import com.markvoronin.immichswipe.data.repository.AuthRepository
-import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.feature.auth.AuthScreen
 import com.markvoronin.immichswipe.feature.auth.AuthViewModel
-import com.markvoronin.immichswipe.feature.auth.AuthViewModelFactory
 import com.markvoronin.immichswipe.feature.duplicates.DuplicatesScreen
 import com.markvoronin.immichswipe.feature.duplicates.DuplicatesViewModel
-import com.markvoronin.immichswipe.feature.duplicates.DuplicatesViewModelFactory
 import com.markvoronin.immichswipe.feature.home.components.AlbumGrid
 import com.markvoronin.immichswipe.feature.home.components.AlbumList
 import com.markvoronin.immichswipe.feature.home.components.ErrorView
@@ -89,15 +81,12 @@ import com.markvoronin.immichswipe.feature.home.components.SwipePlaceholder
 import com.markvoronin.immichswipe.feature.settings.SettingsScreen
 import com.markvoronin.immichswipe.feature.settings.SettingsSubMenu
 import com.markvoronin.immichswipe.feature.settings.SettingsViewModel
-import com.markvoronin.immichswipe.feature.settings.SettingsViewModelFactory
 import com.markvoronin.immichswipe.feature.swipe.SwipeScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    assetRepository: AssetRepository,
-    swipeDecisionRepository: SwipeDecisionRepository,
     sessionKey: String,
     modifier: Modifier = Modifier,
 ) {
@@ -125,12 +114,8 @@ fun HomeScreen(
         viewModel.goBack()
     }
 
-    val settingsViewModel: SettingsViewModel = viewModel(
-        key = "settings-$sessionKey",
-        factory = SettingsViewModelFactory(
-            viewModel.getSessionRepository(),
-            swipeDecisionRepository
-        )
+    val settingsViewModel: SettingsViewModel = hiltViewModel(
+        key = "settings-$sessionKey"
     )
     val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -239,18 +224,8 @@ fun HomeScreen(
                         }
                         HomeTab.SWIPE -> {
                             if (uiState.selectedAlbum?.id == Album.VIRTUAL_DUPLICATES_ID) {
-                                val duplicatesViewModel: DuplicatesViewModel = viewModel(
-                                    key = "duplicates-$sessionKey",
-                                    factory = DuplicatesViewModelFactory(
-                                        api = RetrofitFactory.create(
-                                            SessionConfig(
-                                                SessionManager.getBaseUrl() ?: "", 
-                                                SessionManager.getApiKey() ?: "",
-                                                uiState.user?.id ?: ""
-                                            )
-                                        ),
-                                        swipeDecisionRepository = swipeDecisionRepository
-                                    )
+                                val duplicatesViewModel: DuplicatesViewModel = hiltViewModel(
+                                    key = "duplicates-$sessionKey"
                                 )
                                 DuplicatesScreen(
                                     viewModel = duplicatesViewModel,
@@ -259,9 +234,6 @@ fun HomeScreen(
                             } else if (uiState.selectedAlbum != null) {
                                 SwipeScreen(
                                     album = uiState.selectedAlbum!!,
-                                    assetRepository = assetRepository,
-                                    swipeDecisionRepository = swipeDecisionRepository,
-                                    sessionRepository = viewModel.getSessionRepository(),
                                     sessionKey = sessionKey,
                                     resetSignal = viewModel.resetRequestSignal,
                                     userQuotaBytes = uiState.user?.quotaUsageInBytes,
@@ -374,18 +346,10 @@ fun HomeScreen(
     }
 
     if (uiState.isLoggingInToAnotherAccount) {
-        val authRepository = remember { AuthRepository() }
-        val database = AppDatabase.getDatabase(LocalContext.current)
-        val accountRepository = remember { AccountRepository(database.userAccountDao()) }
         val currentBaseUrl = remember { SessionManager.getBaseUrl() ?: "" }
 
-        val authViewModel: AuthViewModel = viewModel(
-            key = "add_account_auth_viewmodel",
-            factory = AuthViewModelFactory(
-                viewModel.getSessionRepository(),
-                authRepository,
-                accountRepository
-            )
+        val authViewModel: AuthViewModel = hiltViewModel(
+            key = "add_account_auth_viewmodel"
         )
 
         LaunchedEffect(Unit) {

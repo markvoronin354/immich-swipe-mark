@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.data.repository.SessionRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +15,8 @@ import kotlinx.coroutines.launch
  * ViewModel principal de l'application (niveau Activity).
  * Il s'occupe de l'initialisation et du thème.
  */
-class AppViewModel(
+@HiltViewModel
+class AppViewModel @Inject constructor(
     private val sessionRepository: SessionRepository
 ) : ViewModel() {
 

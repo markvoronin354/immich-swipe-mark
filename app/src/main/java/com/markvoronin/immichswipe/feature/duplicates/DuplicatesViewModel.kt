@@ -1,7 +1,6 @@
 package com.markvoronin.immichswipe.feature.duplicates
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.SessionManager
@@ -12,6 +11,8 @@ import com.markvoronin.immichswipe.data.local.entity.SwipeDecisionEntity
 import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.domain.model.Asset
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,10 +20,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-class DuplicatesViewModel(
-    private val api: ImmichApi,
+@HiltViewModel
+class DuplicatesViewModel @Inject constructor(
     private val swipeDecisionRepository: SwipeDecisionRepository
 ) : ViewModel() {
+
+    private val api: ImmichApi
+        get() = SessionManager.api ?: error("No active API session")
 
     private val _uiState = MutableStateFlow(DuplicatesUiState())
     val uiState: StateFlow<DuplicatesUiState> = _uiState.asStateFlow()
@@ -327,18 +331,5 @@ class DuplicatesViewModel(
                 swipeDecisionRepository.saveDecisions(entitiesToSave)
             }
         }
-    }
-}
-
-class DuplicatesViewModelFactory(
-    private val api: ImmichApi,
-    private val swipeDecisionRepository: SwipeDecisionRepository
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(DuplicatesViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return DuplicatesViewModel(api, swipeDecisionRepository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

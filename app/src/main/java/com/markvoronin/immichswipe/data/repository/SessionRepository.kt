@@ -10,6 +10,9 @@ import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SessionConfig
 import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.data.datastore.SessionDataStore
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -19,7 +22,10 @@ import kotlinx.coroutines.flow.map
  * Repository gérant la persistence de la session utilisateur.
  * C'est la Source Unique de Vérité (SSOT) pour l'état de connexion.
  */
-class SessionRepository(context: Context) {
+@Singleton
+class SessionRepository @Inject constructor(
+    @ApplicationContext context: Context
+) {
 
     private val dataStore = SessionDataStore(context)
 

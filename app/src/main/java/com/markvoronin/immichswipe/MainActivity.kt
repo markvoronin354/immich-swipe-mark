@@ -1,5 +1,6 @@
 package com.markvoronin.immichswipe
 
+import android.annotation.SuppressLint
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -10,38 +11,31 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.AppTheme
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.core.cache.CacheManager
-import com.markvoronin.immichswipe.data.local.AppDatabase
-import com.markvoronin.immichswipe.data.repository.AccountRepository
-import com.markvoronin.immichswipe.data.repository.AlbumRepository
-import com.markvoronin.immichswipe.data.repository.AssetRepository
-import com.markvoronin.immichswipe.data.repository.AuthRepository
-import com.markvoronin.immichswipe.data.repository.SessionRepository
-import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
 import com.markvoronin.immichswipe.feature.auth.AuthScreen
-import com.markvoronin.immichswipe.feature.auth.AuthViewModelFactory
 import com.markvoronin.immichswipe.feature.common.LoadingScreen
 import com.markvoronin.immichswipe.feature.home.HomeScreen
-import com.markvoronin.immichswipe.feature.home.HomeViewModelFactory
 import com.markvoronin.immichswipe.ui.theme.ImmichSwipeTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,38 +51,25 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         // Mode immersif : On cache les barres système (status et navigation) au lancement.
-        // L'utilisateur peut les faire apparaître temporairement en swipant depuis les bords.
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
         
         // On verrouille l'application en mode Portrait par défaut.
-        // On ne le fait qu'une seule fois au démarrage pour permettre 
-        // les changements dynamiques ensuite.
-        @android.annotation.SuppressLint("SourceLockedOrientationActivity")
+        @SuppressLint("SourceLockedOrientationActivity")
         if (savedInstanceState == null) {
             requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         }
 
-        val sessionRepository = SessionRepository(applicationContext)
-        val authRepository = AuthRepository()
-        
-        // Initialisation de la base de données Room et des Repositories
-        val database = AppDatabase.getDatabase(applicationContext)
-        val swipeDecisionRepository = SwipeDecisionRepository(database.swipeDecisionDao())
-        val accountRepository = AccountRepository(database.userAccountDao())
-
         setContent {
-            val appViewModel: AppViewModel = viewModel(
-                factory = AppViewModelFactory(sessionRepository)
-            )
+            val appViewModel: AppViewModel = hiltViewModel()
             val state by appViewModel.uiState.collectAsStateWithLifecycle()
 
             // Détermination du thème à appliquer
             val useDarkTheme = when (state.themeMode) {
                 AppTheme.LIGHT -> false
                 AppTheme.DARK -> true
-                AppTheme.SYSTEM -> androidx.compose.foundation.isSystemInDarkTheme()
+                AppTheme.SYSTEM -> isSystemInDarkTheme()
             }
 
             ImmichSwipeTheme(darkTheme = useDarkTheme, dynamicColor = state.dynamicColor) {
@@ -96,8 +77,6 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // On utilise AnimatedContent directement sans Scaffold parent 
-                    // car chaque écran (Home, Auth) possède son propre Scaffold
                     AnimatedContent(
                         targetState = state,
                         transitionSpec = {
@@ -118,50 +97,22 @@ class MainActivity : ComponentActivity() {
                                 val apiKey = SessionManager.getApiKey()
                                 
                                 if ((api != null) && (baseUrl != null) && (apiKey != null) && (activeUserId != null)) {
-                                    // On utilise l'ID utilisateur + URL + Clé API comme clé pour forcer
-                                    // le rafraîchissement total si la session change.
                                     val sessionKey = "$activeUserId-$baseUrl-$apiKey"
                                     
                                     key(sessionKey) {
-                                        val albumRepository = remember(sessionKey) { AlbumRepository(api) }
-                                        val assetRepository = remember(sessionKey) { 
-                                            AssetRepository(
-                                                applicationContext,
-                                                api, 
-                                                database.albumAssetDao()
-                                            ) 
-                                        }
-
                                         HomeScreen(
-                                            viewModel = viewModel(
-                                                key = sessionKey,
-                                                factory = HomeViewModelFactory(
-                                                    sessionRepository, 
-                                                    albumRepository, 
-                                                    swipeDecisionRepository,
-                                                    assetRepository,
-                                                    accountRepository,
-                                                    activeUserId,
-                                                    api
-                                                )
-                                            ),
-                                            assetRepository = assetRepository,
-                                            swipeDecisionRepository = swipeDecisionRepository,
+                                            viewModel = hiltViewModel(key = sessionKey),
                                             sessionKey = sessionKey
                                         )
                                     }
                                 } else {
-                                    // Sécurité : si l'API n'est plus là mais qu'on est noté connecté,
-                                    // on affiche un chargement le temps que l'état se synchronise.
                                     LoadingScreen()
                                 }
                             }
 
                             else -> {
                                 AuthScreen(
-                                    viewModel = viewModel(
-                                        factory = AuthViewModelFactory(sessionRepository, authRepository, accountRepository)
-                                    )
+                                    viewModel = hiltViewModel()
                                 )
                             }
                         }

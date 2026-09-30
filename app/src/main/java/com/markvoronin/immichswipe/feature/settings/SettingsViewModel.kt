@@ -2,7 +2,6 @@ package com.markvoronin.immichswipe.feature.settings
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.AppLogger
@@ -17,6 +16,8 @@ import com.markvoronin.immichswipe.data.local.model.DatabaseExport
 import com.markvoronin.immichswipe.data.repository.SessionRepository
 import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
 import com.markvoronin.immichswipe.data.repository.UserRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,16 +26,12 @@ import kotlinx.coroutines.launch
 import java.io.InputStream
 import java.io.OutputStream
 
-class SettingsViewModel(
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val swipeDecisionRepository: SwipeDecisionRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
-
-    private val userRepository by lazy {
-        UserRepository(
-            SessionManager.api ?: throw IllegalStateException("Session not initialized")
-        )
-    }
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -509,18 +506,5 @@ class SettingsViewModel(
                 )
             }
         }
-    }
-}
-
-class SettingsViewModelFactory(
-    private val sessionRepository: SessionRepository,
-    private val swipeDecisionRepository: SwipeDecisionRepository
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return SettingsViewModel(sessionRepository, swipeDecisionRepository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
