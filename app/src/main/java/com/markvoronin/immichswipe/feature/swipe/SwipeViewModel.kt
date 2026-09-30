@@ -419,10 +419,15 @@ class SwipeViewModel(
     }
     fun toggleFavorite() {
         val asset = _uiState.value.currentAsset ?: return
-        val current = _uiState.value.localFavorites[asset.id] ?: false
+        val current = _uiState.value.isFavorite(asset.id)
+        val newFav = !current
         val newFavs = _uiState.value.localFavorites.toMutableMap()
-        newFavs[asset.id] = !current
+        newFavs[asset.id] = newFav
         _uiState.update { it.copy(localFavorites = newFavs) }
+
+        if (newFav && _uiState.value.autoNextOnFav) {
+            onSwipe(SwipeDecision.KEEP)
+        }
     }
     fun toggleSummary(visible: Boolean) { _uiState.update { it.copy(showSummary = visible) } }
     fun toggleFullscreen(visible: Boolean) { _uiState.update { it.copy(isFullscreenMode = visible) } }
@@ -569,6 +574,29 @@ class SwipeViewModel(
                     assetRepository.syncAssetRotationToServer(assetId, rot)
                 }
                 
+                // 2c. Sync favorite changes to Immich server
+                val favsToAdd = currentState.localFavorites.filter { it.value }.keys.toList()
+                val favsToRemove = currentState.localFavorites.filter { !it.value }.keys.toList()
+                if (favsToAdd.isNotEmpty()) {
+                    assetRepository.updateAssets(favsToAdd, isFavorite = true)
+                }
+                if (favsToRemove.isNotEmpty()) {
+                    assetRepository.updateAssets(favsToRemove, isFavorite = false)
+                }
+
+                // Update memory work pile with favorite changes
+                if (currentState.localFavorites.isNotEmpty()) {
+                    masterWorkPile = masterWorkPile.map { asset ->
+                        val newFav = currentState.localFavorites[asset.id]
+                        if (newFav != null) asset.copy(isFavorite = newFav) else asset
+                    }
+                    val updatedWorkPile = allAssetsFoundFlow.value.map { asset ->
+                        val newFav = currentState.localFavorites[asset.id]
+                        if (newFav != null) asset.copy(isFavorite = newFav) else asset
+                    }
+                    allAssetsFoundFlow.value = updatedWorkPile
+                }
+                
                 // 3. Save sync history
                 swipeDecisionRepository.saveSyncHistory(
                     userId = config.userId,
@@ -597,7 +625,8 @@ class SwipeViewModel(
                     showSuccessAnimation = true,
                     // Remove deleted assets from current UI decisions too
                     decisions = remainingDecisions,
-                    history = emptyList() // Reset history for undo after sync
+                    history = emptyList(), // Reset history for undo after sync
+                    localFavorites = emptyMap()
                 ) }
 
                 // Force refresh sorted work pile so `_uiState.value.assets` and `currentIndex` are updated immediately
