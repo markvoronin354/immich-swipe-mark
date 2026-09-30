@@ -174,16 +174,18 @@ fun SwipeActionBar(
             }
         }
 
-        IconButton(
-            onClick = { viewModel.toggleLock() },
-            modifier = Modifier.size(if (uiState.showSwipeButtons) 36.dp else 44.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Lock,
-                contentDescription = stringResource(R.string.swipe_locked),
-                tint = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.size(if (uiState.showSwipeButtons) 22.dp else 26.dp)
-            )
+        if (uiState.showLockButton) {
+            IconButton(
+                onClick = { viewModel.toggleLock() },
+                modifier = Modifier.size(if (uiState.showSwipeButtons) 36.dp else 44.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = stringResource(R.string.swipe_locked),
+                    tint = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.size(if (uiState.showSwipeButtons) 22.dp else 26.dp)
+                )
+            }
         }
 
         Box {

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.Forward
 import androidx.compose.material.icons.filled.AdsClick
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -123,6 +124,16 @@ fun InteractionsScreen(
                     checked = uiState.showArchiveButton,
                     onCheckedChange = { viewModel.setShowArchiveButton(it) },
                     icon = Icons.Default.Archive
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
+
+                // 3. Lock
+                SettingsToggleItemSmall(
+                    title = stringResource(R.string.settings_show_lock_label),
+                    checked = uiState.showLockButton,
+                    onCheckedChange = { viewModel.setShowLockButton(it) },
+                    icon = Icons.Default.Lock
                 )
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)

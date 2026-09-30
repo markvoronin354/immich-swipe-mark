@@ -60,6 +60,7 @@ data class SwipeUiState(
     val cardDisplayMode: CardDisplayMode = CardDisplayMode.FIT,
     val showSwipeButtons: Boolean = false,
     val showArchiveButton: Boolean = true,
+    val showLockButton: Boolean = true,
     val isFullscreenMode: Boolean = false,
     val showResetConfirmation: Boolean = false,
     val syncLocalDeletion: Boolean = false,

@@ -131,6 +131,7 @@ class SessionRepository(context: Context) {
     val includeArchived: Flow<Boolean> = dataStore.isIncludeArchived()
     val showSwipeButtons: Flow<Boolean> = dataStore.isShowSwipeButtons()
     val showArchiveButton: Flow<Boolean> = dataStore.isShowArchiveButton()
+    val showLockButton: Flow<Boolean> = dataStore.isShowLockButton()
     val backupWarningShown: Flow<Boolean> = dataStore.isBackupWarningShown()
     val syncLocalDeletion: Flow<Boolean> = dataStore.isSyncLocalDeletion()
     val trashLocalDeletion: Flow<Boolean> = dataStore.isTrashLocalDeletion()
@@ -246,6 +247,7 @@ class SessionRepository(context: Context) {
     suspend fun saveIncludeArchived(include: Boolean) { dataStore.saveIncludeArchived(include) }
     suspend fun saveShowSwipeButtons(show: Boolean) { dataStore.saveShowSwipeButtons(show) }
     suspend fun saveShowArchiveButton(show: Boolean) { dataStore.saveShowArchiveButton(show) }
+    suspend fun saveShowLockButton(show: Boolean) { dataStore.saveShowLockButton(show) }
     suspend fun saveBackupWarningShown(shown: Boolean) { dataStore.saveBackupWarningShown(shown) }
     suspend fun saveSyncLocalDeletion(sync: Boolean) { dataStore.saveSyncLocalDeletion(sync) }
     suspend fun saveTapToSwipeEnabled(enabled: Boolean) { dataStore.saveTapToSwipeEnabled(enabled) }

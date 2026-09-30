@@ -124,6 +124,7 @@
     <string name="settings_share_pos_label">Position du bouton Partage</string>
     <string name="settings_show_swipe_buttons_label">Afficher les boutons Keep/Delete</string>
     <string name="settings_show_archive_label">Bouton Archiver</string>
+    <string name="settings_show_lock_label">Bouton Verrouiller</string>
     <string name="settings_sync_local_deletion_label">Sycnhro. suppression locale</string>
     <string name="settings_sync_local_deletion_desc">Lorsque vous supprimez une photo d\'Immich, tente également de supprimer le fichier local de votre téléphone pour éviter qu\'il ne soit re-sauvegardé.</string>
     <string name="swipe_rotate_asset">Pivoter le média à 90°</string>

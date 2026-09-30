@@ -85,7 +85,9 @@ class SwipeViewModel(
                 sessionRepository.syncLocalDeletion,
                 sessionRepository.trashLocalDeletion,
                 sessionRepository.sortOrder,
-                sessionRepository.tapToSwipeEnabled
+                sessionRepository.tapToSwipeEnabled,
+                sessionRepository.showFavoriteButton,
+                sessionRepository.showLockButton
             ) { values ->
                 updateSettingsState(values)
             }.collect {}
@@ -131,7 +133,9 @@ class SwipeViewModel(
             trashLocalDeletion = values[17] as Boolean,
             sortOrder = order,
             sortCategory = category,
-            tapToSwipeEnabled = values[19] as Boolean
+            tapToSwipeEnabled = values[19] as Boolean,
+            showFavoriteButton = values[20] as Boolean,
+            showLockButton = values[21] as Boolean
         )}
         if (oldOrder != order) {
             pendingJumpToFirstUnprocessed = true

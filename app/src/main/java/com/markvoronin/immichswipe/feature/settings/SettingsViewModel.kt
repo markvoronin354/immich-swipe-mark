@@ -185,6 +185,11 @@ class SettingsViewModel(
             }
         }
         viewModelScope.launch {
+            sessionRepository.showLockButton.collect { show ->
+                _uiState.update { it.copy(showLockButton = show) }
+            }
+        }
+        viewModelScope.launch {
             sessionRepository.syncLocalDeletion.collect { sync ->
                 _uiState.update { it.copy(syncLocalDeletion = sync) }
             }
@@ -330,6 +335,12 @@ class SettingsViewModel(
     fun setShowArchiveButton(show: Boolean) {
         viewModelScope.launch {
             sessionRepository.saveShowArchiveButton(show)
+        }
+    }
+
+    fun setShowLockButton(show: Boolean) {
+        viewModelScope.launch {
+            sessionRepository.saveShowLockButton(show)
         }
     }
 
