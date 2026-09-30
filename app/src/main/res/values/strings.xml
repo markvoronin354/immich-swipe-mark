@@ -5,6 +5,7 @@
     <string name="login_url_label">Server URL</string>
     <string name="login_url_placeholder">https://your-instance.com</string>
     <string name="login_api_key_label">API Key</string>
+    <string name="login_clear_fields">Clear</string>
     <string name="login_button">Login</string>
     <string name="login_success">Login successful ✔</string>
     <string name="login_error_unknown">An unknown error occurred</string>

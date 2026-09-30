@@ -377,7 +377,21 @@ fun HomeScreen(
         val authRepository = remember { AuthRepository() }
         val database = AppDatabase.getDatabase(LocalContext.current)
         val accountRepository = remember { AccountRepository(database.userAccountDao()) }
-        
+        val currentBaseUrl = remember { SessionManager.getBaseUrl() ?: "" }
+
+        val authViewModel: AuthViewModel = viewModel(
+            key = "add_account_auth_viewmodel",
+            factory = AuthViewModelFactory(
+                viewModel.getSessionRepository(),
+                authRepository,
+                accountRepository
+            )
+        )
+
+        LaunchedEffect(Unit) {
+            authViewModel.prepareForAddAccount(currentBaseUrl)
+        }
+
         Dialog(
             onDismissRequest = { viewModel.cancelAddAccount() },
             properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -393,13 +407,7 @@ fun HomeScreen(
                         }
                     )
                     AuthScreen(
-                        viewModel = viewModel<AuthViewModel>(
-                            factory = AuthViewModelFactory(
-                                viewModel.getSessionRepository(),
-                                authRepository,
-                                accountRepository
-                            )
-                        )
+                        viewModel = authViewModel
                     )
                 }
             }

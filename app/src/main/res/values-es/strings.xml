@@ -5,6 +5,7 @@
     <string name="login_url_label">URL del servidor</string>
     <string name="login_url_placeholder">https://tu-instancia.com</string>
     <string name="login_api_key_label">Clave API</string>
+    <string name="login_clear_fields">Limpiar</string>
     <string name="login_button">Iniciar sesión</string>
     <string name="login_success">Sesión iniciada ✔</string>
     <string name="login_error_unknown">Se ha producido un error desconocido</string>

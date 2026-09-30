@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Button
@@ -21,7 +23,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -88,6 +92,16 @@ fun AuthScreen(
                     label = { Text(stringResource(R.string.login_url_label)) },
                     placeholder = { Text(stringResource(R.string.login_url_placeholder)) },
                     leadingIcon = { Icon(Icons.Default.Storage, contentDescription = null) },
+                    trailingIcon = if (state.baseUrl.isNotEmpty()) {
+                        {
+                            IconButton(onClick = { viewModel.onBaseUrlChange("") }) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = stringResource(R.string.login_clear_fields)
+                                )
+                            }
+                        }
+                    } else null,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = MaterialTheme.shapes.medium
@@ -98,6 +112,16 @@ fun AuthScreen(
                     onValueChange = viewModel::onApiKeyChange,
                     label = { Text(stringResource(R.string.login_api_key_label)) },
                     leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                    trailingIcon = if (state.apiKey.isNotEmpty()) {
+                        {
+                            IconButton(onClick = { viewModel.onApiKeyChange("") }) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = stringResource(R.string.login_clear_fields)
+                                )
+                            }
+                        }
+                    } else null,
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
@@ -106,22 +130,38 @@ fun AuthScreen(
 
                 Spacer(Modifier.height(8.dp))
 
-                Button(
-                    onClick = { viewModel.login() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    enabled = !state.isLoading,
-                    shape = MaterialTheme.shapes.medium
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    if (state.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text(stringResource(R.string.login_button), fontWeight = FontWeight.Bold)
+                    OutlinedButton(
+                        onClick = { viewModel.clearAllFields() },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp),
+                        enabled = !state.isLoading && (state.baseUrl.isNotEmpty() || state.apiKey.isNotEmpty()),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Text(stringResource(R.string.login_clear_fields), fontWeight = FontWeight.Medium)
+                    }
+
+                    Button(
+                        onClick = { viewModel.login() },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp),
+                        enabled = !state.isLoading,
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        if (state.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(stringResource(R.string.login_button), fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
 

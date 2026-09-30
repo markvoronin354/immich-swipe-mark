@@ -53,8 +53,30 @@ class AuthViewModel(
     /**
      * Remet l'état à zéro (utile après une déconnexion).
      */
-    private fun resetState() {
+    fun resetState() {
         _uiState.value = AuthUiState()
+    }
+
+    /**
+     * Vide tous les champs de texte du formulaire.
+     */
+    fun clearAllFields() {
+        _uiState.value = AuthUiState()
+    }
+
+    /**
+     * Prépare le formulaire pour l'ajout d'un nouveau compte en s'assurant
+     * que la clé API est vide. L'URL du serveur peut être optionnellement pré-remplie.
+     */
+    fun prepareForAddAccount(defaultBaseUrl: String? = null) {
+        val initialUrl = defaultBaseUrl?.takeIf { it.isNotEmpty() } ?: _uiState.value.baseUrl
+        _uiState.value = AuthUiState(
+            baseUrl = initialUrl,
+            apiKey = "",
+            isLoading = false,
+            error = null,
+            success = false
+        )
     }
 
     /**
