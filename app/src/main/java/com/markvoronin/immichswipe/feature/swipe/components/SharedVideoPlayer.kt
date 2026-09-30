@@ -85,7 +85,7 @@ fun SharedVideoPlayer(
     isVideoReady: Boolean = true,
     toggleControllerTrigger: Int = 0,
     showControls: Boolean = true,
-    cardDisplayMode: CardDisplayMode = CardDisplayMode.FILL,
+    cardDisplayMode: CardDisplayMode = CardDisplayMode.FIT,
     fileSize: Long? = null,
     showSize: Boolean = false,
     onControllerVisibilityChanged: ((Boolean) -> Unit)? = null,

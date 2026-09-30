@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -73,10 +72,11 @@ class HomeViewModel(
             }
         }
 
-        // Applique le mode d'affichage par défaut au démarrage
+        // Applique et observe le mode d'affichage (liste vs grille)
         viewModelScope.launch {
-            val isGrid = sessionRepository.defaultLayoutGrid.first()
-            _uiState.update { it.copy(isGridView = isGrid) }
+            sessionRepository.defaultLayoutGrid.collect { isGrid ->
+                _uiState.update { it.copy(isGridView = isGrid) }
+            }
         }
 
         // SOLUTION : Observe l'état de santé global de la connexion.
@@ -370,7 +370,12 @@ class HomeViewModel(
         }
     }
 
-    fun toggleLayoutMode() = _uiState.update { it.copy(isGridView = !it.isGridView) }
+    fun toggleLayoutMode() {
+        val newGridState = !_uiState.value.isGridView
+        viewModelScope.launch {
+            sessionRepository.saveDefaultLayoutGrid(newGridState)
+        }
+    }
 
     fun toggleCategory(status: AlbumStatus) {
         _uiState.update { state ->

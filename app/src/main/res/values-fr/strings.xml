@@ -91,6 +91,9 @@
     <string name="sort_category_size">Taille</string>
     <string name="sort_category_type">Type</string>
     <string name="settings_section_interaction">Interaction</string>
+    <string name="settings_interactions_label">Interactions</string>
+    <string name="settings_interactions_desc">Actions de tri, gestes tactiles et synchronisation</string>
+    <string name="settings_interactions_dialog_title">Interactions</string>
     <string name="settings_action_buttons_label">Boutons d\'action à l\'écran</string>
     <string name="settings_action_buttons_desc">Personnaliser la visibilité et la position des boutons superposés</string>
     <string name="settings_action_buttons_dialog_title">Boutons d\'Action</string>
@@ -114,9 +117,7 @@
     <string name="settings_pos_top_right">Haut-Droite</string>
     <string name="settings_pos_bottom_left">Bas-Gauche</string>
     <string name="settings_pos_bottom_right">Bas-Droite</string>
-    <string name="settings_display_mode_label">Affichage par défaut des médias</string>
-    <string name="settings_display_mode_fill">Remplir</string>
-    <string name="settings_display_mode_fit">Ajuster</string>
+
     <string name="settings_rotation_pos_label">Position du bouton de rotation du média</string>
     <string name="settings_mute_pos_label">Position du bouton Mute</string>
     <string name="settings_download_pos_label">Position du bouton Téléchargement</string>
@@ -209,6 +210,11 @@
     <string name="settings_db_confirm_export_title">Exporter les données</string>
     <string name="settings_db_confirm_import_title">Importer les données</string>
     <string name="settings_db_confirm_import_msg">L\'importation va ajouter les données du fichier à votre base actuelle. Les décisions déjà existantes seront mises à jour.\n\nVoulez-vous continuer ?</string>
+    <string name="settings_db_delete_success">Données supprimées avec succès</string>
+    <string name="settings_db_export_success">Export terminé (%1$d décisions)</string>
+    <string name="settings_db_export_error">Erreur export: %1$s</string>
+    <string name="settings_db_import_success">Import réussi (%1$d décisions)</string>
+    <string name="settings_db_import_error">Erreur import: %1$s</string>
 
     <!-- Débogage -->
     <string name="settings_section_debug">Débogage</string>

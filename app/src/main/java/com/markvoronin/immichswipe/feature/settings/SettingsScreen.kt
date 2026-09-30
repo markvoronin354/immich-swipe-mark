@@ -1,17 +1,18 @@
 package com.markvoronin.immichswipe.feature.settings
 
-import android.Manifest
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,42 +27,27 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Forward
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AdsClick
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
-import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PhonelinkErase
 import androidx.compose.material.icons.filled.SettingsSuggest
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TouchApp
-import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -72,10 +58,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
@@ -84,18 +67,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.AppTheme
-import com.markvoronin.immichswipe.core.CardDisplayMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
-import com.markvoronin.immichswipe.core.SortOrder
-import androidx.compose.animation.AnimatedContent
 import com.markvoronin.immichswipe.feature.settings.components.ActionButtonsScreen
 import com.markvoronin.immichswipe.feature.settings.components.ClearCacheDialog
 import com.markvoronin.immichswipe.feature.settings.components.DatabaseActionDialog
+import com.markvoronin.immichswipe.feature.settings.components.InteractionsScreen
 import com.markvoronin.immichswipe.feature.settings.components.LogsDialog
 import com.markvoronin.immichswipe.feature.settings.components.SettingsClickableItem
 import com.markvoronin.immichswipe.feature.settings.components.SettingsSection
 import com.markvoronin.immichswipe.feature.settings.components.SettingsToggleItemSmall
 import com.markvoronin.immichswipe.feature.settings.components.ThemeButton
+
+enum class SettingsSubMenu {
+    NONE, INTERACTIONS, ACTION_BUTTONS
+}
 
 @Composable
 fun SettingsScreen(
@@ -113,7 +98,7 @@ fun SettingsScreen(
         uri?.let {
             val pendingScope = uiState.pendingDatabaseScope ?: DatabaseScope.USER
             context.contentResolver.openOutputStream(it)?.let { outputStream ->
-                viewModel.exportDatabase(pendingScope, outputStream)
+                viewModel.exportDatabase(pendingScope, outputStream, context)
             }
         }
     }
@@ -123,20 +108,12 @@ fun SettingsScreen(
     ) { uri ->
         uri?.let {
             context.contentResolver.openInputStream(it)?.let { inputStream ->
-                viewModel.importDatabase(inputStream)
+                viewModel.importDatabase(inputStream, context)
             }
         }
     }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val allGranted = permissions.entries.all { it.value }
-        if (!allGranted) {
-            viewModel.setSyncLocalDeletion(sync = false)
-            Toast.makeText(context, "Permission denied. Local sync disabled.", Toast.LENGTH_SHORT).show()
-        }
-    }
+
 
     LaunchedEffect(uiState.databaseActionStatus) {
         uiState.databaseActionStatus?.let {
@@ -145,25 +122,52 @@ fun SettingsScreen(
         }
     }
 
+    val settingsScrollState = rememberScrollState()
+
+    val activeSubMenu = when {
+        uiState.showInteractionsDialog -> SettingsSubMenu.INTERACTIONS
+        uiState.showActionButtonsDialog -> SettingsSubMenu.ACTION_BUTTONS
+        else -> SettingsSubMenu.NONE
+    }
+
     AnimatedContent(
-        targetState = uiState.showActionButtonsDialog,
+        targetState = activeSubMenu,
+        transitionSpec = {
+            if (targetState != SettingsSubMenu.NONE) {
+                (slideInHorizontally(animationSpec = tween(300)) { width -> width } + fadeIn(animationSpec = tween(300)))
+                    .togetherWith(slideOutHorizontally(animationSpec = tween(300)) { width -> -width } + fadeOut(animationSpec = tween(300)))
+            } else {
+                (slideInHorizontally(animationSpec = tween(300)) { width -> -width } + fadeIn(animationSpec = tween(300)))
+                    .togetherWith(slideOutHorizontally(animationSpec = tween(300)) { width -> width } + fadeOut(animationSpec = tween(300)))
+            }.using(SizeTransform(clip = false))
+        },
         label = "settings_menu_transition"
-    ) { showActionButtonsSubMenu ->
-        if (showActionButtonsSubMenu) {
-            ActionButtonsScreen(
-                uiState = uiState,
-                viewModel = viewModel,
-                onBack = { viewModel.setShowActionButtonsDialog(false) },
-                modifier = modifier
-            )
-        } else {
-            Column(
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
+    ) { subMenu ->
+        when (subMenu) {
+            SettingsSubMenu.INTERACTIONS -> {
+                InteractionsScreen(
+                    uiState = uiState,
+                    viewModel = viewModel,
+                    onBack = { viewModel.setShowInteractionsDialog(false) },
+                    modifier = modifier
+                )
+            }
+            SettingsSubMenu.ACTION_BUTTONS -> {
+                ActionButtonsScreen(
+                    uiState = uiState,
+                    viewModel = viewModel,
+                    onBack = { viewModel.setShowActionButtonsDialog(false) },
+                    modifier = modifier
+                )
+            }
+            SettingsSubMenu.NONE -> {
+                Column(
+                    modifier = modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        .padding(16.dp)
+                        .verticalScroll(settingsScrollState)
+                ) {
         SettingsSection(title = stringResource(R.string.settings_section_appearance), icon = Icons.Default.Palette) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -242,293 +246,21 @@ fun SettingsScreen(
                         modifier = Modifier.weight(1f)
                     )
                 }
-
-                Spacer(Modifier.height(16.dp))
-
-                Text(
-                    text = stringResource(R.string.settings_display_mode_label),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    ThemeButton(
-                        text = stringResource(R.string.settings_display_mode_fill),
-                        icon = Icons.Default.AspectRatio,
-                        selected = uiState.defaultCardDisplayMode == CardDisplayMode.FILL,
-                        onClick = { viewModel.setDefaultCardDisplayMode(CardDisplayMode.FILL) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    ThemeButton(
-                        text = stringResource(R.string.settings_display_mode_fit),
-                        icon = Icons.Default.FitScreen,
-                        selected = uiState.defaultCardDisplayMode == CardDisplayMode.FIT,
-                        onClick = { viewModel.setDefaultCardDisplayMode(CardDisplayMode.FIT) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
             }
         }
 
-        Spacer(Modifier.height(16.dp))
 
-        SettingsSection(title = stringResource(R.string.settings_section_tri), icon = Icons.AutoMirrored.Filled.Sort) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                SettingsToggleItemSmall(
-                    title = stringResource(R.string.settings_include_archived_label),
-                    checked = uiState.includeArchived,
-                    onCheckedChange = { viewModel.setIncludeArchived(it) },
-                    icon = Icons.Default.Inventory2
-                )
-                Text(
-                    text = stringResource(R.string.settings_include_archived_desc),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 16.dp)
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(bottom = 16.dp), thickness = 0.5.dp)
-
-                var isSortOrderExpanded by rememberSaveable { mutableStateOf(false) }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { isSortOrderExpanded = !isSortOrderExpanded }
-                        .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.settings_sort_order_label),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = stringResource(R.string.settings_sort_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                    Icon(
-                        imageVector = if (isSortOrderExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                AnimatedVisibility(
-                    visible = isSortOrderExpanded,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    Column {
-                        Spacer(Modifier.height(12.dp))
-                        
-                        Text(text = stringResource(R.string.sort_category_time), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            ThemeButton(
-                                text = stringResource(R.string.settings_sort_newest),
-                                icon = Icons.Default.ArrowDownward,
-                                selected = uiState.sortOrder == SortOrder.CHRONOLOGICAL_DESC,
-                                onClick = { viewModel.setSortOrder(SortOrder.CHRONOLOGICAL_DESC) },
-                                modifier = Modifier.weight(1f)
-                            )
-                            ThemeButton(
-                                text = stringResource(R.string.settings_sort_oldest),
-                                icon = Icons.Default.ArrowUpward,
-                                selected = uiState.sortOrder == SortOrder.CHRONOLOGICAL_ASC,
-                                onClick = { viewModel.setSortOrder(SortOrder.CHRONOLOGICAL_ASC) },
-                                modifier = Modifier.weight(1f)
-                            )
-                            ThemeButton(
-                                text = stringResource(R.string.settings_sort_shuffled),
-                                icon = Icons.Default.Shuffle,
-                                selected = uiState.sortOrder == SortOrder.SHUFFLED,
-                                onClick = { viewModel.setSortOrder(SortOrder.SHUFFLED) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-
-                        Spacer(Modifier.height(8.dp))
-                        
-                        Text(text = stringResource(R.string.sort_category_size), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            ThemeButton(
-                                text = stringResource(R.string.settings_sort_biggest),
-                                icon = Icons.Default.ExpandMore,
-                                selected = uiState.sortOrder == SortOrder.SIZE_DESC,
-                                onClick = { viewModel.setSortOrder(SortOrder.SIZE_DESC) },
-                                modifier = Modifier.weight(1f)
-                            )
-                            ThemeButton(
-                                text = stringResource(R.string.settings_sort_smallest),
-                                icon = Icons.Default.ExpandLess,
-                                selected = uiState.sortOrder == SortOrder.SIZE_ASC,
-                                onClick = { viewModel.setSortOrder(SortOrder.SIZE_ASC) },
-                                modifier = Modifier.weight(1f)
-                            )
-                            Spacer(Modifier.weight(1f))
-                        }
-
-                        Spacer(Modifier.height(8.dp))
-
-                        Text(text = stringResource(R.string.sort_category_type), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            ThemeButton(
-                                text = stringResource(R.string.settings_sort_videos),
-                                icon = Icons.Default.Videocam,
-                                selected = uiState.sortOrder == SortOrder.TYPE_VIDEO_FIRST,
-                                onClick = { viewModel.setSortOrder(SortOrder.TYPE_VIDEO_FIRST) },
-                                modifier = Modifier.weight(1f)
-                            )
-                            ThemeButton(
-                                text = stringResource(R.string.settings_sort_photos),
-                                icon = Icons.Default.Image,
-                                selected = uiState.sortOrder == SortOrder.TYPE_PHOTO_FIRST,
-                                onClick = { viewModel.setSortOrder(SortOrder.TYPE_PHOTO_FIRST) },
-                                modifier = Modifier.weight(1f)
-                            )
-                            Spacer(Modifier.weight(1f))
-                        }
-                    }
-                }
-            }
-        }
 
         Spacer(Modifier.height(16.dp))
 
         SettingsSection(title = stringResource(R.string.settings_section_interaction), icon = Icons.Default.TouchApp) {
             Column {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = stringResource(R.string.settings_tri_actions_label),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    
-                    SettingsToggleItemSmall(
-                        title = stringResource(R.string.settings_tri_favorite),
-                        checked = uiState.showFavoriteButton,
-                        onCheckedChange = { viewModel.setShowFavorite(it) },
-                        icon = Icons.Default.Star
-                    )
-
-                    AnimatedVisibility(
-                        visible = uiState.showFavoriteButton,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically()
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .padding(start = 32.dp, end = 8.dp, bottom = 8.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                    RoundedCornerShape(12.dp)
-                                )
-                        ) {
-                            SettingsToggleItemSmall(
-                                title = stringResource(R.string.settings_auto_next_label),
-                                checked = uiState.autoNextOnFav,
-                                onCheckedChange = { viewModel.setAutoNextOnFav(it) },
-                                icon = Icons.AutoMirrored.Filled.Forward
-                            )
-                            Text(
-                                text = stringResource(R.string.settings_auto_next_desc),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.outline,
-                                modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)
-                            )
-                        }
-                    }
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-
-                    SettingsToggleItemSmall(
-                        title = stringResource(R.string.settings_show_swipe_buttons_label),
-                        checked = uiState.showSwipeButtons,
-                        onCheckedChange = { viewModel.setShowSwipeButtons(it) },
-                        icon = Icons.Default.AdsClick
-                    )
-                    Text(
-                        text = stringResource(R.string.settings_show_swipe_buttons_desc),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)
-                    )
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-
-                    SettingsToggleItemSmall(
-                        title = stringResource(R.string.settings_tap_to_swipe_label),
-                        checked = uiState.tapToSwipeEnabled,
-                        onCheckedChange = { viewModel.setTapToSwipeEnabled(it) },
-                        icon = Icons.Default.TouchApp
-                    )
-                    Text(
-                        text = stringResource(R.string.settings_tap_to_swipe_desc),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)
-                    )
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-
-                    SettingsToggleItemSmall(
-                        title = stringResource(R.string.settings_swap_summary_archive_label),
-                        checked = uiState.swapSummaryArchive,
-                        onCheckedChange = { viewModel.setSwapSummaryArchive(it) },
-                        icon = Icons.Default.SwapHoriz
-                    )
-                    Text(
-                        text = stringResource(R.string.settings_swap_summary_archive_desc),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)
-                    )
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-
-                    SettingsToggleItemSmall(
-                        title = stringResource(R.string.settings_sync_local_deletion_label),
-                        checked = uiState.syncLocalDeletion,
-                        onCheckedChange = { checked ->
-                            if (checked) {
-                                val perms = if (Build.VERSION.SDK_INT >= 33) {
-                                    arrayOf(
-                                        Manifest.permission.READ_MEDIA_IMAGES,
-                                        Manifest.permission.READ_MEDIA_VIDEO
-                                    )
-                                } else {
-                                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
-                                }
-                                permissionLauncher.launch(perms)
-                            }
-                            viewModel.setSyncLocalDeletion(checked)
-                        },
-                        icon = Icons.Default.PhonelinkErase
-                    )
-                    Text(
-                        text = stringResource(R.string.settings_sync_local_deletion_desc),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(start = 40.dp, end = 16.dp, bottom = 8.dp)
-                    )
-                }
+                SettingsClickableItem(
+                    title = stringResource(R.string.settings_interactions_label),
+                    subtitle = stringResource(R.string.settings_interactions_desc),
+                    icon = Icons.Default.TouchApp,
+                    onClick = { viewModel.setShowInteractionsDialog(true) }
+                )
 
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
 
@@ -584,6 +316,7 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_db_delete_label),
                     subtitle = stringResource(R.string.settings_db_delete_desc),
                     icon = Icons.Default.DeleteForever,
+                    isDestructive = true,
                     onClick = { viewModel.requestDatabaseAction(DatabaseAction.DELETE, DatabaseScope.USER) }
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
@@ -618,6 +351,7 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_clear_cache_label),
                     subtitle = stringResource(R.string.settings_clear_cache_desc),
                     icon = Icons.Default.DeleteSweep,
+                    isDestructive = true,
                     onClick = { viewModel.setShowClearCacheConfirmation(true) }
                 )
             }
@@ -660,6 +394,7 @@ fun SettingsScreen(
         Spacer(Modifier.height(88.dp))
             }
         }
+        }
     }
 
     if (uiState.showLogsDialog) {
@@ -682,7 +417,7 @@ fun SettingsScreen(
             onScopeChange = { act, sc -> viewModel.requestDatabaseAction(act, sc) },
             onConfirm = { act, sc ->
                 when(act) {
-                    DatabaseAction.DELETE -> viewModel.executeDelete(sc)
+                    DatabaseAction.DELETE -> viewModel.executeDelete(sc, context)
                     DatabaseAction.EXPORT -> {
                         val fileName = "immich_swipe_backup_${if(sc == DatabaseScope.ALL) "total" else "user"}_${System.currentTimeMillis()}.json"
                         exportLauncher.launch(fileName)

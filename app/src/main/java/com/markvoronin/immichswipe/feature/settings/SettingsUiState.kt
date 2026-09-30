@@ -52,6 +52,7 @@ data class SettingsUiState(
     val trashLocalDeletion: Boolean = true,
     val tapToSwipeEnabled: Boolean = false,
     val showActionButtonsDialog: Boolean = false,
+    val showInteractionsDialog: Boolean = false,
     val showClearCacheConfirmation: Boolean = false,
     
     // Database actions

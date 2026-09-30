@@ -67,8 +67,12 @@ fun SettingsClickableItem(
     title: String,
     subtitle: String,
     icon: ImageVector,
+    isDestructive: Boolean = false,
     onClick: () -> Unit
 ) {
+    val effectiveTitleColor = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+    val effectiveIconColor = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -76,10 +80,10 @@ fun SettingsClickableItem(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+        Icon(icon, contentDescription = null, tint = effectiveIconColor)
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Text(text = title, style = MaterialTheme.typography.bodyLarge, color = effectiveTitleColor)
             Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
         }
         Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.outlineVariant)

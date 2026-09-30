@@ -1,5 +1,6 @@
 package com.markvoronin.immichswipe.feature.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -21,6 +22,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.InputStream
+import java.io.OutputStream
 
 class SettingsViewModel(
     private val sessionRepository: SessionRepository,
@@ -365,7 +368,7 @@ class SettingsViewModel(
         )
     }
 
-    fun executeDelete(scope: DatabaseScope) {
+    fun executeDelete(scope: DatabaseScope, context: Context) {
         viewModelScope.launch {
             val userId = SessionManager.getUserId()
             if (scope == DatabaseScope.ALL) {
@@ -374,11 +377,13 @@ class SettingsViewModel(
                 userId?.let { swipeDecisionRepository.clearUserData(it) }
             }
             dismissDatabaseConfirmation()
-            _uiState.value = _uiState.value.copy(databaseActionStatus = "Données supprimées avec succès")
+            _uiState.value = _uiState.value.copy(
+                databaseActionStatus = context.getString(R.string.settings_db_delete_success)
+            )
         }
     }
 
-    fun exportDatabase(scope: DatabaseScope, outputStream: java.io.OutputStream) {
+    fun exportDatabase(scope: DatabaseScope, outputStream: OutputStream, context: android.content.Context) {
         viewModelScope.launch {
             try {
                 val userId = SessionManager.getUserId()
@@ -403,16 +408,20 @@ class SettingsViewModel(
                 val json = com.google.gson.Gson().toJson(export)
                 outputStream.use { it.write(json.toByteArray()) }
 
-                _uiState.value = _uiState.value.copy(databaseActionStatus = "Export terminé (${decisions.size} décisions)")
+                _uiState.value = _uiState.value.copy(
+                    databaseActionStatus = context.getString(R.string.settings_db_export_success, decisions.size)
+                )
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(databaseActionStatus = "Erreur export: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    databaseActionStatus = context.getString(R.string.settings_db_export_error, e.message ?: "")
+                )
             } finally {
                 dismissDatabaseConfirmation()
             }
         }
     }
 
-    fun importDatabase(inputStream: java.io.InputStream) {
+    fun importDatabase(inputStream: InputStream, context: android.content.Context) {
         viewModelScope.launch {
             try {
                 val json = inputStream.bufferedReader().use { it.readText() }
@@ -420,9 +429,13 @@ class SettingsViewModel(
 
                 swipeDecisionRepository.importData(export.swipeDecisions, export.syncHistory)
 
-                _uiState.value = _uiState.value.copy(databaseActionStatus = "Import réussi (${export.swipeDecisions.size} décisions)")
+                _uiState.value = _uiState.value.copy(
+                    databaseActionStatus = context.getString(R.string.settings_db_import_success, export.swipeDecisions.size)
+                )
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(databaseActionStatus = "Erreur import: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    databaseActionStatus = context.getString(R.string.settings_db_import_error, e.message ?: "")
+                )
             } finally {
                 dismissDatabaseConfirmation()
             }
@@ -439,6 +452,10 @@ class SettingsViewModel(
 
     fun setShowActionButtonsDialog(show: Boolean) {
         _uiState.value = _uiState.value.copy(showActionButtonsDialog = show)
+    }
+
+    fun setShowInteractionsDialog(show: Boolean) {
+        _uiState.value = _uiState.value.copy(showInteractionsDialog = show)
     }
 
     fun setShowClearCacheConfirmation(show: Boolean) {

@@ -71,7 +71,7 @@
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_dynamic_color_label">System colors (Material You)</string>
     <string name="settings_dynamic_color_desc">Use colors from your wallpaper and system theme. If disabled, the default app colors will be used.</string>
-    <string name="settings_layout_label">Default layout</string>
+    <string name="settings_layout_label">Default homepage layout</string>
     <string name="settings_layout_list">List</string>
     <string name="settings_layout_grid">Grid</string>
     <string name="settings_section_tri">Sorting</string>
@@ -89,7 +89,10 @@
     <string name="sort_category_time">Date</string>
     <string name="sort_category_size">Size</string>
     <string name="sort_category_type">Type</string>
-    <string name="settings_section_interaction">Interaction</string>
+    <string name="settings_section_interaction">Preferences</string>
+    <string name="settings_interactions_label">Interactions</string>
+    <string name="settings_interactions_desc">Sorting bar actions, tap gestures, and device sync</string>
+    <string name="settings_interactions_dialog_title">Interactions</string>
     <string name="settings_action_buttons_label">Swipe card action buttons</string>
     <string name="settings_action_buttons_desc">Customize visibility and position of overlay buttons</string>
     <string name="settings_action_buttons_dialog_title">Action Buttons</string>
@@ -113,9 +116,7 @@
     <string name="settings_pos_top_right">Top-Right</string>
     <string name="settings_pos_bottom_left">Bottom-Left</string>
     <string name="settings_pos_bottom_right">Bottom-Right</string>
-    <string name="settings_display_mode_label">Default media display</string>
-    <string name="settings_display_mode_fill">Fill</string>
-    <string name="settings_display_mode_fit">Fit</string>
+
     <string name="settings_rotation_pos_label">Rotate asset button position</string>
     <string name="settings_mute_pos_label">Mute button position</string>
     <string name="settings_download_pos_label">Download button position</string>
@@ -208,6 +209,11 @@
     <string name="settings_db_confirm_export_title">Export data</string>
     <string name="settings_db_confirm_import_title">Import data</string>
     <string name="settings_db_confirm_import_msg">Importing will add the file data to your current database. Existing decisions will be updated.\n\nDo you want to continue?</string>
+    <string name="settings_db_delete_success">Data deleted successfully</string>
+    <string name="settings_db_export_success">Export completed (%1$d decisions)</string>
+    <string name="settings_db_export_error">Export error: %1$s</string>
+    <string name="settings_db_import_success">Import successful (%1$d decisions)</string>
+    <string name="settings_db_import_error">Import error: %1$s</string>
 
     <!-- Debugging -->
     <string name="settings_section_debug">Debugging</string>
