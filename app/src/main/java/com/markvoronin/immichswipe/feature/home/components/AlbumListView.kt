@@ -1,6 +1,13 @@
 package com.markvoronin.immichswipe.feature.home.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,7 +28,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -87,7 +93,7 @@ fun AlbumList(
                 state = state,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 120.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val statusOrder = listOf(AlbumStatus.IN_PROGRESS, AlbumStatus.NOT_STARTED, AlbumStatus.COMPLETED, AlbumStatus.VIRTUAL)
 
@@ -95,53 +101,72 @@ fun AlbumList(
                     val albumsInStatus = groupedAlbums[status]
                     if (!albumsInStatus.isNullOrEmpty()) {
                         val isCollapsed = collapsedCategories.contains(status)
-                        item(key = "header_${status.name}") {
+                        item(key = "group_${status.name}") {
                             val statusLabel = when(status) {
                                 AlbumStatus.IN_PROGRESS -> stringResource(R.string.home_status_in_progress)
                                 AlbumStatus.NOT_STARTED -> stringResource(R.string.home_status_not_started)
                                 AlbumStatus.COMPLETED -> stringResource(R.string.home_status_completed)
                                 AlbumStatus.VIRTUAL -> stringResource(R.string.home_status_virtual)
                             }
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onToggleCategory(status) }
-                                    .padding(top = 8.dp, bottom = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = statusLabel,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = if (status == AlbumStatus.VIRTUAL)
-                                        VirtualGold
-                                    else
-                                        MaterialTheme.colorScheme.primary
-                                )
-                                
-                                val rotation by animateFloatAsState(
-                                    targetValue = if (isCollapsed) -90f else 0f,
-                                    label = "chevronRotation"
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.ExpandMore,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.outline,
-                                    modifier = Modifier.graphicsLayer { rotationZ = rotation }
-                                )
-                            }
-                        }
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onToggleCategory(status) }
+                                        .padding(top = 8.dp, bottom = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = statusLabel,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = if (status == AlbumStatus.VIRTUAL)
+                                            VirtualGold
+                                        else
+                                            MaterialTheme.colorScheme.primary
+                                    )
+                                    
+                                    val rotation by animateFloatAsState(
+                                        targetValue = if (isCollapsed) -90f else 0f,
+                                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+                                        label = "chevronRotation"
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.ExpandMore,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.outline,
+                                        modifier = Modifier.graphicsLayer { rotationZ = rotation }
+                                    )
+                                }
 
-                        if (!isCollapsed) {
-                            items(albumsInStatus, key = { it.id }) { album ->
-                                AlbumItem(
-                                    album = album,
-                                    treatedCount = treatedCounts[album.id] ?: 0,
-                                    unsyncedCount = unsyncedChanges[album.id] ?: 0,
-                                    onClick = { onAlbumClick(album) },
-                                    modifier = Modifier.animateItem()
-                                )
+                                AnimatedVisibility(
+                                    visible = !isCollapsed,
+                                    enter = expandVertically(
+                                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+                                    ) + fadeIn(
+                                        animationSpec = tween(durationMillis = 300)
+                                    ),
+                                    exit = shrinkVertically(
+                                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+                                    ) + fadeOut(
+                                        animationSpec = tween(durationMillis = 200)
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        albumsInStatus.forEach { album ->
+                                            AlbumItem(
+                                                album = album,
+                                                treatedCount = treatedCounts[album.id] ?: 0,
+                                                unsyncedCount = unsyncedChanges[album.id] ?: 0,
+                                                onClick = { onAlbumClick(album) }
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
