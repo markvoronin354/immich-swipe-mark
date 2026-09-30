@@ -176,7 +176,7 @@ fun SettingsScreen(
                 Column(
                     modifier = modifier
                         .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        .background(MaterialTheme.colorScheme.background)
                         .padding(16.dp)
                         .verticalScroll(settingsScrollState)
                 ) {
