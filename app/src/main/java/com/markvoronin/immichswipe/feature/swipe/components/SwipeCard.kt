@@ -187,17 +187,16 @@ fun SwipeCard(
                 .setPrioritizeTimeOverSizeThresholds(true)
                 .build()
             
+            val audioAttributes = AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                .build()
+            val handleAudioFocus = (config.playbackBehavior != PlaybackBehavior.IGNORE)
+
             ExoPlayer.Builder(context)
                 .setLoadControl(loadControl)
-                .setAudioAttributes(AudioAttributes.DEFAULT, true)
+                .setAudioAttributes(audioAttributes, handleAudioFocus)
                 .build().apply {
-                if (config.playbackBehavior != PlaybackBehavior.IGNORE) {
-                    val audioAttributes = AudioAttributes.Builder()
-                        .setUsage(C.USAGE_MEDIA)
-                        .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
-                        .build()
-                    setAudioAttributes(audioAttributes, true)
-                }
 
                 repeatMode = Player.REPEAT_MODE_ONE
                 val videoUrl = "$baseUrl/api/assets/${asset.id}/video/playback"

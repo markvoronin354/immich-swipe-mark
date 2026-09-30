@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -57,8 +59,10 @@ import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.markvoronin.immichswipe.R
+import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.core.cache.VideoCache
+import com.markvoronin.immichswipe.data.repository.SessionRepository
 import com.markvoronin.immichswipe.domain.model.Asset
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
@@ -71,6 +75,10 @@ fun DuplicateVideoPlayer(
     contentScale: ContentScale = ContentScale.Fit
 ) {
     val context = LocalContext.current
+    val sessionRepository = remember(context) { SessionRepository(context.applicationContext) }
+    val playbackBehavior by sessionRepository.playbackBehavior.collectAsState(initial = PlaybackBehavior.PAUSE_OTHERS)
+    val handleAudioFocus = (playbackBehavior != PlaybackBehavior.IGNORE)
+
     val baseUrl = remember { SessionManager.getBaseUrl()?.removeSuffix("/") }
     val apiKey = remember { SessionManager.getApiKey() ?: "" }
 
@@ -83,15 +91,20 @@ fun DuplicateVideoPlayer(
     var isScrubbing by remember(asset.id) { mutableStateOf(false) }
     var scrubValue by remember(asset.id) { mutableLongStateOf(0L) }
 
-    val exoPlayer = remember(asset.id) {
+    val exoPlayer = remember(asset.id, handleAudioFocus) {
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(15_000, 50_000, 500, 1_000)
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
 
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(C.USAGE_MEDIA)
+            .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+            .build()
+
         ExoPlayer.Builder(context)
             .setLoadControl(loadControl)
-            .setAudioAttributes(AudioAttributes.DEFAULT, true)
+            .setAudioAttributes(audioAttributes, handleAudioFocus)
             .build().apply {
                 repeatMode = Player.REPEAT_MODE_ONE
                 val videoUrl = "$baseUrl/api/assets/${asset.id}/video/playback"

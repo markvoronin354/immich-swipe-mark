@@ -180,9 +180,15 @@ fun SwipeScreen(
             .setBackBuffer(60_000, true) // 1 minute back-buffer
             .build()
         
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(C.USAGE_MEDIA)
+            .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+            .build()
+        val handleAudioFocus = (playbackBehavior != PlaybackBehavior.IGNORE)
+
         ExoPlayer.Builder(context)
             .setLoadControl(loadControl)
-            .setAudioAttributes(AudioAttributes.DEFAULT, true)
+            .setAudioAttributes(audioAttributes, handleAudioFocus)
             .build().apply {
                 repeatMode = Player.REPEAT_MODE_ONE
                 addListener(object : Player.Listener {
@@ -228,13 +234,12 @@ fun SwipeScreen(
 
     // Configuration des attributs audio selon le comportement choisi
     LaunchedEffect(playbackBehavior) {
-        if (playbackBehavior != PlaybackBehavior.IGNORE) {
-            val audioAttributes = AudioAttributes.Builder()
-                .setUsage(C.USAGE_MEDIA)
-                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
-                .build()
-            sharedPlayer.setAudioAttributes(audioAttributes, true)
-        }
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(C.USAGE_MEDIA)
+            .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+            .build()
+        val handleAudioFocus = (playbackBehavior != PlaybackBehavior.IGNORE)
+        sharedPlayer.setAudioAttributes(audioAttributes, handleAudioFocus)
     }
 
     // Mise à jour du volume quand isMuted change
