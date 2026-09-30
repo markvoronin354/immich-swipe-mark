@@ -208,6 +208,7 @@
 
     <!-- Depuración -->
     <string name="settings_section_debug">Depuración</string>
+    <string name="settings_buy_me_a_coffee">Buy me a coffee</string>
     <string name="settings_view_logs_label">Ver registros locales</string>
     <string name="settings_view_logs_desc">Consultar o exportar eventos del sistema en caso de problemas</string>
     <string name="settings_logs_dialog_title">Registros del sistema</string>
