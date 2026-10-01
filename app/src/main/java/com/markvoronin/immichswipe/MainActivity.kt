@@ -1,16 +1,12 @@
 package com.markvoronin.immichswipe
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -81,48 +77,45 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AnimatedContent(
-                        targetState = state,
-                        transitionSpec = {
-                            fadeIn(animationSpec = tween(500)) togetherWith fadeOut(animationSpec = tween(500))
-                        },
-                        label = "ScreenTransition",
-                        modifier = Modifier.fillMaxSize(),
-                    ) { targetState ->
-                        when {
-                            targetState.isLoading -> {
+                    when {
+                        state.isLoading -> {
+                            LoadingScreen()
+                        }
+
+                        state.isLoggedIn -> {
+                            val activeUserId = state.activeUserId
+                            val api = sessionManager.api
+                            val baseUrl = sessionManager.getBaseUrl()
+                            val apiKey = sessionManager.getApiKey()
+                            
+                            if ((api != null) && (baseUrl != null) && (apiKey != null) && (activeUserId != null)) {
+                                val sessionKey = "$activeUserId-$baseUrl-$apiKey"
+                                
+                                key(sessionKey) {
+                                    HomeScreen(
+                                        viewModel = hiltViewModel(key = sessionKey),
+                                        sessionKey = sessionKey,
+                                        deepLinkIntent = intent
+                                    )
+                                }
+                            } else {
                                 LoadingScreen()
                             }
+                        }
 
-                            targetState.isLoggedIn -> {
-                                val activeUserId = targetState.activeUserId
-                                val api = sessionManager.api
-                                val baseUrl = sessionManager.getBaseUrl()
-                                val apiKey = sessionManager.getApiKey()
-                                
-                                if ((api != null) && (baseUrl != null) && (apiKey != null) && (activeUserId != null)) {
-                                    val sessionKey = "$activeUserId-$baseUrl-$apiKey"
-                                    
-                                    key(sessionKey) {
-                                        HomeScreen(
-                                            viewModel = hiltViewModel(key = sessionKey),
-                                            sessionKey = sessionKey
-                                        )
-                                    }
-                                } else {
-                                    LoadingScreen()
-                                }
-                            }
-
-                            else -> {
-                                AuthScreen(
-                                    viewModel = hiltViewModel()
-                                )
-                            }
+                        else -> {
+                            AuthScreen(
+                                viewModel = hiltViewModel()
+                            )
                         }
                     }
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
     }
 }

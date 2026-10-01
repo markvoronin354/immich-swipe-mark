@@ -1,15 +1,9 @@
 package com.markvoronin.immichswipe.feature.home
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,18 +46,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.ui.NavDisplay
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.feature.auth.AuthScreen
@@ -76,11 +73,32 @@ import com.markvoronin.immichswipe.feature.home.components.ErrorView
 import com.markvoronin.immichswipe.feature.home.components.HomeTopBar
 import com.markvoronin.immichswipe.feature.home.components.ProfilePopup
 import com.markvoronin.immichswipe.feature.home.components.StatsPopup
-import com.markvoronin.immichswipe.feature.home.components.SwipePlaceholder
 import com.markvoronin.immichswipe.feature.settings.SettingsScreen
 import com.markvoronin.immichswipe.feature.settings.SettingsSubMenu
 import com.markvoronin.immichswipe.feature.settings.SettingsViewModel
 import com.markvoronin.immichswipe.feature.swipe.SwipeScreen
+import com.markvoronin.immichswipe.navigation.DeepLinkHandler
+import com.markvoronin.immichswipe.navigation.NavKey
+
+private val navKeySaver = Saver<SnapshotStateList<NavKey>, List<String>>(
+    save = { list -> list.map { it.route } },
+    restore = { savedRoutes ->
+        val restoredList = mutableStateListOf<NavKey>()
+        savedRoutes.forEach { route ->
+            val key = when {
+                route == "auth" -> NavKey.Auth
+                route == "home" -> NavKey.Home
+                route.startsWith("swipe/") -> NavKey.Swipe(route.removePrefix("swipe/"))
+                route == "duplicates" -> NavKey.Duplicates
+                route == "settings" -> NavKey.Settings
+                else -> NavKey.Home
+            }
+            restoredList.add(key)
+        }
+        if (restoredList.isEmpty()) restoredList.add(NavKey.Home)
+        restoredList
+    }
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,9 +106,31 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     sessionKey: String,
     modifier: Modifier = Modifier,
+    deepLinkIntent: Intent? = null
 ) {
     val uiState: HomeUiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isHome = uiState.currentTab == HomeTab.HOME
+
+    val backStack = rememberSaveable(inputs = arrayOf(sessionKey), saver = navKeySaver) {
+        mutableStateListOf<NavKey>(NavKey.Home)
+    }
+
+    LaunchedEffect(deepLinkIntent) {
+        val parsedKey = DeepLinkHandler.parseIntent(deepLinkIntent)
+        if (parsedKey != null && backStack.lastOrNull() != parsedKey) {
+            if (parsedKey is NavKey.Swipe) {
+                if (backStack.firstOrNull() != NavKey.Home) {
+                    backStack.clear()
+                    backStack.add(NavKey.Home)
+                }
+                backStack.add(parsedKey)
+            } else {
+                backStack.add(parsedKey)
+            }
+        }
+    }
+
+    val currentTopKey = backStack.lastOrNull() ?: NavKey.Home
+    val isHome = currentTopKey is NavKey.Home
 
     LaunchedEffect(Unit) {
         viewModel.loadUser()
@@ -109,8 +149,10 @@ fun HomeScreen(
         viewModel.updateVirtualNames(Album.VIRTUAL_DUPLICATES_ID, virtualDuplicatesName, virtualDuplicatesDesc)
     }
 
-    BackHandler(enabled = uiState.currentTab != HomeTab.HOME) {
-        viewModel.goBack()
+    BackHandler(enabled = backStack.size > 1) {
+        if (backStack.size > 1) {
+            backStack.removeAt(backStack.lastIndex)
+        }
     }
 
     val settingsViewModel: SettingsViewModel = hiltViewModel(
@@ -119,7 +161,7 @@ fun HomeScreen(
     val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
     val activeSubMenu = when {
-        uiState.currentTab != HomeTab.SETTINGS -> SettingsSubMenu.NONE
+        currentTopKey !is NavKey.Settings -> SettingsSubMenu.NONE
         settingsUiState.showInteractionsDialog -> SettingsSubMenu.INTERACTIONS
         settingsUiState.showActionButtonsDialog -> SettingsSubMenu.ACTION_BUTTONS
         else -> SettingsSubMenu.NONE
@@ -131,8 +173,8 @@ fun HomeScreen(
         topBar = {
             HomeTopBar(
                 isHome = isHome,
-                isSwipeTab = uiState.currentTab == HomeTab.SWIPE,
-                isSettingsTab = uiState.currentTab == HomeTab.SETTINGS,
+                isSwipeTab = currentTopKey is NavKey.Swipe || currentTopKey is NavKey.Duplicates,
+                isSettingsTab = currentTopKey is NavKey.Settings,
                 activeSubMenu = activeSubMenu,
                 user = uiState.user,
                 connectionStatus = uiState.connectionStatus,
@@ -148,8 +190,8 @@ fun HomeScreen(
                     if (activeSubMenu != SettingsSubMenu.NONE) {
                         settingsViewModel.setShowInteractionsDialog(false)
                         settingsViewModel.setShowActionButtonsDialog(false)
-                    } else {
-                        viewModel.goBack()
+                    } else if (backStack.size > 1) {
+                        backStack.removeAt(backStack.lastIndex)
                     }
                 }
             )
@@ -163,20 +205,16 @@ fun HomeScreen(
                 .padding(top = innerPadding.calculateTopPadding())
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                AnimatedContent(
-                    targetState = uiState.currentTab,
-                    transitionSpec = {
-                        val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
-                        (slideInHorizontally(animationSpec = tween(300)) { width -> direction * width } + fadeIn(tween(300)))
-                            .togetherWith(slideOutHorizontally(animationSpec = tween(300)) { width -> -direction * width } + fadeOut(tween(300)))
-                            .using(SizeTransform(clip = false))
+                NavDisplay(
+                    backStack = backStack,
+                    onBack = {
+                        if (backStack.size > 1) {
+                            backStack.removeAt(backStack.lastIndex)
+                        }
                     },
-                    label = "TabTransition",
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.TopStart
-                ) { targetTab ->
-                    when (targetTab) {
-                        HomeTab.HOME -> {
+                    entryProvider = entryProvider {
+                        entry<NavKey.Home> {
                             if (uiState.isLoading && uiState.albums.isEmpty()) {
                                 Box(Modifier.fillMaxSize()) {
                                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -207,7 +245,14 @@ fun HomeScreen(
                                             baseUrl = uiState.baseUrl,
                                             apiKey = uiState.apiKey,
                                             onRefresh = { viewModel.refreshAlbums() },
-                                            onAlbumClick = { viewModel.onAlbumSelected(it) },
+                                            onAlbumClick = { album ->
+                                                viewModel.onAlbumSelected(album)
+                                                if (album.id == Album.VIRTUAL_DUPLICATES_ID) {
+                                                    backStack.add(NavKey.Duplicates)
+                                                } else {
+                                                    backStack.add(NavKey.Swipe(album.id))
+                                                }
+                                            },
                                             onToggleCategory = viewModel::toggleCategory
                                         )
                                     } else {
@@ -220,41 +265,59 @@ fun HomeScreen(
                                             baseUrl = uiState.baseUrl,
                                             apiKey = uiState.apiKey,
                                             onRefresh = { viewModel.refreshAlbums() },
-                                            onAlbumClick = { viewModel.onAlbumSelected(it) },
+                                            onAlbumClick = { album ->
+                                                viewModel.onAlbumSelected(album)
+                                                if (album.id == Album.VIRTUAL_DUPLICATES_ID) {
+                                                    backStack.add(NavKey.Duplicates)
+                                                } else {
+                                                    backStack.add(NavKey.Swipe(album.id))
+                                                }
+                                            },
                                             onToggleCategory = viewModel::toggleCategory
                                         )
                                     }
                                 }
                             }
                         }
-                        HomeTab.SWIPE -> {
-                            if (uiState.selectedAlbum?.id == Album.VIRTUAL_DUPLICATES_ID) {
-                                val duplicatesViewModel: DuplicatesViewModel = hiltViewModel(
-                                    key = "duplicates-$sessionKey"
+                        entry<NavKey.Swipe> { key ->
+                            val selectedAlbum = uiState.filteredAlbums.firstOrNull { it.id == key.albumId }
+                                ?: uiState.selectedAlbum?.takeIf { it.id == key.albumId }
+                                ?: Album(
+                                    id = key.albumId,
+                                    albumName = if (key.albumId == Album.VIRTUAL_ALL_ID) virtualAllName else (uiState.virtualNames[key.albumId] ?: "Album"),
+                                    description = uiState.virtualDescriptions[key.albumId],
+                                    assetCount = 0,
+                                    albumThumbnailAssetId = null
                                 )
-                                DuplicatesScreen(
-                                    viewModel = duplicatesViewModel,
-                                    resetSignal = viewModel.resetRequestSignal
-                                )
-                            } else if (uiState.selectedAlbum != null) {
-                                SwipeScreen(
-                                    album = uiState.selectedAlbum!!,
-                                    sessionKey = sessionKey,
-                                    resetSignal = viewModel.resetRequestSignal,
-                                    userQuotaBytes = uiState.user?.quotaUsageInBytes,
-                                    onBack = { viewModel.goBack() }
-                                )
-                            } else {
-                                SwipePlaceholder(selectedAlbum = null)
-                            }
+
+                            SwipeScreen(
+                                album = selectedAlbum,
+                                sessionKey = sessionKey,
+                                resetSignal = viewModel.resetRequestSignal,
+                                userQuotaBytes = uiState.user?.quotaUsageInBytes,
+                                onBack = {
+                                    if (backStack.size > 1) {
+                                        backStack.removeAt(backStack.lastIndex)
+                                    }
+                                }
+                            )
                         }
-                        HomeTab.SETTINGS -> {
+                        entry<NavKey.Duplicates> {
+                            val duplicatesViewModel: DuplicatesViewModel = hiltViewModel(
+                                key = "duplicates-$sessionKey"
+                            )
+                            DuplicatesScreen(
+                                viewModel = duplicatesViewModel,
+                                resetSignal = viewModel.resetRequestSignal
+                            )
+                        }
+                        entry<NavKey.Settings> {
                             SettingsScreen(
                                 viewModel = settingsViewModel
                             )
                         }
                     }
-                }
+                )
 
                 Box(
                     modifier = Modifier
@@ -277,8 +340,14 @@ fun HomeScreen(
                             windowInsets = WindowInsets(0, 0, 0, 0)
                         ) {
                             NavigationBarItem(
-                                selected = uiState.currentTab == HomeTab.HOME,
-                                onClick = { viewModel.onTabSelected(HomeTab.HOME) },
+                                selected = currentTopKey is NavKey.Home,
+                                onClick = {
+                                    if (currentTopKey !is NavKey.Home) {
+                                        backStack.clear()
+                                        backStack.add(NavKey.Home)
+                                        viewModel.refreshAlbums()
+                                    }
+                                },
                                 icon = { Icon(Icons.Default.Home, contentDescription = stringResource(R.string.nav_home), modifier = Modifier.size(24.dp)) },
                                 alwaysShowLabel = false,
                                 colors = NavigationBarItemDefaults.colors(
@@ -288,8 +357,18 @@ fun HomeScreen(
                                 )
                             )
                             NavigationBarItem(
-                                selected = uiState.currentTab == HomeTab.SWIPE,
-                                onClick = { viewModel.onTabSelected(HomeTab.SWIPE) },
+                                selected = currentTopKey is NavKey.Swipe || currentTopKey is NavKey.Duplicates,
+                                onClick = {
+                                    if (currentTopKey !is NavKey.Swipe && currentTopKey !is NavKey.Duplicates) {
+                                        val targetAlbum = uiState.selectedAlbum
+                                        if (targetAlbum?.id == Album.VIRTUAL_DUPLICATES_ID) {
+                                            backStack.add(NavKey.Duplicates)
+                                        } else {
+                                            val targetId = targetAlbum?.id ?: Album.VIRTUAL_ALL_ID
+                                            backStack.add(NavKey.Swipe(targetId))
+                                        }
+                                    }
+                                },
                                 icon = { Icon(Icons.Default.Swipe, contentDescription = stringResource(R.string.nav_swipe), modifier = Modifier.size(24.dp)) },
                                 alwaysShowLabel = false,
                                 colors = NavigationBarItemDefaults.colors(
@@ -323,7 +402,9 @@ fun HomeScreen(
             },
             dismissButton = {
                 TextButton(onClick = {
-                    viewModel.onTabSelected(HomeTab.SETTINGS)
+                    if (currentTopKey !is NavKey.Settings) {
+                        backStack.add(NavKey.Settings)
+                    }
                     viewModel.dismissBackupWarning()
                 }) {
                     Text(stringResource(R.string.backup_warning_settings))
@@ -342,7 +423,9 @@ fun HomeScreen(
             apiKey = uiState.apiKey,
             onClose = { viewModel.toggleProfilePopup(visible = false) },
             onSettingsClick = { 
-                viewModel.onTabSelected(HomeTab.SETTINGS)
+                if (currentTopKey !is NavKey.Settings) {
+                    backStack.add(NavKey.Settings)
+                }
                 viewModel.toggleProfilePopup(visible = false)
             },
             onSwitchAccount = { viewModel.switchAccount(it) },

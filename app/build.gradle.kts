@@ -7,11 +7,7 @@ plugins {
 
 android {
     namespace = "com.markvoronin.immichswipe"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.markvoronin.immichswipe"
@@ -89,6 +85,10 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
+
+    // Navigation 3
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
 
     // Hilt
     implementation(libs.hilt.android)
