@@ -85,7 +85,8 @@ class SessionManager @Inject constructor(
         clearImageCache()
         this.config = config
         this._sessionConfig.value = config
-        this._api = RetrofitFactory.create(config, this)
+        this._api = RetrofitFactory.create(config)
+        this._connectionStatus.value = ConnectionStatus(ConnectionLevel.ONLINE, DiagStatus.CONNECTED)
     }
 
     @Synchronized

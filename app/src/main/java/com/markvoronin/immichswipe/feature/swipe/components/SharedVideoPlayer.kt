@@ -59,7 +59,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.Timeline
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
@@ -110,17 +112,34 @@ fun SharedVideoPlayer(
             }
         }
 
-        val videoAlpha = if (isVideoReady) 1f else 0f
+        var currentMediaId by remember(player, assetId) { mutableStateOf(player.currentMediaItem?.mediaId) }
 
-        DisposableEffect(player) {
+        DisposableEffect(player, assetId) {
             val listener = object : Player.Listener {
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     isVideoPlaying = isPlaying
                 }
+                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                    currentMediaId = mediaItem?.mediaId
+                }
+                override fun onTimelineChanged(timeline: Timeline, reason: Int) {
+                    currentMediaId = player.currentMediaItem?.mediaId
+                }
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    // Force a re-check of the media ID when state changes
+                    val newMediaId = player.currentMediaItem?.mediaId
+                    if (currentMediaId != newMediaId) {
+                        currentMediaId = newMediaId
+                    }
+                }
             }
             player.addListener(listener)
+            currentMediaId = player.currentMediaItem?.mediaId
             onDispose { player.removeListener(listener) }
         }
+
+        val isCorrectMediaBound = (assetId == null || currentMediaId == assetId)
+        val videoAlpha = if (isVideoReady && isCorrectMediaBound) 1f else 0f
 
         LaunchedEffect(player, isPaused, assetId) {
             AppLogger.d("VideoPlayer", "SharedVideoPlayer Effect: asset=$assetId, isPaused=$isPaused, isFullscreen=$isFullscreen")
@@ -188,16 +207,22 @@ fun SharedVideoPlayer(
                                     onControllerVisibilityChanged?.invoke(visibility == View.VISIBLE)
                                 })
                                 
-                                // Keep the texture from clearing to black when media changes
-                                view.setKeepContentOnPlayerReset(true)
+                                // Clear content on player reset to prevent showing stale frames from previous videos
+                                view.setKeepContentOnPlayerReset(false)
                                 
                                 playerViewRef.value = view
                                 view
                             },
                             update = { view ->
-                                if (view.player != player) {
-                                    AppLogger.d("VideoPlayer", "AndroidView Update: Binding player (fullscreen=$isFullscreen), asset=$assetId")
-                                    view.player = player
+                                val isCorrectMedia = (assetId == null || currentMediaId == assetId)
+                                if (isCorrectMedia) {
+                                    if (view.player != player) {
+                                        view.player = player
+                                    }
+                                } else {
+                                    if (view.player != null) {
+                                        view.player = null
+                                    }
                                 }
 
                                 view.useController = false

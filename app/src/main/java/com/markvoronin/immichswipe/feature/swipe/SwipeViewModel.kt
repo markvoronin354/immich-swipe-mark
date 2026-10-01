@@ -19,15 +19,15 @@ import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -67,11 +67,11 @@ class SwipeViewModel @Inject constructor(
     private var sortingJob: Job? = null
     private var pendingJumpToFirstUnprocessed = false
     
-    private val _downloadRequestSignal = MutableSharedFlow<Asset>(extraBufferCapacity = 1)
-    val downloadRequestSignal = _downloadRequestSignal.asSharedFlow()
+    private val _downloadRequestChannel = Channel<Asset>(Channel.BUFFERED)
+    val downloadRequestSignal = _downloadRequestChannel.receiveAsFlow()
 
-    private val _shareRequestSignal = MutableSharedFlow<Asset>(extraBufferCapacity = 1)
-    val shareRequestSignal = _shareRequestSignal.asSharedFlow()
+    private val _shareRequestChannel = Channel<Asset>(Channel.BUFFERED)
+    val shareRequestSignal = _shareRequestChannel.receiveAsFlow()
 
     init {
         loadAssetsAndDecisions()
@@ -540,8 +540,8 @@ class SwipeViewModel @Inject constructor(
     fun exitBulkMode() { _uiState.update { it.copy(isBulkDeleteMode = false, isBulkKeepMode = false, bulkSelection = emptySet()) } }
     fun setBulkSelection(ids: Set<String>, last: Int? = null) { _uiState.update { it.copy(bulkSelection = ids, bulkLastIndex = last) } }
     fun onLocalDeleteIntentHandled() { _uiState.update { it.copy(localDeletePendingIntent = null) } }
-    fun downloadAsset(asset: Asset) { viewModelScope.launch { _downloadRequestSignal.emit(asset) } }
-    fun shareAsset(asset: Asset) { viewModelScope.launch { _shareRequestSignal.emit(asset) } }
+    fun downloadAsset(asset: Asset) { _downloadRequestChannel.trySend(asset) }
+    fun shareAsset(asset: Asset) { _shareRequestChannel.trySend(asset) }
     fun onMoveToAsset(index: Int) {
         if (index in _uiState.value.assets.indices) {
             _uiState.update { it.copy(currentIndex = index) }

@@ -158,10 +158,7 @@ fun SwipeCard(
     var pausedByHoldState by remember(asset.id) { mutableStateOf(false) }
     var ignoreNextTap by remember(asset.id) { mutableStateOf(false) }
 
-    var isVideoReady by remember(asset.id, providedPlayer) {
-        val isSameAsset = providedPlayer?.currentMediaItem?.mediaId == asset.id
-        mutableStateOf(isSameAsset && providedPlayer?.playbackState == Player.STATE_READY)
-    }
+    var isVideoReady by remember(asset.id) { mutableStateOf(false) }
     var showLoadingIndicator by remember(asset.id, providedPlayer) {
         val isSameAsset = providedPlayer?.currentMediaItem?.mediaId == asset.id
         mutableStateOf(asset.type == "VIDEO" && !(isSameAsset && providedPlayer?.playbackState == Player.STATE_READY))
@@ -272,10 +269,6 @@ fun SwipeCard(
                     showLoadingIndicator = false
                 }
             }
-        }
-        val isSameAssetInit = exoPlayer?.currentMediaItem?.mediaId == asset.id
-        if (exoPlayer?.playbackState == Player.STATE_READY && isSameAssetInit) {
-            isVideoReady = true
         }
         exoPlayer?.addListener(listener)
         var wasPlayingBeforeAppPause = false

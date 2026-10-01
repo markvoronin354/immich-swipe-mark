@@ -76,7 +76,7 @@ import com.markvoronin.immichswipe.feature.swipe.components.SwipeCardDeck
 import androidx.activity.compose.BackHandler
 import com.markvoronin.immichswipe.feature.swipe.components.AddToAlbumDialog
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -88,7 +88,7 @@ import java.io.File
 fun SwipeScreen(
     album: Album,
     sessionKey: String,
-    resetSignal: SharedFlow<Unit>,
+    resetSignal: Flow<Unit>,
     modifier: Modifier = Modifier,
     userQuotaBytes: Long? = null,
     onBack: () -> Unit = {}

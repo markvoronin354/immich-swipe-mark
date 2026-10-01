@@ -171,10 +171,7 @@ fun FullscreenViewer(
 
     var toggleControllerTrigger by remember { mutableIntStateOf(0) }
 
-    var isVideoReady by remember(asset.id, providedPlayer) {
-        val isSameAsset = providedPlayer?.currentMediaItem?.mediaId == asset.id
-        mutableStateOf(isSameAsset && providedPlayer?.playbackState == Player.STATE_READY)
-    }
+    var isVideoReady by remember(asset.id) { mutableStateOf(false) }
     var showLoadingIndicator by remember(asset.id, providedPlayer) {
         val isSameAsset = providedPlayer?.currentMediaItem?.mediaId == asset.id
         mutableStateOf(asset.type == "VIDEO" && !(isSameAsset && providedPlayer?.playbackState == Player.STATE_READY))
@@ -284,11 +281,6 @@ fun FullscreenViewer(
                 AppLogger.e("Fullscreen", "Player error: ${error.message}", error)
                 showLoadingIndicator = false
             }
-        }
-
-        val isSameAssetInit = exoPlayer?.currentMediaItem?.mediaId == asset.id
-        if (exoPlayer?.playbackState == Player.STATE_READY && isSameAssetInit) {
-            isVideoReady = true
         }
 
         exoPlayer?.addListener(listener)

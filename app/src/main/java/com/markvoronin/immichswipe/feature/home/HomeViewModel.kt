@@ -18,18 +18,18 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -441,13 +441,11 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private val _resetRequestSignal = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val resetRequestSignal = _resetRequestSignal.asSharedFlow()
+    private val _resetRequestChannel = Channel<Unit>(Channel.BUFFERED)
+    val resetRequestSignal = _resetRequestChannel.receiveAsFlow()
 
     fun requestReset() {
-        viewModelScope.launch {
-            _resetRequestSignal.emit(Unit)
-        }
+        _resetRequestChannel.trySend(Unit)
     }
 
     fun toggleGlobalResetConfirmation(visible: Boolean) {

@@ -59,13 +59,13 @@ import com.markvoronin.immichswipe.feature.duplicates.components.ZoomData
 import com.markvoronin.immichswipe.feature.duplicates.components.formatSizeStr
 import com.markvoronin.immichswipe.feature.settings.components.verticalFadingEdges
 import com.markvoronin.immichswipe.ui.theme.VirtualGold
-import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.Flow
 
 @Composable
 fun DuplicatesScreen(
     viewModel: DuplicatesViewModel,
     modifier: Modifier = Modifier,
-    resetSignal: SharedFlow<Unit>? = null
+    resetSignal: Flow<Unit>? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var activeZoomData by remember { mutableStateOf<ZoomData?>(null) }
