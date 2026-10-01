@@ -39,11 +39,12 @@ data class AssetBatch(
 @Singleton
 class AssetRepository @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val sessionManager: SessionManager,
     private val customApi: ImmichApi? = null,
     private val albumAssetDao: AlbumAssetDao? = null
 ) {
     private val api: ImmichApi
-        get() = customApi ?: SessionManager.api ?: error("No active API session")
+        get() = customApi ?: sessionManager.api ?: error("No active API session")
     fun getAssetsByAlbum(
         albumId: String,
         includeArchived: Boolean = false,
@@ -52,20 +53,25 @@ class AssetRepository @Inject constructor(
         shuffleSeed: Long? = null
     ): Flow<AssetBatch> = channelFlow {
         if (userId == null || albumAssetDao == null) return@channelFlow
+        if (sessionManager.getUserId() != userId) {
+            AppLogger.w("AssetRepo", "Session mismatch at start: requested $userId but active is ${sessionManager.getUserId()}")
+            return@channelFlow
+        }
 
-        // 1. Emit local cache instantly
+        // 1. Emit local cache instantly (up to 100,000 assets from DB)
+        val maxDbLimit = 100000
         val cachedEntities = when (sortOrder) {
-            SortOrder.CHRONOLOGICAL_DESC -> albumAssetDao.getAssetsChronologicalDesc(albumId, userId, limit = 5000, offset = 0)
-            SortOrder.CHRONOLOGICAL_ASC -> albumAssetDao.getAssetsChronologicalAsc(albumId, userId, limit = 5000, offset = 0)
-            SortOrder.SIZE_DESC -> albumAssetDao.getAssetsSizeDesc(albumId, userId, limit = 5000, offset = 0)
-            SortOrder.SIZE_ASC -> albumAssetDao.getAssetsSizeAsc(albumId, userId, limit = 5000, offset = 0)
-            SortOrder.TYPE_VIDEO_FIRST -> albumAssetDao.getAssetsTypeVideoFirstDesc(albumId, userId, limit = 5000, offset = 0)
-            SortOrder.TYPE_PHOTO_FIRST -> albumAssetDao.getAssetsTypePhotoFirstDesc(albumId, userId, limit = 5000, offset = 0)
-            SortOrder.TYPE_VIDEO_FIRST_ASC -> albumAssetDao.getAssetsTypeVideoFirstAsc(albumId, userId, limit = 5000, offset = 0)
-            SortOrder.TYPE_PHOTO_FIRST_ASC -> albumAssetDao.getAssetsTypePhotoFirstAsc(albumId, userId, limit = 5000, offset = 0)
-            SortOrder.SHUFFLED -> albumAssetDao.getAssetsShuffled(albumId, userId, shuffleSeed ?: 1L, limit = 5000, offset = 0)
-            SortOrder.TYPE_VIDEO_FIRST_SHUFFLED -> albumAssetDao.getAssetsTypeVideoFirstShuffled(albumId, userId, shuffleSeed ?: 1L, limit = 5000, offset = 0)
-            SortOrder.TYPE_PHOTO_FIRST_SHUFFLED -> albumAssetDao.getAssetsTypePhotoFirstShuffled(albumId, userId, shuffleSeed ?: 1L, limit = 5000, offset = 0)
+            SortOrder.CHRONOLOGICAL_DESC -> albumAssetDao.getAssetsChronologicalDesc(albumId, userId, limit = maxDbLimit, offset = 0)
+            SortOrder.CHRONOLOGICAL_ASC -> albumAssetDao.getAssetsChronologicalAsc(albumId, userId, limit = maxDbLimit, offset = 0)
+            SortOrder.SIZE_DESC -> albumAssetDao.getAssetsSizeDesc(albumId, userId, limit = maxDbLimit, offset = 0)
+            SortOrder.SIZE_ASC -> albumAssetDao.getAssetsSizeAsc(albumId, userId, limit = maxDbLimit, offset = 0)
+            SortOrder.TYPE_VIDEO_FIRST -> albumAssetDao.getAssetsTypeVideoFirstDesc(albumId, userId, limit = maxDbLimit, offset = 0)
+            SortOrder.TYPE_PHOTO_FIRST -> albumAssetDao.getAssetsTypePhotoFirstDesc(albumId, userId, limit = maxDbLimit, offset = 0)
+            SortOrder.TYPE_VIDEO_FIRST_ASC -> albumAssetDao.getAssetsTypeVideoFirstAsc(albumId, userId, limit = maxDbLimit, offset = 0)
+            SortOrder.TYPE_PHOTO_FIRST_ASC -> albumAssetDao.getAssetsTypePhotoFirstAsc(albumId, userId, limit = maxDbLimit, offset = 0)
+            SortOrder.SHUFFLED -> albumAssetDao.getAssetsShuffled(albumId, userId, shuffleSeed ?: 1L, limit = maxDbLimit, offset = 0)
+            SortOrder.TYPE_VIDEO_FIRST_SHUFFLED -> albumAssetDao.getAssetsTypeVideoFirstShuffled(albumId, userId, shuffleSeed ?: 1L, limit = maxDbLimit, offset = 0)
+            SortOrder.TYPE_PHOTO_FIRST_SHUFFLED -> albumAssetDao.getAssetsTypePhotoFirstShuffled(albumId, userId, shuffleSeed ?: 1L, limit = maxDbLimit, offset = 0)
         }
         
         val mappedLocal = withContext(Dispatchers.Default) {
@@ -128,9 +134,15 @@ class AssetRepository @Inject constructor(
             else -> SearchAssetsRequest(albumIds = listOf(albumId), visibility = visibility, withExif = needsExif, order = apiOrder)
         }
 
+        val statsRequest = when (albumId) {
+            Album.VIRTUAL_ALL_ID -> SearchAssetsRequest(visibility = visibility)
+            Album.VIRTUAL_ORPHANS_ID -> SearchAssetsRequest(isNotInAlbum = true, visibility = visibility)
+            else -> SearchAssetsRequest(albumIds = listOf(albumId), visibility = visibility)
+        }
+
         // 2. Fetch statistics to get the TRUE total (Search metadata total can be capped or inaccurate on some versions)
         val statsResp = try {
-            api.getSearchStatistics(baseRequest)
+            api.getSearchStatistics(statsRequest)
         } catch (e: Exception) {
             AppLogger.e("AssetRepo", "Error fetching stats: ${e.message}")
             null
@@ -144,19 +156,39 @@ class AssetRepository @Inject constructor(
         } catch (e: Exception) {
             AppLogger.e("AssetRepo", "Error fetching first page: ${e.message}")
             if (mappedLocal.isEmpty()) send(AssetBatch(emptyList(), totalFromServer, isLocalCache = false, isSyncing = false))
+            else send(AssetBatch(mappedLocal, mappedLocal.size, isLocalCache = true, isSyncing = false))
             return@channelFlow
         }
 
         // Use the higher of the two totals if they differ
         val effectiveTotal = maxOf(totalFromServer, firstPageResp.assets.total)
         
-        // If the cache is already complete, we can stop here or sync quietly
-        val isCacheComplete = cachedEntities.size >= effectiveTotal && effectiveTotal > 0
+        // Use total DB count rather than capped cachedEntities.size
+        val totalInDb = albumAssetDao.getAssetCountForAlbum(albumId, userId)
+        val isCacheComplete = totalInDb >= (effectiveTotal - 10) && effectiveTotal > 0
         
         if (isCacheComplete) {
-            // Check if Page 1 matches. if not, maybe some items are new.
-            // For now, let's just finish and be fast.
-            send(AssetBatch(mappedLocal, effectiveTotal, isLocalCache = true, isSyncing = false))
+            // Check if Page 1 has any new items
+            val fetchedIds = cachedEntities.map { it.assetId }.toSet()
+            val newFromPage1 = firstPageResp.assets.items.filter { it.id !in fetchedIds }
+            if (newFromPage1.isNotEmpty()) {
+                withContext(Dispatchers.IO) {
+                    albumAssetDao.insertAlbumAssets(newFromPage1.map { asset ->
+                        AlbumAssetEntity(
+                            albumId = albumId,
+                            assetId = asset.id,
+                            userId = userId,
+                            type = asset.type,
+                            fileCreatedAt = asset.effectiveDate,
+                            originalFileName = asset.originalFileName,
+                            fileSizeInBytes = asset.exifInfo?.fileSizeInBytes,
+                            imageWidth = asset.exifInfo?.imageWidth,
+                            imageHeight = asset.exifInfo?.imageHeight
+                        )
+                    })
+                }
+            }
+            send(AssetBatch(mappedLocal, maxOf(effectiveTotal, mappedLocal.size), isLocalCache = true, isSyncing = false))
             return@channelFlow
         }
 
@@ -166,6 +198,10 @@ class AssetRepository @Inject constructor(
         
         var nextPage: String? = "1"
         while (nextPage != null) {
+            if (sessionManager.getUserId() != userId) {
+                AppLogger.w("AssetRepo", "Session switched from $userId to ${sessionManager.getUserId()}. Aborting sync.")
+                return@channelFlow
+            }
             try {
                 val resp = if (nextPage == "1") firstPageResp else api.searchAssets(baseRequest.copy(page = nextPage.toIntOrNull() ?: 1, size = 1000))
                 val items = resp.assets.items
@@ -185,7 +221,7 @@ class AssetRepository @Inject constructor(
                                         assetId = asset.id,
                                         userId = userId,
                                         type = asset.type,
-                                        fileCreatedAt = asset.fileCreatedAt,
+                                        fileCreatedAt = asset.effectiveDate,
                                         originalFileName = asset.originalFileName,
                                         fileSizeInBytes = asset.exifInfo?.fileSizeInBytes,
                                         imageWidth = asset.exifInfo?.imageWidth,
@@ -251,8 +287,8 @@ class AssetRepository @Inject constructor(
     fun applySort(allAssets: List<Asset>, sortOrder: SortOrder, shuffleSeed: Long?): List<Asset> {
         val seed = shuffleSeed ?: 1L
         return when (sortOrder) {
-            SortOrder.CHRONOLOGICAL_DESC -> allAssets.sortedByDescending { it.fileCreatedAt }
-            SortOrder.CHRONOLOGICAL_ASC -> allAssets.sortedBy { it.fileCreatedAt }
+            SortOrder.CHRONOLOGICAL_DESC -> allAssets.sortedByDescending { it.effectiveDate }
+            SortOrder.CHRONOLOGICAL_ASC -> allAssets.sortedBy { it.effectiveDate }
             SortOrder.SIZE_DESC -> allAssets.sortedByDescending { it.exifInfo?.fileSizeInBytes ?: 0L }
             SortOrder.SIZE_ASC -> allAssets.sortedBy { it.exifInfo?.fileSizeInBytes ?: 0L }
             SortOrder.SHUFFLED -> allAssets.sortedBy { getShuffleHash(it.id, seed) }
@@ -294,12 +330,12 @@ class AssetRepository @Inject constructor(
         return if (isAsc) {
             allAssets.sortedWith(
                 compareBy<Asset> { if (it.type.equals(targetType, ignoreCase = true)) 0 else 1 }
-                    .thenBy { it.fileCreatedAt }
+                    .thenBy { it.effectiveDate }
             )
         } else {
             allAssets.sortedWith(
                 compareBy<Asset> { if (it.type.equals(targetType, ignoreCase = true)) 0 else 1 }
-                    .thenByDescending { it.fileCreatedAt }
+                    .thenByDescending { it.effectiveDate }
             )
         }
     }

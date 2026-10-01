@@ -49,7 +49,6 @@ import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.size.Precision
-import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.domain.model.Asset
 import kotlin.math.abs
 
@@ -84,14 +83,15 @@ fun AssetTimeline(
     isArchived: (String) -> Boolean,
     isLocked: (String) -> Boolean,
     onAssetClick: (Int) -> Unit,
+    baseUrl: String = "",
+    apiKey: String = "",
     isBulkMode: Boolean = false,
     bulkSelection: Set<String> = emptySet(),
     isBulkDelete: Boolean = false,
     getRotation: (String) -> Int = { 0 }
 ) {
     val listState = rememberLazyListState()
-    val baseUrl = remember { SessionManager.getBaseUrl()?.removeSuffix("/") }
-    val apiKey = remember { SessionManager.getApiKey() ?: "" }
+    val baseUrlClean = baseUrl.removeSuffix("/")
 
     val targetIndex = if (isBulkMode && bulkSelection.isNotEmpty()) {
         assets.indices.lastOrNull { i -> bulkSelection.contains(assets[i].id) } ?: currentIndex
@@ -133,7 +133,7 @@ fun AssetTimeline(
                 hasLock = isLocked(asset.id),
                 isBulkDelete = isBulkDelete,
                 rotation = getRotation(asset.id),
-                baseUrl = baseUrl,
+                baseUrl = baseUrlClean,
                 apiKey = apiKey,
                 onAssetClick = onAssetClick
             )
@@ -153,7 +153,7 @@ private fun AssetTimelineItem(
     hasLock: Boolean,
     isBulkDelete: Boolean,
     rotation: Int,
-    baseUrl: String?,
+    baseUrl: String,
     apiKey: String,
     onAssetClick: (Int) -> Unit
 ) {
@@ -178,7 +178,7 @@ private fun AssetTimelineItem(
             )
             .clickable { onAssetClick(index) }
     ) {
-        if (baseUrl != null) {
+        if (baseUrl.isNotEmpty()) {
             val thumbnailRequest = remember(asset.id, baseUrl, apiKey, rotation) {
                 ImageRequest.Builder(context)
                     .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=thumbnail&edited=true")

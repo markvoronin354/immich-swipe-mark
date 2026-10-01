@@ -7,6 +7,8 @@ import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.domain.model.Asset
 
 data class SwipeCardConfig(
+    val baseUrl: String = "",
+    val apiKey: String = "",
     val playbackBehavior: PlaybackBehavior,
     val fullscreenButtonPosition: IconPosition,
     val immichButtonPosition: IconPosition,

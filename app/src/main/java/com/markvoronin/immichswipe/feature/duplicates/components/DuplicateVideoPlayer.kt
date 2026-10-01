@@ -60,7 +60,6 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.PlaybackBehavior
-import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.core.cache.VideoCache
 import com.markvoronin.immichswipe.data.repository.SessionRepository
 import com.markvoronin.immichswipe.domain.model.Asset
@@ -71,6 +70,8 @@ import kotlin.time.Duration.Companion.milliseconds
 @Composable
 fun DuplicateVideoPlayer(
     asset: Asset,
+    baseUrl: String = "",
+    apiKey: String = "",
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit
 ) {
@@ -79,8 +80,7 @@ fun DuplicateVideoPlayer(
     val playbackBehavior by sessionRepository.playbackBehavior.collectAsState(initial = PlaybackBehavior.PAUSE_OTHERS)
     val handleAudioFocus = (playbackBehavior != PlaybackBehavior.IGNORE)
 
-    val baseUrl = remember { SessionManager.getBaseUrl()?.removeSuffix("/") }
-    val apiKey = remember { SessionManager.getApiKey() ?: "" }
+    val baseUrlClean = baseUrl.removeSuffix("/")
 
     var isVideoReady by remember(asset.id) { mutableStateOf(false) }
     var isMuted by remember(asset.id) { mutableStateOf(false) }
@@ -107,7 +107,7 @@ fun DuplicateVideoPlayer(
             .setAudioAttributes(audioAttributes, handleAudioFocus)
             .build().apply {
                 repeatMode = Player.REPEAT_MODE_ONE
-                val videoUrl = "$baseUrl/api/assets/${asset.id}/video/playback"
+                val videoUrl = "$baseUrlClean/api/assets/${asset.id}/video/playback"
                 val dataSourceFactory = VideoCache.getCacheDataSourceFactory(context, apiKey)
                 val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
                     .createMediaSource(
@@ -166,7 +166,7 @@ fun DuplicateVideoPlayer(
     ) {
         AsyncImage(
             model = ImageRequest.Builder(context)
-                .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                .data("$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
                 .addHeader("x-api-key", apiKey)
                 .crossfade(true)
                 .build(),

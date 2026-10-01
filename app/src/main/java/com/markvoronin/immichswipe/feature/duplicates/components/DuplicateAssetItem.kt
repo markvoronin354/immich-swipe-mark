@@ -47,7 +47,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.feature.duplicates.DuplicateDecision
 
@@ -56,14 +55,15 @@ fun DuplicateAssetItem(
     asset: Asset,
     decision: DuplicateDecision,
     isBeingZoomed: Boolean,
+    baseUrl: String = "",
+    apiKey: String = "",
     modifier: Modifier = Modifier,
     onToggle: () -> Unit,
     onLongPress: () -> Unit,
     onZoomStateUpdate: (ZoomData?) -> Unit
 ) {
     val context = LocalContext.current
-    val baseUrl = remember { SessionManager.getBaseUrl()?.removeSuffix("/") }
-    val apiKey = remember { SessionManager.getApiKey() ?: "" }
+    val baseUrlClean = baseUrl.removeSuffix("/")
 
     val currentDecision by rememberUpdatedState(decision)
     val currentOnToggle by rememberUpdatedState(onToggle)
@@ -161,9 +161,9 @@ fun DuplicateAssetItem(
                     }
                 }
         ) {
-            val imageRequest = remember(asset.id, baseUrl, apiKey) {
+            val imageRequest = remember(asset.id, baseUrlClean, apiKey) {
                 ImageRequest.Builder(context)
-                    .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                    .data("$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
                     .addHeader("x-api-key", apiKey)
                     .crossfade(true)
                     .build()

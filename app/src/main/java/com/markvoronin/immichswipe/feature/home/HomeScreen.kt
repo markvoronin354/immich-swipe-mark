@@ -65,7 +65,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markvoronin.immichswipe.R
-import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.feature.auth.AuthScreen
 import com.markvoronin.immichswipe.feature.auth.AuthViewModel
@@ -137,6 +136,8 @@ fun HomeScreen(
                 activeSubMenu = activeSubMenu,
                 user = uiState.user,
                 connectionStatus = uiState.connectionStatus,
+                baseUrl = uiState.baseUrl,
+                apiKey = uiState.apiKey,
                 searchQuery = uiState.searchQuery,
                 onSearchQueryChange = { viewModel.onSearchQueryChanged(it) },
                 onOpenStats = { viewModel.toggleStatsPopup(visible = true) },
@@ -203,6 +204,8 @@ fun HomeScreen(
                                             unsyncedChanges = uiState.albumUnsyncedChanges,
                                             collapsedCategories = uiState.collapsedCategories,
                                             isRefreshing = uiState.isRefreshing,
+                                            baseUrl = uiState.baseUrl,
+                                            apiKey = uiState.apiKey,
                                             onRefresh = { viewModel.refreshAlbums() },
                                             onAlbumClick = { viewModel.onAlbumSelected(it) },
                                             onToggleCategory = viewModel::toggleCategory
@@ -214,6 +217,8 @@ fun HomeScreen(
                                             unsyncedChanges = uiState.albumUnsyncedChanges,
                                             collapsedCategories = uiState.collapsedCategories,
                                             isRefreshing = uiState.isRefreshing,
+                                            baseUrl = uiState.baseUrl,
+                                            apiKey = uiState.apiKey,
                                             onRefresh = { viewModel.refreshAlbums() },
                                             onAlbumClick = { viewModel.onAlbumSelected(it) },
                                             onToggleCategory = viewModel::toggleCategory
@@ -333,6 +338,8 @@ fun HomeScreen(
             user = uiState.user,
             savedAccounts = uiState.savedAccounts,
             connectionStatus = uiState.connectionStatus,
+            baseUrl = uiState.baseUrl,
+            apiKey = uiState.apiKey,
             onClose = { viewModel.toggleProfilePopup(visible = false) },
             onSettingsClick = { 
                 viewModel.onTabSelected(HomeTab.SETTINGS)
@@ -346,7 +353,7 @@ fun HomeScreen(
     }
 
     if (uiState.isLoggingInToAnotherAccount) {
-        val currentBaseUrl = remember { SessionManager.getBaseUrl() ?: "" }
+        val currentBaseUrl = uiState.baseUrl
 
         val authViewModel: AuthViewModel = hiltViewModel(
             key = "add_account_auth_viewmodel"

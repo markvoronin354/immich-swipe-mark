@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.feature.duplicates.DuplicateDecision
 import kotlinx.coroutines.launch
 
@@ -43,14 +42,15 @@ fun InstagramZoomOverlay(
     zoomData: ZoomData?,
     decision: DuplicateDecision,
     rootWindowOffset: Offset,
+    baseUrl: String = "",
+    apiKey: String = "",
     onDismiss: () -> Unit
 ) {
     if (zoomData == null) return
 
     val context = LocalContext.current
     val density = LocalDensity.current
-    val baseUrl = remember { SessionManager.getBaseUrl()?.removeSuffix("/") }
-    val apiKey = remember { SessionManager.getApiKey() ?: "" }
+    val baseUrlClean = baseUrl.removeSuffix("/")
 
     val scaleAnim = remember { Animatable(zoomData.scale) }
     val offsetXAnim = remember { Animatable(zoomData.offset.x) }
@@ -132,9 +132,9 @@ fun InstagramZoomOverlay(
                 .clip(RoundedCornerShape(8.dp))
                 .border(3.dp, borderColor, RoundedCornerShape(8.dp))
         ) {
-            val imageRequest = remember(zoomData.asset.id, baseUrl, apiKey) {
+            val imageRequest = remember(zoomData.asset.id, baseUrlClean, apiKey) {
                 ImageRequest.Builder(context)
-                    .data("$baseUrl/api/assets/${zoomData.asset.id}/thumbnail?format=WEBP&size=preview")
+                    .data("$baseUrlClean/api/assets/${zoomData.asset.id}/thumbnail?format=WEBP&size=preview")
                     .addHeader("x-api-key", apiKey)
                     .crossfade(true)
                     .build()

@@ -58,7 +58,6 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Precision
 import com.markvoronin.immichswipe.R
-import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.domain.model.Asset
 
 
@@ -314,8 +313,8 @@ fun DeletedAssetThumbnail(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val baseUrl = SessionManager.getBaseUrl()?.removeSuffix("/")
-    val apiKey = SessionManager.getApiKey() ?: ""
+    val baseUrl = uiState.baseUrl.removeSuffix("/")
+    val apiKey = uiState.apiKey
 
     val hasHeart = uiState.isFavorite(asset.id)
     val hasArchive = asset.isArchived

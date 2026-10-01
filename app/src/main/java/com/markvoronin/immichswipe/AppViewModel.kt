@@ -17,7 +17,8 @@ import kotlinx.coroutines.launch
  */
 @HiltViewModel
 class AppViewModel @Inject constructor(
-    private val sessionRepository: SessionRepository
+    private val sessionRepository: SessionRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppUiState())
@@ -36,7 +37,7 @@ class AppViewModel @Inject constructor(
             sessionRepository.sessionConfig.collect { config ->
                 if (config != null) {
                     // Si on a une config sauvegardée, on initialise le SessionManager
-                    SessionManager.initialize(config)
+                    sessionManager.initialize(config)
 
                     // On met à jour l'UI : on est connecté !
                     _uiState.value = _uiState.value.copy(
@@ -46,7 +47,7 @@ class AppViewModel @Inject constructor(
                     )
                 } else {
                     // Si on reçoit null, on nettoie tout
-                    SessionManager.clear()
+                    sessionManager.clear()
 
                     // SOLUTION : Si on vient d'une version v2, on force le nettoyage complet
                     // pour obliger à une reconnexion propre (multi-compte).

@@ -1,6 +1,7 @@
 package com.markvoronin.immichswipe.feature.swipe
 
 import com.markvoronin.immichswipe.core.CardDisplayMode
+import com.markvoronin.immichswipe.core.ConnectionStatus
 import com.markvoronin.immichswipe.core.IconPosition
 import com.markvoronin.immichswipe.core.ImmichOpenMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
@@ -53,6 +54,9 @@ data class SwipeUiState(
     val isMuted: Boolean = false,
     val showFavoriteButton: Boolean = true,
     val autoNextOnFav: Boolean = false,
+    val connectionStatus: ConnectionStatus = ConnectionStatus(),
+    val baseUrl: String = "",
+    val apiKey: String = "",
     val includeArchived: Boolean = false,
     val sortCategory: com.markvoronin.immichswipe.core.SortCategory = com.markvoronin.immichswipe.core.SortCategory.TIME,
     val sortOrder: SortOrder = SortOrder.CHRONOLOGICAL_DESC,

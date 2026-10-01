@@ -9,6 +9,8 @@ data class DuplicatesUiState(
     val favorites: Map<String, Boolean> = emptyMap(), // assetId -> isFavorite
     val isSyncing: Boolean = false,
     val showDeleteConfirmation: Boolean = false,
+    val baseUrl: String = "",
+    val apiKey: String = "",
     val error: String? = null
 ) {
     fun isFavorite(asset: Asset): Boolean {

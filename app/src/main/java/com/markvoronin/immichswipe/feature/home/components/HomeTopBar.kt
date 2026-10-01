@@ -53,7 +53,6 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.ConnectionStatus
-import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.domain.model.User
 import com.markvoronin.immichswipe.feature.settings.SettingsSubMenu
 
@@ -66,6 +65,8 @@ fun HomeTopBar(
     activeSubMenu: SettingsSubMenu = SettingsSubMenu.NONE,
     user: User?,
     connectionStatus: ConnectionStatus,
+    baseUrl: String = "",
+    apiKey: String = "",
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onOpenStats: () -> Unit,
@@ -164,7 +165,6 @@ fun HomeTopBar(
                 }
 
                 if (!isSettingsTab || activeSubMenu == SettingsSubMenu.NONE) {
-                    val baseUrl = SessionManager.getBaseUrl()
                     val userId = user?.id
                     val avatarColor = getAvatarColor(user?.avatarColor)
                     
@@ -177,12 +177,12 @@ fun HomeTopBar(
                         .clickable { onOpenProfile() }
 
                     Box(contentAlignment = Alignment.BottomEnd) {
-                        if ((userId != null) && (baseUrl != null)) {
+                        if ((userId != null) && baseUrl.isNotEmpty()) {
                             val cleanBaseUrl = baseUrl.removeSuffix("/")
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
                                     .data("$cleanBaseUrl/api/users/$userId/profile-image")
-                                    .addHeader("x-api-key", SessionManager.getApiKey() ?: "")
+                                    .addHeader("x-api-key", apiKey)
                                     .crossfade(enable = true)
                                     .build(),
                                 contentDescription = stringResource(R.string.settings_section_account),

@@ -19,10 +19,11 @@ import kotlinx.coroutines.sync.withPermit
  */
 @Singleton
 class AlbumRepository @Inject constructor(
+    private val sessionManager: SessionManager,
     private val customApi: ImmichApi? = null
 ) {
     private val api: ImmichApi
-        get() = customApi ?: SessionManager.api ?: error("No active API session")
+        get() = customApi ?: sessionManager.api ?: error("No active API session")
 
     suspend fun getAlbumsRaw(): List<Album> {
         return api.getAlbums()

@@ -36,7 +36,8 @@ class SwipeViewModel @Inject constructor(
     private val assetRepository: AssetRepository,
     private val sessionRepository: SessionRepository,
     private val swipeDecisionRepository: SwipeDecisionRepository,
-    private val albumRepository: AlbumRepository
+    private val albumRepository: AlbumRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SwipeUiState())
@@ -75,6 +76,23 @@ class SwipeViewModel @Inject constructor(
     init {
         loadAssetsAndDecisions()
         observeSettings()
+        observeSession()
+    }
+
+    private fun observeSession() {
+        viewModelScope.launch {
+            sessionManager.sessionConfig.collect { config ->
+                _uiState.update { it.copy(
+                    baseUrl = config?.baseUrl ?: "",
+                    apiKey = config?.apiKey ?: ""
+                ) }
+            }
+        }
+        viewModelScope.launch {
+            sessionManager.connectionStatus.collect { status ->
+                _uiState.update { it.copy(connectionStatus = status) }
+            }
+        }
     }
 
     private fun observeSettings() {
@@ -158,7 +176,6 @@ class SwipeViewModel @Inject constructor(
         )}
         if (oldOrder != order) {
             pendingJumpToFirstUnprocessed = true
-            refreshSortedWorkPile(jumpToFirstUnprocessed = true)
         }
     }
 
@@ -188,11 +205,14 @@ class SwipeViewModel @Inject constructor(
     private suspend fun fetchAssetsLoop(userId: String) {
         try {
             sessionRepository.sortOrder.flatMapLatest { sortOrder ->
+                pendingJumpToFirstUnprocessed = true
+                isAssetsLoadingFlow.value = true
+                isFetchingAssetsFlow.value = true
                 assetRepository.getAssetsByAlbum(
                     albumId = _uiState.value.albumId,
                     userId = userId,
                     sortOrder = sortOrder,
-                    shuffleSeed = SessionManager.globalShuffleSeed
+                    shuffleSeed = sessionManager.globalShuffleSeed
                 )
             }.collect { batch ->
                 _uiState.update { it.copy(
@@ -202,17 +222,12 @@ class SwipeViewModel @Inject constructor(
                     isFetchingAssets = batch.isSyncing
                 )}
                 
-                // Only publish to active work pile when metadata sync is complete or coming from local cache
-                if (batch.isLocalCache || !batch.isSyncing || allAssetsFoundFlow.value.isEmpty()) {
-                    allAssetsFoundFlow.value = batch.assets
-                }
+                allAssetsFoundFlow.value = batch.assets
                 
-                if (batch.isLocalCache || !batch.isSyncing) {
+                if (!batch.isLocalCache || !batch.isSyncing) {
                     isAssetsLoadingFlow.value = false
-                    isFetchingAssetsFlow.value = false
-                } else {
-                    isFetchingAssetsFlow.value = true
                 }
+                isFetchingAssetsFlow.value = batch.isSyncing
             }
         } finally {
             isAssetsLoadingFlow.value = false
@@ -250,7 +265,7 @@ class SwipeViewModel @Inject constructor(
             
             val isResetting = localDecisions.isEmpty() && currentDecisions.isNotEmpty()
             val shouldJump = pendingJumpToFirstUnprocessed || _uiState.value.assets.isEmpty() || isResetting
-            if (shouldJump) {
+            if (shouldJump && !isInitialLoading) {
                 pendingJumpToFirstUnprocessed = false
             }
             
@@ -259,8 +274,8 @@ class SwipeViewModel @Inject constructor(
                 overrideDecisions = mergedDecisions,
                 overrideSizes = mergedSizes,
                 overrideHistory = derivedHistory,
-                overrideIsLoading = isInitialLoading && allAssetsFound.isEmpty(),
-                overrideIsFetchingAssets = isFetching || (isInitialLoading && allAssetsFound.isEmpty())
+                overrideIsLoading = isInitialLoading,
+                overrideIsFetchingAssets = isFetching || isInitialLoading
             )
         }.collect {}
     }
@@ -281,7 +296,7 @@ class SwipeViewModel @Inject constructor(
         sortingJob?.cancel()
         sortingJob = viewModelScope.launch {
             val sorted = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                assetRepository.applySort(masterWorkPile, order, SessionManager.globalShuffleSeed)
+                assetRepository.applySort(masterWorkPile, order, sessionManager.globalShuffleSeed)
             }
 
             _uiState.update { state ->
@@ -361,6 +376,7 @@ class SwipeViewModel @Inject constructor(
     }
 
     fun onSwipe(decision: SwipeDecision) {
+        pendingJumpToFirstUnprocessed = false
         val currentState = _uiState.value
         val currentAsset = currentState.currentAsset ?: return
         
@@ -448,6 +464,7 @@ class SwipeViewModel @Inject constructor(
 
     fun retryLoading() { loadAssetsAndDecisions() }
     fun resetToFirstUnprocessed() {
+        pendingJumpToFirstUnprocessed = true
         refreshSortedWorkPile(jumpToFirstUnprocessed = true)
     }
     fun toggleFavorite() {

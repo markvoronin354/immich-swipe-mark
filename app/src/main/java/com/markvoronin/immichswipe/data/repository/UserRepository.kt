@@ -6,9 +6,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class UserRepository @Inject constructor() {
+class UserRepository @Inject constructor(
+    private val sessionManager: SessionManager
+) {
     private val api: ImmichApi
-        get() = SessionManager.api ?: error("No active API session")
+        get() = sessionManager.api ?: error("No active API session")
 
     suspend fun getCurrentUser() = api.getCurrentUser()
 }

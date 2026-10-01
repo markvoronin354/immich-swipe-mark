@@ -23,7 +23,8 @@ import kotlinx.coroutines.launch
 class AuthViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val authRepository: AuthRepository,
-    private val accountRepository: AccountRepository
+    private val accountRepository: AccountRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -107,7 +108,7 @@ class AuthViewModel @Inject constructor(
 
                 // 2. Si on arrive ici, c'est que la connexion a réussi !
                 val config = SessionConfig(baseUrl = baseUrl, apiKey = apiKey, userId = user.id)
-                SessionManager.initialize(config)
+                sessionManager.initialize(config)
 
                 // 3. On sauvegarde le compte dans la base locale et la session active
                 accountRepository.saveAccount(baseUrl, apiKey, user)

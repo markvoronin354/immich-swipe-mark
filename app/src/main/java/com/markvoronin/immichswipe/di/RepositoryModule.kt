@@ -1,6 +1,7 @@
 package com.markvoronin.immichswipe.di
 
 import android.content.Context
+import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.data.local.dao.AlbumAssetDao
 import com.markvoronin.immichswipe.data.local.dao.SwipeDecisionDao
 import com.markvoronin.immichswipe.data.local.dao.UserAccountDao
@@ -48,22 +49,23 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideAlbumRepository(): AlbumRepository {
-        return AlbumRepository()
+    fun provideAlbumRepository(sessionManager: SessionManager): AlbumRepository {
+        return AlbumRepository(sessionManager = sessionManager)
     }
 
     @Provides
     @Singleton
-    fun provideUserRepository(): UserRepository {
-        return UserRepository()
+    fun provideUserRepository(sessionManager: SessionManager): UserRepository {
+        return UserRepository(sessionManager = sessionManager)
     }
 
     @Provides
     @Singleton
     fun provideAssetRepository(
         @ApplicationContext context: Context,
+        sessionManager: SessionManager,
         albumAssetDao: AlbumAssetDao
     ): AssetRepository {
-        return AssetRepository(context = context, albumAssetDao = albumAssetDao)
+        return AssetRepository(context = context, sessionManager = sessionManager, albumAssetDao = albumAssetDao)
     }
 }

@@ -97,7 +97,6 @@ import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.CardDisplayMode
 import com.markvoronin.immichswipe.core.IconPosition
 import com.markvoronin.immichswipe.core.PlaybackBehavior
-import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.core.cache.VideoCache
 import com.markvoronin.immichswipe.domain.model.Asset
 import kotlinx.coroutines.delay
@@ -142,8 +141,8 @@ fun SwipeCard(
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
-    val baseUrl = SessionManager.getBaseUrl()?.removeSuffix("/")
-    val apiKey = SessionManager.getApiKey() ?: ""
+    val baseUrl = config.baseUrl.removeSuffix("/")
+    val apiKey = config.apiKey
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val scope = rememberCoroutineScope()

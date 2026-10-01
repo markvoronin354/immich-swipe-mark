@@ -85,7 +85,6 @@ import coil.size.Precision
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.IconPosition
-import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.domain.model.Asset
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -138,7 +137,9 @@ fun FullscreenViewer(
     showShareButton: Boolean = false,
     onDownload: (Asset) -> Unit = {},
     onShare: (Asset) -> Unit = {},
-    rotation: Int = 0
+    rotation: Int = 0,
+    baseUrl: String = "",
+    apiKey: String = ""
 ) {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
@@ -198,8 +199,8 @@ fun FullscreenViewer(
         label = "ControlsShift"
     )
 
-    val baseUrl = SessionManager.getBaseUrl()?.removeSuffix("/")
-    val apiKey = SessionManager.getApiKey() ?: ""
+    val baseUrlClean = baseUrl.removeSuffix("/")
+    val apiKeyLocal = apiKey
 
     val exoPlayer = providedPlayer // Use shared player exclusively for Fullscreen to avoid heavy instantiations
 
@@ -565,9 +566,6 @@ fun FullscreenViewer(
                         if (rotation % 180 != 0) 1f / baseAR else baseAR
                     }
                 ) {
-                    val baseUrlClean = SessionManager.getBaseUrl()?.removeSuffix("/")
-                    val apiKeyLocal = SessionManager.getApiKey() ?: ""
-
                     val animatedRotation by animateFloatAsState(targetValue = rotation.toFloat(), label = "FullscreenRotation")
 
                     val photoRequest = remember(asset.id, baseUrlClean, apiKeyLocal) {

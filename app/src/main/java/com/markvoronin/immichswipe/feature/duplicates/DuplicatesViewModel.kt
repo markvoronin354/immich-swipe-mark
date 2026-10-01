@@ -13,46 +13,70 @@ import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.domain.model.Asset
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 
 @HiltViewModel
 class DuplicatesViewModel @Inject constructor(
-    private val swipeDecisionRepository: SwipeDecisionRepository
+    private val swipeDecisionRepository: SwipeDecisionRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val api: ImmichApi
-        get() = SessionManager.api ?: error("No active API session")
+        get() = sessionManager.api ?: error("No active API session")
 
     private val _uiState = MutableStateFlow(DuplicatesUiState())
     val uiState: StateFlow<DuplicatesUiState> = _uiState.asStateFlow()
 
     init {
         observeSavedDecisions()
+        observeSession()
         loadDuplicates()
     }
 
+    private fun observeSession() {
+        viewModelScope.launch {
+            sessionManager.sessionConfig.collect { config ->
+                _uiState.update { it.copy(
+                    baseUrl = config?.baseUrl ?: "",
+                    apiKey = config?.apiKey ?: ""
+                ) }
+            }
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeSavedDecisions() {
         viewModelScope.launch {
-            val userId = SessionManager.getUserId() ?: return@launch
-            swipeDecisionRepository.getAllDecisionsForUser(userId).collect { savedDecisions ->
-                val decisionMap = savedDecisions.associate { entity ->
-                    val d = when (entity.decision) {
-                        "KEEP" -> DuplicateDecision.KEEP
-                        "DELETE" -> DuplicateDecision.DELETE
-                        else -> DuplicateDecision.NONE
-                    }
-                    entity.assetId to d
-                }.filterValues { it != DuplicateDecision.NONE }
+            sessionManager.sessionConfig
+                .map { it?.userId ?: "" }
+                .distinctUntilChanged()
+                .flatMapLatest { userId ->
+                    if (userId.isEmpty()) flowOf(emptyList())
+                    else swipeDecisionRepository.getAllDecisionsForUser(userId)
+                }.collect { savedDecisions ->
+                    val decisionMap = savedDecisions.associate { entity ->
+                        val d = when (entity.decision) {
+                            "KEEP" -> DuplicateDecision.KEEP
+                            "DELETE" -> DuplicateDecision.DELETE
+                            else -> DuplicateDecision.NONE
+                        }
+                        entity.assetId to d
+                    }.filterValues { it != DuplicateDecision.NONE }
 
-                _uiState.update { state ->
-                    state.copy(decisions = decisionMap)
+                    _uiState.update { state ->
+                        state.copy(decisions = decisionMap)
+                    }
                 }
-            }
         }
     }
 
@@ -113,7 +137,7 @@ class DuplicatesViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val userId = SessionManager.getUserId() ?: return@launch
+            val userId = sessionManager.getUserId() ?: return@launch
             val asset = _uiState.value.clusters.flatMap { it.assets }.find { it.id == assetId }
             val fileSize = asset?.exifInfo?.fileSizeInBytes
             when (next) {
@@ -145,7 +169,7 @@ class DuplicatesViewModel @Inject constructor(
             state.copy(decisions = emptyMap())
         }
         viewModelScope.launch {
-            val userId = SessionManager.getUserId() ?: return@launch
+            val userId = sessionManager.getUserId() ?: return@launch
             if (currentDecidedAssetIds.isNotEmpty()) {
                 swipeDecisionRepository.removeDecisions(currentDecidedAssetIds, userId)
             }
@@ -189,7 +213,7 @@ class DuplicatesViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val userId = SessionManager.getUserId() ?: return@launch
+            val userId = sessionManager.getUserId() ?: return@launch
             val asset = _uiState.value.clusters.flatMap { it.assets }.find { it.id == assetId }
             val fileSize = asset?.exifInfo?.fileSizeInBytes
             when (decision) {
@@ -233,7 +257,7 @@ class DuplicatesViewModel @Inject constructor(
 
                     api.deleteAssets(DeleteAssetsRequest(ids = toDeleteSet.toList(), force = false))
 
-                    val userId = SessionManager.getUserId()
+                    val userId = sessionManager.getUserId()
                     if (userId != null) {
                         // Remove deleted assets from decisions DB
                         swipeDecisionRepository.removeDecisions(toDeleteSet.toList(), userId)
@@ -254,7 +278,7 @@ class DuplicatesViewModel @Inject constructor(
                         )
                     }
                 } else {
-                    val userId = SessionManager.getUserId()
+                    val userId = sessionManager.getUserId()
                     if (userId != null && toKeepSet.isNotEmpty()) {
                         swipeDecisionRepository.markAsSynced(toKeepSet.toList(), userId)
                     }
@@ -311,7 +335,7 @@ class DuplicatesViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val userId = SessionManager.getUserId() ?: return@launch
+            val userId = sessionManager.getUserId() ?: return@launch
             val allAssetsMap = _uiState.value.clusters.flatMap { it.assets }.associateBy { it.id }
             val entitiesToSave = newDecisions.mapNotNull { (assetId, decision) ->
                 if (decision == DuplicateDecision.NONE) null

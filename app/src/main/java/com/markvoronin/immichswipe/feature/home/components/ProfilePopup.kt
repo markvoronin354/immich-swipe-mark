@@ -61,7 +61,6 @@ import coil.request.ImageRequest
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.ConnectionLevel
 import com.markvoronin.immichswipe.core.ConnectionStatus
-import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.data.local.entity.UserAccountEntity
 import com.markvoronin.immichswipe.domain.model.User
 import com.markvoronin.immichswipe.feature.settings.components.verticalFadingEdges
@@ -71,6 +70,8 @@ fun ProfilePopup(
     user: User?,
     savedAccounts: List<UserAccountEntity>,
     connectionStatus: ConnectionStatus,
+    baseUrl: String = "",
+    apiKey: String = "",
     onClose: () -> Unit,
     onSettingsClick: () -> Unit,
     onSwitchAccount: (String) -> Unit,
@@ -79,8 +80,7 @@ fun ProfilePopup(
     onLogout: () -> Unit
 ) {
     val context = LocalContext.current
-    val baseUrl = SessionManager.getBaseUrl()?.removeSuffix("/")
-    val apiKey = SessionManager.getApiKey() ?: ""
+    val baseUrlClean = baseUrl.removeSuffix("/")
 
     Dialog(
         onDismissRequest = onClose,
@@ -138,10 +138,10 @@ fun ProfilePopup(
                     .padding(4.dp)
                     .clip(CircleShape)
 
-                if ((user != null) && (baseUrl != null)) {
+                if ((user != null) && baseUrlClean.isNotEmpty()) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
-                            .data("$baseUrl/api/users/${user.id}/profile-image")
+                            .data("$baseUrlClean/api/users/${user.id}/profile-image")
                             .addHeader("x-api-key", apiKey)
                             .crossfade(enable = true)
                             .build(),

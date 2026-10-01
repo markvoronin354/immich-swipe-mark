@@ -37,6 +37,8 @@ data class HomeUiState(
     val isGridView: Boolean = false, // Toggle entre liste et grille
     val searchQuery: String = "", // Texte de recherche pour filtrer les albums
     val connectionStatus: ConnectionStatus = ConnectionStatus(),
+    val baseUrl: String = "",
+    val apiKey: String = "",
     val allAssetsCount: Int = 0, // Nombre total de médias
     val orphansCount: Int = 0,
     val duplicatesCount: Int = 0, // Nombre de médias orphelins (sans album)

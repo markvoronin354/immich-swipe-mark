@@ -69,7 +69,6 @@ import coil.size.Precision
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.CardDisplayMode
-import com.markvoronin.immichswipe.core.SessionManager
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -80,6 +79,8 @@ fun SharedVideoPlayer(
     player: Player,
     isFullscreen: Boolean,
     assetId: String? = null,
+    baseUrl: String = "",
+    apiKey: String = "",
     isMuted: Boolean = false,
     isPaused: Boolean = false,
     isVideoReady: Boolean = true,
@@ -143,17 +144,16 @@ fun SharedVideoPlayer(
 
         val configuration = LocalConfiguration.current
         val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        val baseUrl = remember { SessionManager.getBaseUrl()?.removeSuffix("/") }
-        val apiKey = remember { SessionManager.getApiKey() ?: "" }
+        val baseUrlClean = baseUrl.removeSuffix("/")
 
         Box(modifier = Modifier.fillMaxSize()) {
             videoSurfaceWrapper {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    if (assetId != null && baseUrl != null) {
+                    if (assetId != null && baseUrlClean.isNotEmpty()) {
                         val context = LocalContext.current
-                        val thumbnailRequest = remember(assetId, baseUrl, apiKey) {
+                        val thumbnailRequest = remember(assetId, baseUrlClean, apiKey) {
                             ImageRequest.Builder(context)
-                                .data("$baseUrl/api/assets/$assetId/thumbnail?format=WEBP&size=preview")
+                                .data("$baseUrlClean/api/assets/$assetId/thumbnail?format=WEBP&size=preview")
                                 .addHeader("x-api-key", apiKey)
                                 .crossfade(false)
                                 .precision(Precision.INEXACT)

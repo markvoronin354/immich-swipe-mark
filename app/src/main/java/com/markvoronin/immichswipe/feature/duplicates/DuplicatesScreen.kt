@@ -184,6 +184,8 @@ fun DuplicatesScreen(
                             cluster = cluster,
                             decisions = uiState.decisions,
                             activeZoomAssetId = activeZoomData?.asset?.id,
+                            baseUrl = uiState.baseUrl,
+                            apiKey = uiState.apiKey,
                             onDecisionToggle = { assetId -> viewModel.toggleDecision(assetId) },
                             onAssetLongPress = { clickedAsset ->
                                 val index = cluster.assets.indexOfFirst { it.id == clickedAsset.id }.coerceAtLeast(0)
@@ -202,6 +204,8 @@ fun DuplicatesScreen(
             zoomData = activeZoomData,
             decision = activeZoomData?.let { uiState.decisions[it.asset.id] ?: DuplicateDecision.NONE } ?: DuplicateDecision.NONE,
             rootWindowOffset = rootWindowOffset,
+            baseUrl = uiState.baseUrl,
+            apiKey = uiState.apiKey,
             onDismiss = { activeZoomData = null }
         )
 
@@ -209,6 +213,8 @@ fun DuplicatesScreen(
             previewData = fullScreenPreviewData,
             decisions = uiState.decisions,
             isFavorite = { uiState.isFavorite(it) },
+            baseUrl = uiState.baseUrl,
+            apiKey = uiState.apiKey,
             onDecisionToggle = { assetId -> viewModel.toggleDecision(assetId) },
             onFavoriteToggle = { asset -> viewModel.toggleFavorite(asset) },
             onDismiss = { fullScreenPreviewData = null }

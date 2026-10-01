@@ -30,7 +30,8 @@ import java.io.OutputStream
 class SettingsViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val swipeDecisionRepository: SwipeDecisionRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -389,7 +390,7 @@ class SettingsViewModel @Inject constructor(
 
     fun executeDelete(scope: DatabaseScope, context: Context) {
         viewModelScope.launch {
-            val userId = SessionManager.getUserId()
+            val userId = sessionManager.getUserId()
             if (scope == DatabaseScope.ALL) {
                 swipeDecisionRepository.clearAllData()
             } else {
@@ -405,7 +406,7 @@ class SettingsViewModel @Inject constructor(
     fun exportDatabase(scope: DatabaseScope, outputStream: OutputStream, context: android.content.Context) {
         viewModelScope.launch {
             try {
-                val userId = SessionManager.getUserId()
+                val userId = sessionManager.getUserId()
                 val decisions = if (scope == DatabaseScope.ALL) {
                     swipeDecisionRepository.getAllDecisionsRaw()
                 } else {

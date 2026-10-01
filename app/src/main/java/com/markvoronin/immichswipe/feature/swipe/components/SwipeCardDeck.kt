@@ -126,6 +126,8 @@ fun SwipeCardDeck(
                         isMuted = uiState.isMuted,
                         topCardSwipeOffset = if (isNextCard) topCardOffsetX else 0f,
                         config = SwipeCardConfig(
+                            baseUrl = uiState.baseUrl,
+                            apiKey = uiState.apiKey,
                             playbackBehavior = uiState.playbackBehavior,
                             fullscreenButtonPosition = uiState.fullscreenButtonPosition,
                             immichButtonPosition = uiState.immichButtonPosition,

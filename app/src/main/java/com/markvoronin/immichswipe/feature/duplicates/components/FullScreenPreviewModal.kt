@@ -77,7 +77,6 @@ import com.markvoronin.immichswipe.feature.settings.components.horizontalFadingE
 import androidx.core.net.toUri
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.feature.duplicates.DuplicateDecision
 import kotlin.math.abs
@@ -87,6 +86,8 @@ fun FullScreenPreviewModal(
     previewData: FullScreenPreviewData?,
     decisions: Map<String, DuplicateDecision>,
     isFavorite: (Asset) -> Boolean,
+    baseUrl: String = "",
+    apiKey: String = "",
     onDecisionToggle: (String) -> Unit,
     onFavoriteToggle: (Asset) -> Unit,
     onDismiss: () -> Unit
@@ -98,8 +99,7 @@ fun FullScreenPreviewModal(
 
     val context = LocalContext.current
     val density = LocalDensity.current
-    val baseUrl = remember { SessionManager.getBaseUrl()?.removeSuffix("/") }
-    val apiKey = remember { SessionManager.getApiKey() ?: "" }
+    val baseUrlClean = baseUrl.removeSuffix("/")
 
     val currentOnDecisionToggle by rememberUpdatedState(onDecisionToggle)
     val currentOnFavoriteToggle by rememberUpdatedState(onFavoriteToggle)
@@ -275,7 +275,7 @@ fun FullScreenPreviewModal(
 
                         IconButton(
                             onClick = {
-                                ImmichLauncher.openAssetInImmich(context, baseUrl, currentAsset.id)
+                                ImmichLauncher.openAssetInImmich(context, baseUrlClean, currentAsset.id)
                             },
                             modifier = Modifier
                                 .padding(end = 8.dp)
@@ -321,9 +321,9 @@ fun FullScreenPreviewModal(
                     label = "PagePanY"
                 )
 
-                val imageRequest = remember(currentAsset.id, baseUrl, apiKey) {
+                val imageRequest = remember(currentAsset.id, baseUrlClean, apiKey) {
                     ImageRequest.Builder(context)
-                        .data("$baseUrl/api/assets/${currentAsset.id}/thumbnail?format=WEBP&size=preview")
+                        .data("$baseUrlClean/api/assets/${currentAsset.id}/thumbnail?format=WEBP&size=preview")
                         .addHeader("x-api-key", apiKey)
                         .crossfade(false)
                         .build()
@@ -532,9 +532,9 @@ fun FullScreenPreviewModal(
                                         selectedIndex = index
                                     }
                             ) {
-                                val thumbRequest = remember(asset.id, baseUrl, apiKey) {
+                                val thumbRequest = remember(asset.id, baseUrlClean, apiKey) {
                                     ImageRequest.Builder(context)
-                                        .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                                        .data("$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
                                         .addHeader("x-api-key", apiKey)
                                         .crossfade(false)
                                         .build()

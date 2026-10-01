@@ -56,7 +56,6 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.size.Precision
 import com.markvoronin.immichswipe.R
-import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.feature.settings.components.verticalFadingEdges
 import java.text.Normalizer
@@ -70,6 +69,8 @@ private fun String.normalizeForSearch(): String {
 fun AddToAlbumDialog(
     albums: List<Album>,
     isLoading: Boolean,
+    baseUrl: String = "",
+    apiKey: String = "",
     onAlbumSelect: (Album) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -88,8 +89,7 @@ fun AddToAlbumDialog(
         }
     }
 
-    val baseUrl = remember { SessionManager.getBaseUrl()?.removeSuffix("/") }
-    val apiKey = remember { SessionManager.getApiKey() ?: "" }
+    val baseUrlClean = baseUrl.removeSuffix("/")
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -205,7 +205,7 @@ fun AddToAlbumDialog(
                                 ) { album ->
                                     AlbumSelectionItem(
                                         album = album,
-                                        baseUrl = baseUrl,
+                                        baseUrl = baseUrlClean,
                                         apiKey = apiKey,
                                         onClick = { onAlbumSelect(album) }
                                     )

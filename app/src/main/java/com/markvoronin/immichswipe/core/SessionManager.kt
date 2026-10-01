@@ -1,9 +1,15 @@
 package com.markvoronin.immichswipe.core
 
+import android.content.Context
 import androidx.compose.ui.graphics.Color
+import coil.Coil
 import com.markvoronin.immichswipe.data.api.ImmichApi
 import com.markvoronin.immichswipe.data.api.RetrofitFactory
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
@@ -39,35 +45,59 @@ data class ConnectionStatus(
     val lastUpdate: Long = System.currentTimeMillis()
 )
 
-object SessionManager {
+@Singleton
+class SessionManager @Inject constructor(
+    @param:ApplicationContext private val context: Context
+) {
 
+    @Volatile
     private var config: SessionConfig? = null
 
-    var api: ImmichApi? = null
-        private set
+    @Volatile
+    private var _api: ImmichApi? = null
+
+    val api: ImmichApi?
+        get() = _api
+
+    private val _sessionConfig = MutableStateFlow<SessionConfig?>(null)
+    val sessionConfig: StateFlow<SessionConfig?> = _sessionConfig.asStateFlow()
 
     // Flux global indiquant la santé de la connexion.
     private val _connectionStatus = MutableStateFlow(ConnectionStatus())
-    val connectionStatus = _connectionStatus.asStateFlow()
+    val connectionStatus: StateFlow<ConnectionStatus> = _connectionStatus.asStateFlow()
 
-    val globalShuffleSeed = System.currentTimeMillis()
+    val globalShuffleSeed: Long = System.currentTimeMillis()
 
     fun updateStatus(level: ConnectionLevel, type: DiagStatus, statusCode: Int? = null, rawMessage: String? = null) {
         _connectionStatus.value = ConnectionStatus(level, type, statusCode, rawMessage)
     }
 
-    fun initialize(config: SessionConfig) {
-        this.config = config
-        this.api = RetrofitFactory.create(config)
+    private fun clearImageCache() {
+        try {
+            Coil.imageLoader(context).memoryCache?.clear()
+        } catch (e: Exception) {
+            AppLogger.e("SessionManager", "Error clearing Coil memory cache: ${e.message}")
+        }
     }
 
+    @Synchronized
+    fun initialize(config: SessionConfig) {
+        clearImageCache()
+        this.config = config
+        this._sessionConfig.value = config
+        this._api = RetrofitFactory.create(config, this)
+    }
+
+    @Synchronized
     fun clear() {
+        clearImageCache()
         config = null
-        api = null
+        _sessionConfig.value = null
+        _api = null
         _connectionStatus.value = ConnectionStatus(ConnectionLevel.OFFLINE, DiagStatus.LOGGED_OUT)
     }
 
-    fun isLoggedIn(): Boolean = api != null
+    fun isLoggedIn(): Boolean = _api != null
     fun getBaseUrl(): String? = config?.baseUrl
     fun getApiKey(): String? = config?.apiKey
     fun getUserId(): String? = config?.userId

@@ -5,15 +5,18 @@ import androidx.lifecycle.viewModelScope
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.data.api.ImmichApi
+import com.markvoronin.immichswipe.data.local.entity.SyncHistoryEntity
 import com.markvoronin.immichswipe.data.repository.AccountRepository
 import com.markvoronin.immichswipe.data.repository.AlbumRepository
 import com.markvoronin.immichswipe.data.repository.AssetRepository
 import com.markvoronin.immichswipe.data.repository.SessionRepository
 import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
 import com.markvoronin.immichswipe.data.repository.UserRepository
+import com.markvoronin.immichswipe.data.local.dao.UnsyncedDecisionCounts
 import com.markvoronin.immichswipe.domain.model.Album
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -24,6 +27,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -39,11 +44,12 @@ class HomeViewModel @Inject constructor(
     private val swipeDecisionRepository: SwipeDecisionRepository,
     private val assetRepository: AssetRepository,
     private val accountRepository: AccountRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val activeUserId: String
-        get() = SessionManager.getUserId() ?: ""
+        get() = sessionManager.getUserId() ?: ""
     
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -86,81 +92,118 @@ class HomeViewModel @Inject constructor(
         // Puisque SessionManager met à jour son Flow à chaque requête réseau,
         // la pastille réagira à tout (refresh, swipe, vidéo, etc.)
         viewModelScope.launch {
-            SessionManager.connectionStatus.collect { status ->
+            sessionManager.connectionStatus.collect { status ->
                 _uiState.update { it.copy(connectionStatus = status) }
             }
         }
 
-        // Observe les décisions locales pour mettre à jour les barres de progression
+        @OptIn(ExperimentalCoroutinesApi::class)
         viewModelScope.launch {
-            combine(
-                swipeDecisionRepository.getGlobalUniqueTreatedCount(activeUserId),
-                swipeDecisionRepository.getGlobalUnsyncedCount(activeUserId),
-                swipeDecisionRepository.getAllAlbumDecisionCounts(activeUserId)
-            ) { globalTreatedCount, globalUnsyncedCount, albumStats ->
-                val treatedMap = albumStats.associateBy { it.albumId }.mapValues { it.value.totalCount }.toMutableMap()
-                val unsyncedMap = albumStats.associateBy { it.albumId }.mapValues { it.value.unsyncedCount }.toMutableMap()
-                
-                // Injection du compte global pour "Tous les médias"
-                treatedMap[Album.VIRTUAL_ALL_ID] = globalTreatedCount
-                unsyncedMap[Album.VIRTUAL_ALL_ID] = globalUnsyncedCount
-                
-                // For Duplicates, the total depends on the fetched clusters.
-                // We'll leave treatedCount at 0 or query it if needed.
-                // It will be managed normally by SwipeDecisionRepository if we let it.
-                
-                _uiState.update { 
-                    it.copy(
-                        albumTreatedCounts = treatedMap,
-                        albumUnsyncedChanges = unsyncedMap
-                    )
+            sessionManager.sessionConfig.collect { config ->
+                if (config != null) {
+                    _uiState.update { it.copy(
+                        baseUrl = config.baseUrl,
+                        apiKey = config.apiKey,
+                        user = if (it.user?.id != config.userId) null else it.user,
+                        albums = if (it.user?.id != config.userId) emptyList() else it.albums,
+                        albumTreatedCounts = if (it.user?.id != config.userId) emptyMap() else it.albumTreatedCounts,
+                        albumUnsyncedChanges = if (it.user?.id != config.userId) emptyMap() else it.albumUnsyncedChanges
+                    ) }
+                    loadUser()
+                } else {
+                    _uiState.update { it.copy(
+                        baseUrl = "",
+                        apiKey = "",
+                        user = null,
+                        albums = emptyList(),
+                        albumTreatedCounts = emptyMap(),
+                        albumUnsyncedChanges = emptyMap()
+                    ) }
                 }
-            }.collect {}
+            }
+        }
+
+        // Observe les décisions locales pour mettre à jour les barres de progression
+        @OptIn(ExperimentalCoroutinesApi::class)
+        viewModelScope.launch {
+            sessionManager.sessionConfig
+                .map { it?.userId ?: "" }
+                .distinctUntilChanged()
+                .flatMapLatest { userId ->
+                    if (userId.isEmpty()) flowOf(Triple(0, 0, emptyList()))
+                    else combine(
+                        swipeDecisionRepository.getGlobalUniqueTreatedCount(userId),
+                        swipeDecisionRepository.getGlobalUnsyncedCount(userId),
+                        swipeDecisionRepository.getAllAlbumDecisionCounts(userId)
+                    ) { globalTreatedCount, globalUnsyncedCount, albumStats ->
+                        Triple(globalTreatedCount, globalUnsyncedCount, albumStats)
+                    }
+                }.collect { (globalTreatedCount, globalUnsyncedCount, albumStats) ->
+                    val treatedMap = albumStats.associateBy { it.albumId }.mapValues { it.value.totalCount }.toMutableMap()
+                    val unsyncedMap = albumStats.associateBy { it.albumId }.mapValues { it.value.unsyncedCount }.toMutableMap()
+                    
+                    treatedMap[Album.VIRTUAL_ALL_ID] = globalTreatedCount
+                    unsyncedMap[Album.VIRTUAL_ALL_ID] = globalUnsyncedCount
+                    
+                    _uiState.update { 
+                        it.copy(
+                            albumTreatedCounts = treatedMap,
+                            albumUnsyncedChanges = unsyncedMap
+                        )
+                    }
+                }
         }
 
         // Observe les statistiques globales (Historique + Albums)
+        @OptIn(ExperimentalCoroutinesApi::class)
         viewModelScope.launch {
-            combine(
-                swipeDecisionRepository.getSyncHistory(activeUserId),
-                swipeDecisionRepository.getUnsyncedDecisionCounts(activeUserId),
-                _uiState.map { it.albums }.distinctUntilChanged(),
-                _uiState.map { it.albumTreatedCounts }.distinctUntilChanged()
-            ) { history, unsyncedCounts, albums, treatedCounts ->
-                val now = System.currentTimeMillis()
-                val oneWeekAgo = now - (7 * 24 * 60 * 60 * 1000L)
-                
-                val weeklyHistory = history.filter { it.timestamp >= oneWeekAgo }
+            sessionManager.sessionConfig
+                .map { it?.userId ?: "" }
+                .distinctUntilChanged()
+                .flatMapLatest { userId ->
+                    if (userId.isEmpty()) flowOf(Pair(emptyList<SyncHistoryEntity>(), UnsyncedDecisionCounts(0, 0)))
+                    else combine(
+                        swipeDecisionRepository.getSyncHistory(userId),
+                        swipeDecisionRepository.getUnsyncedDecisionCounts(userId)
+                    ) { history, unsyncedCounts ->
+                        Pair(history, unsyncedCounts)
+                    }
+                }.collect { (history, unsyncedCounts) ->
+                    val albums = _uiState.value.albums
+                    val treatedCounts = _uiState.value.albumTreatedCounts
+                    val now = System.currentTimeMillis()
+                    val oneWeekAgo = now - (7 * 24 * 60 * 60 * 1000L)
+                    
+                    val weeklyHistory = history.filter { it.timestamp >= oneWeekAgo }
 
-                // STATS GLOBALES (Cumul Historique + Décisions locales non synchronisées)
-                val totalDeleted = history.sumOf { it.deletedCount }
-                val totalBytes = history.sumOf { it.bytesSaved }
-                val totalLocked = history.sumOf { it.lockedCount }
-                
-                val totalKept = history.sumOf { it.keptCount } + unsyncedCounts.keptCount
-                val totalArchived = history.sumOf { it.archivedCount } + unsyncedCounts.archivedCount
-                
-                val weeklyDeleted = weeklyHistory.sumOf { it.deletedCount }
-                val weeklyBytes = weeklyHistory.sumOf { it.bytesSaved }
+                    val totalDeleted = history.sumOf { it.deletedCount }
+                    val totalBytes = history.sumOf { it.bytesSaved }
+                    val totalLocked = history.sumOf { it.lockedCount }
+                    
+                    val totalKept = history.sumOf { it.keptCount } + unsyncedCounts.keptCount
+                    val totalArchived = history.sumOf { it.archivedCount } + unsyncedCounts.archivedCount
+                    
+                    val weeklyDeleted = weeklyHistory.sumOf { it.deletedCount }
+                    val weeklyBytes = weeklyHistory.sumOf { it.bytesSaved }
 
-                val completedCount = albums.count { album ->
-                    val treated = treatedCounts[album.id] ?: 0
-                    (treated >= album.assetCount) && (album.assetCount > 0)
+                    val completedCount = albums.count { album ->
+                        val treated = treatedCounts[album.id] ?: 0
+                        (treated >= album.assetCount) && (album.assetCount > 0)
+                    }
+
+                    val newStats = StatsUiData(
+                        totalDeleted = totalDeleted,
+                        totalBytesSaved = totalBytes,
+                        totalKept = totalKept,
+                        totalArchived = totalArchived,
+                        totalLocked = totalLocked,
+                        totalAlbums = albums.size,
+                        completedAlbums = completedCount,
+                        weeklyDeleted = weeklyDeleted,
+                        weeklyBytesSaved = weeklyBytes
+                    )
+                    _uiState.update { it.copy(stats = newStats) }
                 }
-
-                StatsUiData(
-                    totalDeleted = totalDeleted,
-                    totalBytesSaved = totalBytes,
-                    totalKept = totalKept,
-                    totalArchived = totalArchived,
-                    totalLocked = totalLocked,
-                    totalAlbums = albums.size,
-                    completedAlbums = completedCount,
-                    weeklyDeleted = weeklyDeleted,
-                    weeklyBytesSaved = weeklyBytes
-                )
-            }.collect { newStats ->
-                _uiState.update { it.copy(stats = newStats) }
-            }
         }
 
         // Observe les comptes sauvegardés

@@ -64,7 +64,6 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.size.Precision
 import com.markvoronin.immichswipe.R
-import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.feature.home.AlbumStatus
 import com.markvoronin.immichswipe.feature.settings.components.verticalFadingEdges
@@ -78,6 +77,8 @@ fun AlbumGrid(
     unsyncedChanges: Map<String, Int>,
     collapsedCategories: Set<AlbumStatus>,
     isRefreshing: Boolean,
+    baseUrl: String = "",
+    apiKey: String = "",
     onRefresh: () -> Unit,
     onAlbumClick: (Album) -> Unit,
     onToggleCategory: (AlbumStatus) -> Unit
@@ -172,6 +173,8 @@ fun AlbumGrid(
                                                         album = album,
                                                         treatedCount = treatedCounts[album.id] ?: 0,
                                                         unsyncedCount = unsyncedChanges[album.id] ?: 0,
+                                                        baseUrl = baseUrl,
+                                                        apiKey = apiKey,
                                                         onClick = { onAlbumClick(album) },
                                                         modifier = Modifier.weight(1f)
                                                     )
@@ -244,12 +247,13 @@ fun AlbumGridItem(
     album: Album,
     treatedCount: Int,
     unsyncedCount: Int,
+    baseUrl: String = "",
+    apiKey: String = "",
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val baseUrl = remember { SessionManager.getBaseUrl()?.removeSuffix("/") }
-    val apiKey = remember { SessionManager.getApiKey() ?: "" }
+    val baseUrlClean = baseUrl.removeSuffix("/")
     val progress = if (album.assetCount > 0) treatedCount.toFloat() / album.assetCount else 0f
     val isCompleted = album.assetCount in 1..treatedCount
     val hasUnsyncedChanges = unsyncedCount > 0
@@ -263,10 +267,10 @@ fun AlbumGridItem(
         shape = MaterialTheme.shapes.medium
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            if (album.albumThumbnailAssetId != null && baseUrl != null) {
-                val imageRequest = remember(album.albumThumbnailAssetId, baseUrl, apiKey) {
+            if (album.albumThumbnailAssetId != null && baseUrlClean.isNotEmpty()) {
+                val imageRequest = remember(album.albumThumbnailAssetId, baseUrlClean, apiKey) {
                     ImageRequest.Builder(context)
-                        .data("$baseUrl/api/assets/${album.albumThumbnailAssetId}/thumbnail?format=WEBP")
+                        .data("$baseUrlClean/api/assets/${album.albumThumbnailAssetId}/thumbnail?format=WEBP")
                         .addHeader("x-api-key", apiKey)
                         .crossfade(true)
                         .precision(Precision.INEXACT)

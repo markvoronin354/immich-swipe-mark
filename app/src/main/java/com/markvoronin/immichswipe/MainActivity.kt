@@ -33,10 +33,14 @@ import com.markvoronin.immichswipe.feature.common.LoadingScreen
 import com.markvoronin.immichswipe.feature.home.HomeScreen
 import com.markvoronin.immichswipe.ui.theme.ImmichSwipeTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var sessionManager: SessionManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,9 +96,9 @@ class MainActivity : ComponentActivity() {
 
                             targetState.isLoggedIn -> {
                                 val activeUserId = targetState.activeUserId
-                                val api = SessionManager.api
-                                val baseUrl = SessionManager.getBaseUrl()
-                                val apiKey = SessionManager.getApiKey()
+                                val api = sessionManager.api
+                                val baseUrl = sessionManager.getBaseUrl()
+                                val apiKey = sessionManager.getApiKey()
                                 
                                 if ((api != null) && (baseUrl != null) && (apiKey != null) && (activeUserId != null)) {
                                     val sessionKey = "$activeUserId-$baseUrl-$apiKey"

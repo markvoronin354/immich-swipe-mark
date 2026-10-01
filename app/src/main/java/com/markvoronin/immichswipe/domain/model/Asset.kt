@@ -22,7 +22,10 @@ data class Asset(
     val exifInfo: ExifInfo? = null,
     val rotation: Int = 0,
     val isEdited: Boolean = false
-)
+) {
+    val effectiveDate: String
+        get() = exifInfo?.dateTimeOriginal?.takeIf { it.isNotBlank() } ?: fileCreatedAt
+}
 
 data class ExifInfo(
     @SerializedName("fileSizeInByte")

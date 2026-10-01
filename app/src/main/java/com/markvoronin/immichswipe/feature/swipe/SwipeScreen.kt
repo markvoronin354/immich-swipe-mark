@@ -1,10 +1,15 @@
 package com.markvoronin.immichswipe.feature.swipe
 
 import android.app.DownloadManager
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Environment
+import android.provider.MediaStore
 import android.widget.Toast
+import java.io.IOException
+import kotlinx.coroutines.withContext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -57,7 +62,6 @@ import coil.request.ImageRequest
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.ConnectionLevel
 import com.markvoronin.immichswipe.core.PlaybackBehavior
-import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.core.cache.VideoCache
 import com.markvoronin.immichswipe.core.cache.VideoPreloader
@@ -76,6 +80,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import java.io.File
 
 @OptIn(UnstableApi::class)
@@ -111,24 +116,15 @@ fun SwipeScreen(
         }
     }
 
-    LaunchedEffect(album.id) {
-        viewModel.retryLoading()
-        viewModel.resetToFirstUnprocessed()
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.resetToFirstUnprocessed()
-    }
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val localCtx = LocalContext.current
     
     // Background Preloader Trigger
-    LaunchedEffect(uiState.currentIndex) {
+    LaunchedEffect(uiState.currentIndex, uiState.apiKey, uiState.baseUrl) {
         val currentIndex = uiState.currentIndex
         val assets = uiState.assets
-        val apiKey = SessionManager.getApiKey()
-        val baseUrl = SessionManager.getBaseUrl()?.removeSuffix("/")
+        val apiKey = uiState.apiKey
+        val baseUrl = uiState.baseUrl.removeSuffix("/")
         
         if (apiKey.isNullOrEmpty() || baseUrl.isNullOrEmpty()) return@LaunchedEffect
 
@@ -172,8 +168,8 @@ fun SwipeScreen(
     val playbackBehavior = uiState.playbackBehavior
     val currentAsset = uiState.currentAsset
     
-    val baseUrl = SessionManager.getBaseUrl()?.removeSuffix("/")
-    val apiKey = SessionManager.getApiKey() ?: ""
+    val baseUrl = uiState.baseUrl.removeSuffix("/")
+    val apiKey = uiState.apiKey
 
     // On crée l'ExoPlayer une seule fois pour tout l'écran Swipe et on change juste la source
     val sharedPlayer: ExoPlayer = remember {
@@ -292,7 +288,7 @@ fun SwipeScreen(
     }
 
     var showSortMenu by remember { mutableStateOf(value = false) }
-    val connectionStatus by SessionManager.connectionStatus.collectAsState()
+    val connectionStatus = uiState.connectionStatus
 
     LaunchedEffect(connectionStatus.level) {
         if ((uiState.error != null) && (connectionStatus.level == ConnectionLevel.ONLINE)) {
@@ -302,82 +298,172 @@ fun SwipeScreen(
 
     LaunchedEffect(Unit) {
         viewModel.downloadRequestSignal.collect { asset ->
-            val baseUrl = SessionManager.getBaseUrl()?.removeSuffix("/") ?: return@collect
-            val apiKey = SessionManager.getApiKey() ?: return@collect
+            val baseUrl = uiState.baseUrl.removeSuffix("/")
+            val apiKey = uiState.apiKey
+            if (baseUrl.isEmpty() || apiKey.isEmpty()) return@collect
 
-            // Using /original for the raw file, which is often more reliable than /download (which can return a zip)
-            val downloadUrl = "$baseUrl/api/assets/${asset.id}/original"
+            val rawName = asset.originalFileName?.substringAfterLast('/')?.substringAfterLast('\\')
+                ?: "immich_${asset.id}.${asset.fileExtension ?: "jpg"}"
+            val fileName = if (rawName.contains(".")) rawName else "$rawName.${asset.fileExtension ?: "jpg"}"
 
-            // Sanitize filename: remove path components and keep only the name
-            val rawName = asset.originalFileName ?: "immich_${asset.id}.${asset.fileExtension ?: "jpg"}"
-            val fileName = rawName.substringAfterLast('/').substringAfterLast('\\')
+            Toast.makeText(context, "Downloading $fileName...", Toast.LENGTH_SHORT).show()
 
-            try {
-                val request = DownloadManager.Request(downloadUrl.toUri())
-                    .setTitle(fileName)
-                    .setDescription("Downloading from Immich")
-                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
-                    .addRequestHeader("x-api-key", apiKey)
-                    .setAllowedOverMetered(true)
-                    .setAllowedOverRoaming(true)
+            scope.launch(Dispatchers.IO) {
+                val urlsToTry = listOf(
+                    "$baseUrl/api/assets/${asset.id}/original?key=$apiKey",
+                    "$baseUrl/api/asset/file/${asset.id}?key=$apiKey",
+                    "$baseUrl/api/assets/${asset.id}/original"
+                )
 
-                val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-                downloadManager.enqueue(request)
+                val client = OkHttpClient.Builder()
+                    .followRedirects(true)
+                    .followSslRedirects(true)
+                    .build()
 
-                Toast.makeText(context, "Download started: $fileName", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                AppLogger.e("Download", "Error starting download", e)
-                Toast.makeText(context, "Error starting download: ${e.message}", Toast.LENGTH_LONG).show()
+                var response: Response? = null
+                for (downloadUrl in urlsToTry) {
+                    try {
+                        val req = Request.Builder()
+                            .url(downloadUrl)
+                            .addHeader("x-api-key", apiKey)
+                            .build()
+                        val resp = client.newCall(req).execute()
+                        if (resp.isSuccessful && resp.body != null) {
+                            response = resp
+                            break
+                        } else {
+                            resp.close()
+                        }
+                    } catch (e: Exception) {
+                        AppLogger.w("Download", "Failed download endpoint $downloadUrl: ${e.message}")
+                    }
+                }
+
+                if (response == null || !response.isSuccessful || response.body == null) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Download failed: Server error", Toast.LENGTH_LONG).show()
+                    }
+                    return@launch
+                }
+
+                val body = response.body!!
+                val mimeType = if (asset.type == "VIDEO") "video/*" else "image/*"
+
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val contentValues = ContentValues().apply {
+                            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                        }
+                        val resolver = context.contentResolver
+                        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                            ?: throw IOException("Failed to create MediaStore entry")
+
+                        resolver.openOutputStream(uri)?.use { output ->
+                            body.byteStream().use { input ->
+                                input.copyTo(output)
+                            }
+                        } ?: throw IOException("Failed to open output stream")
+                    } else {
+                        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                        downloadsDir.mkdirs()
+                        val targetFile = File(downloadsDir, fileName)
+                        targetFile.outputStream().use { output ->
+                            body.byteStream().use { input ->
+                                input.copyTo(output)
+                            }
+                        }
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Saved to Downloads: $fileName", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    AppLogger.e("Download", "Error saving downloaded file", e)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Failed to save file: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                } finally {
+                    body.close()
+                }
             }
         }
     }
 
     LaunchedEffect(Unit) {
         viewModel.shareRequestSignal.collect { asset ->
-            val baseUrl = SessionManager.getBaseUrl()?.removeSuffix("/") ?: return@collect
-            val apiKey = SessionManager.getApiKey() ?: return@collect
-            val shareUrl = "$baseUrl/api/assets/${asset.id}/original"
+            val baseUrl = uiState.baseUrl.removeSuffix("/")
+            val apiKey = uiState.apiKey
+            if (baseUrl.isEmpty() || apiKey.isEmpty()) return@collect
 
             Toast.makeText(context, "Preparing share...", Toast.LENGTH_SHORT).show()
 
             scope.launch(Dispatchers.IO) {
-                try {
-                    val client = OkHttpClient()
-                    val request = Request.Builder()
-                        .url(shareUrl)
-                        .addHeader("x-api-key", apiKey)
-                        .build()
+                val urlsToTry = listOf(
+                    "$baseUrl/api/assets/${asset.id}/original?key=$apiKey",
+                    "$baseUrl/api/asset/file/${asset.id}?key=$apiKey",
+                    "$baseUrl/api/assets/${asset.id}/original"
+                )
 
-                    client.newCall(request).execute().use { response ->
-                        if (!response.isSuccessful) throw Exception("Server returned ${response.code}")
+                val client = OkHttpClient.Builder()
+                    .followRedirects(true)
+                    .followSslRedirects(true)
+                    .build()
 
-                        val body = response.body ?: throw Exception("Empty response body")
-                        val fileName = asset.originalFileName?.substringAfterLast('/')?.substringAfterLast('\\')
-                            ?: "immich_${asset.id}.${asset.fileExtension ?: "jpg"}"
-
-                        val cacheDir = File(context.cacheDir, "shared_assets").apply { mkdirs() }
-                        val file = File(cacheDir, fileName)
-
-                        file.outputStream().use { output ->
-                            body.byteStream().use { input ->
-                                input.copyTo(output)
-                            }
+                var response: Response? = null
+                for (shareUrl in urlsToTry) {
+                    try {
+                        val req = Request.Builder()
+                            .url(shareUrl)
+                            .addHeader("x-api-key", apiKey)
+                            .build()
+                        val resp = client.newCall(req).execute()
+                        if (resp.isSuccessful && resp.body != null) {
+                            response = resp
+                            break
+                        } else {
+                            resp.close()
                         }
-
-                        val contentUri = FileProvider.getUriForFile(
-                            context,
-                            "${context.packageName}.fileprovider",
-                            file
-                        )
-
-                        val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = if (asset.type == "VIDEO") "video/*" else "image/*"
-                            putExtra(Intent.EXTRA_STREAM, contentUri)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
-                        context.startActivity(Intent.createChooser(intent, "Share media"))
+                    } catch (e: Exception) {
+                        AppLogger.w("Share", "Failed share endpoint $shareUrl: ${e.message}")
                     }
+                }
+
+                if (response == null || !response.isSuccessful || response.body == null) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Share failed: Server error", Toast.LENGTH_LONG).show()
+                    }
+                    return@launch
+                }
+
+                try {
+                    val body = response.body!!
+                    val fileName = asset.originalFileName?.substringAfterLast('/')?.substringAfterLast('\\')
+                        ?: "immich_${asset.id}.${asset.fileExtension ?: "jpg"}"
+
+                    val cacheDir = File(context.cacheDir, "shared_assets").apply { mkdirs() }
+                    val file = File(cacheDir, fileName)
+
+                    file.outputStream().use { output ->
+                        body.byteStream().use { input ->
+                            input.copyTo(output)
+                        }
+                    }
+                    body.close()
+
+                    val contentUri = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.fileprovider",
+                        file
+                    )
+
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = if (asset.type == "VIDEO") "video/*" else "image/*"
+                        putExtra(Intent.EXTRA_STREAM, contentUri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(Intent.createChooser(intent, "Share media"))
                 } catch (e: Exception) {
                     AppLogger.e("Share", "Error sharing asset", e)
                     launch(Dispatchers.Main) {
@@ -405,6 +491,8 @@ fun SwipeScreen(
             isArchived = { uiState.isArchived(it) },
             isLocked = { uiState.isLocked(it) },
             onAssetClick = { viewModel.onMoveToAsset(it) },
+            baseUrl = uiState.baseUrl,
+            apiKey = uiState.apiKey,
             isBulkMode = uiState.isBulkDeleteMode || uiState.isBulkKeepMode,
             bulkSelection = uiState.bulkSelection,
             isBulkDelete = uiState.isBulkDeleteMode,
@@ -479,7 +567,9 @@ fun SwipeScreen(
             shareButtonPosition = uiState.shareButtonPosition,
             showShareButton = false, // Share button hidden in fullscreen mode for consistency
             onShare = { viewModel.shareAsset(it) },
-            rotation = uiState.getRotation(currentAsset.id)
+            rotation = uiState.getRotation(currentAsset.id),
+            baseUrl = uiState.baseUrl,
+            apiKey = uiState.apiKey
         )
     }
 
@@ -510,6 +600,8 @@ fun SwipeScreen(
         AddToAlbumDialog(
             albums = uiState.albumsForAddToAlbum,
             isLoading = uiState.isFetchingAlbumsForDialog,
+            baseUrl = uiState.baseUrl,
+            apiKey = uiState.apiKey,
             onAlbumSelect = { targetAlbum ->
                 viewModel.addCurrentAssetToAlbum(targetAlbum) { success, albumName ->
                     viewModel.dismissAddToAlbumDialog()
