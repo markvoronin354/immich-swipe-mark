@@ -1,19 +1,44 @@
 package com.markvoronin.immichswipe.core.cache
 
 import android.content.Context
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.markvoronin.immichswipe.core.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 /**
  * Gère la maintenance du cache de l'application.
  */
 object CacheManager {
     private const val TAG = "CacheManager"
+    private const val WORK_NAME = "CacheMaintenanceWork"
     private const val MAX_CACHE_SIZE = 1024 * 1024 * 1024L // 1 GB
     private const val SHARED_ASSETS_DIR = "shared_assets"
     private const val EXPIRATION_TIME_MS = 24 * 60 * 60 * 1000L // 24 Hours
+
+    /**
+     * Planifie la maintenance périodique du cache via WorkManager (1 fois par jour quand la batterie n'est pas faible).
+     */
+    fun schedulePeriodicMaintenance(context: Context) {
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .build()
+
+        val maintenanceWork = PeriodicWorkRequestBuilder<CacheCleanupWorker>(1, TimeUnit.DAYS)
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            maintenanceWork
+        )
+    }
 
     /**
      * Effectue une maintenance complète du cache.

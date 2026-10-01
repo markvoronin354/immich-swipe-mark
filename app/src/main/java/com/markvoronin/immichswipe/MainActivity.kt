@@ -19,18 +19,15 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.lifecycleScope
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.AppTheme
 import com.markvoronin.immichswipe.core.SessionManager
-import com.markvoronin.immichswipe.core.cache.CacheManager
 import com.markvoronin.immichswipe.feature.auth.AuthScreen
 import com.markvoronin.immichswipe.feature.common.LoadingScreen
 import com.markvoronin.immichswipe.feature.home.HomeScreen
 import com.markvoronin.immichswipe.ui.theme.ImmichSwipeTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -42,11 +39,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         AppLogger.init(applicationContext)
         AppLogger.i("MainActivity", "Application démarrée")
-        
-        // Maintenance du cache en arrière-plan
-        lifecycleScope.launch {
-            CacheManager.performMaintenance(applicationContext)
-        }
 
         enableEdgeToEdge()
 
