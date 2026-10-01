@@ -21,10 +21,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.LibraryAdd
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,7 +43,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -72,7 +74,7 @@ fun AddToAlbumDialog(
     baseUrl: String = "",
     apiKey: String = "",
     onAlbumSelect: (Album) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
@@ -99,26 +101,55 @@ fun AddToAlbumDialog(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .heightIn(max = 580.dp),
-            shape = RoundedCornerShape(28.dp),
+            shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp,
+            tonalElevation = 3.dp,
             shadowElevation = 10.dp,
             border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
             Column(
                 modifier = Modifier.padding(20.dp)
             ) {
-                // Title
-                Text(
-                    text = stringResource(R.string.add_to_album_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                // Header in Settings page style: Primary Icon + Primary Title + Close button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LibraryAdd,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text = stringResource(R.string.add_to_album_title),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.common_close),
+                            tint = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
 
                 Spacer(Modifier.height(16.dp))
 
-                // Search field
+                // Search field styled like Settings search/input cards
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
@@ -136,7 +167,7 @@ fun AddToAlbumDialog(
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outline,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                     },
@@ -157,10 +188,10 @@ fun AddToAlbumDialog(
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     ),
                     textStyle = MaterialTheme.typography.bodyMedium.copy(
                         color = MaterialTheme.colorScheme.onSurface
@@ -169,7 +200,7 @@ fun AddToAlbumDialog(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Album List or Loading State
+                // Album List or Loading / Empty State
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -184,11 +215,23 @@ fun AddToAlbumDialog(
                             )
                         }
                         filteredAlbums.isEmpty() -> {
-                            Text(
-                                text = stringResource(R.string.add_to_album_no_albums),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.outline
-                            )
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PhotoLibrary,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(40.dp)
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = stringResource(R.string.add_to_album_no_albums),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                            }
                         }
                         else -> {
                             val listState = rememberLazyListState()
@@ -207,14 +250,20 @@ fun AddToAlbumDialog(
                                         album = album,
                                         baseUrl = baseUrlClean,
                                         apiKey = apiKey,
-                                        onClick = { onAlbumSelect(album) }
-                                    )
+                                    ) {
+                                        onAlbumSelect(album)
+                                    }
                                 }
                             }
                         }
                     }
                 }
 
+                Spacer(Modifier.height(8.dp))
+                HorizontalDivider(
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
                 Spacer(Modifier.height(8.dp))
 
                 // Footer Cancel button
@@ -250,7 +299,8 @@ private fun AlbumSelectionItem(
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
         Row(
             modifier = Modifier
@@ -260,16 +310,17 @@ private fun AlbumSelectionItem(
         ) {
             // Cover Thumbnail
             Surface(
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(52.dp),
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.primaryContainer
             ) {
-                if (album.albumThumbnailAssetId != null && baseUrl != null) {
+                if ((album.albumThumbnailAssetId != null) && (baseUrl != null)) {
+                    val imageUrl = "$baseUrl/api/assets/${album.albumThumbnailAssetId}/thumbnail?format=WEBP&size=thumbnail"
                     val imageRequest = remember(album.albumThumbnailAssetId, baseUrl, apiKey) {
                         ImageRequest.Builder(context)
-                            .data("$baseUrl/api/assets/${album.albumThumbnailAssetId}/thumbnail?format=WEBP&size=thumbnail")
+                            .data(imageUrl)
                             .addHeader("x-api-key", apiKey)
-                            .crossfade(true)
+                            .crossfade(enable = true)
                             .precision(Precision.INEXACT)
                             .memoryCachePolicy(CachePolicy.ENABLED)
                             .diskCachePolicy(CachePolicy.ENABLED)
@@ -303,18 +354,25 @@ private fun AlbumSelectionItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = album.albumName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = stringResource(R.string.add_to_album_items_count, album.assetCount),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline
                 )
             }
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.outlineVariant,
+                modifier = Modifier.padding(start = 8.dp)
+            )
         }
     }
 }
