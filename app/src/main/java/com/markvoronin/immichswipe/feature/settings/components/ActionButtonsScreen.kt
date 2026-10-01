@@ -23,20 +23,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.filled.AdsClick
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.NorthEast
-import androidx.compose.material.icons.filled.NorthWest
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.SouthEast
-import androidx.compose.material.icons.filled.SouthWest
 import androidx.compose.material.icons.filled.TouchApp
 import com.markvoronin.immichswipe.core.ImmichOpenMode
 import androidx.compose.material3.HorizontalDivider
@@ -235,37 +229,33 @@ fun IconPositionPickerCard(
                     )
                     Spacer(Modifier.height(12.dp))
 
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             CornerButton(
-                                text = stringResource(R.string.settings_pos_top_left),
-                                icon = Icons.Default.NorthWest,
+                                position = IconPosition.TOP_LEFT,
                                 selected = selectedPosition == IconPosition.TOP_LEFT,
-                                onClick = { onPositionSelected(IconPosition.TOP_LEFT) },
-                                modifier = Modifier.weight(1f)
+                                onClick = { onPositionSelected(IconPosition.TOP_LEFT) }
                             )
                             CornerButton(
-                                text = stringResource(R.string.settings_pos_top_right),
-                                icon = Icons.Default.NorthEast,
+                                position = IconPosition.TOP_RIGHT,
                                 selected = selectedPosition == IconPosition.TOP_RIGHT,
-                                onClick = { onPositionSelected(IconPosition.TOP_RIGHT) },
-                                modifier = Modifier.weight(1f)
+                                onClick = { onPositionSelected(IconPosition.TOP_RIGHT) }
                             )
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             CornerButton(
-                                text = stringResource(R.string.settings_pos_bottom_left),
-                                icon = Icons.Default.SouthWest,
+                                position = IconPosition.BOTTOM_LEFT,
                                 selected = selectedPosition == IconPosition.BOTTOM_LEFT,
-                                onClick = { onPositionSelected(IconPosition.BOTTOM_LEFT) },
-                                modifier = Modifier.weight(1f)
+                                onClick = { onPositionSelected(IconPosition.BOTTOM_LEFT) }
                             )
                             CornerButton(
-                                text = stringResource(R.string.settings_pos_bottom_right),
-                                icon = Icons.Default.SouthEast,
+                                position = IconPosition.BOTTOM_RIGHT,
                                 selected = selectedPosition == IconPosition.BOTTOM_RIGHT,
-                                onClick = { onPositionSelected(IconPosition.BOTTOM_RIGHT) },
-                                modifier = Modifier.weight(1f)
+                                onClick = { onPositionSelected(IconPosition.BOTTOM_RIGHT) }
                             )
                         }
                     }
@@ -285,17 +275,26 @@ fun IconPositionPickerCard(
     }
 }
 
+private val IconPosition.labelRes: Int
+    get() = when (this) {
+        IconPosition.TOP_LEFT -> R.string.settings_pos_top_left
+        IconPosition.TOP_RIGHT -> R.string.settings_pos_top_right
+        IconPosition.BOTTOM_LEFT -> R.string.settings_pos_bottom_left
+        IconPosition.BOTTOM_RIGHT -> R.string.settings_pos_bottom_right
+    }
+
 @Composable
 fun CornerButton(
-    text: String,
-    icon: ImageVector,
+    position: IconPosition,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.height(44.dp),
+        modifier = modifier
+            .width(125.dp)
+            .height(40.dp),
         shape = RoundedCornerShape(12.dp),
         color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
         border = BorderStroke(
@@ -303,22 +302,14 @@ fun CornerButton(
             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
         )
     ) {
-        Row(
+        Box(
+            contentAlignment = Alignment.Center,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 8.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.outline
-            )
-            Spacer(Modifier.width(6.dp))
             Text(
-                text = text,
+                text = stringResource(position.labelRes),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                 color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
@@ -401,37 +392,33 @@ fun ImmichCardAction(
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             CornerButton(
-                                text = stringResource(R.string.settings_pos_top_left),
-                                icon = Icons.Default.NorthWest,
+                                position = IconPosition.TOP_LEFT,
                                 selected = selectedPosition == IconPosition.TOP_LEFT,
-                                onClick = { onPositionSelected(IconPosition.TOP_LEFT) },
-                                modifier = Modifier.weight(1f)
+                                onClick = { onPositionSelected(IconPosition.TOP_LEFT) }
                             )
                             CornerButton(
-                                text = stringResource(R.string.settings_pos_top_right),
-                                icon = Icons.Default.NorthEast,
+                                position = IconPosition.TOP_RIGHT,
                                 selected = selectedPosition == IconPosition.TOP_RIGHT,
-                                onClick = { onPositionSelected(IconPosition.TOP_RIGHT) },
-                                modifier = Modifier.weight(1f)
+                                onClick = { onPositionSelected(IconPosition.TOP_RIGHT) }
                             )
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             CornerButton(
-                                text = stringResource(R.string.settings_pos_bottom_left),
-                                icon = Icons.Default.SouthWest,
+                                position = IconPosition.BOTTOM_LEFT,
                                 selected = selectedPosition == IconPosition.BOTTOM_LEFT,
-                                onClick = { onPositionSelected(IconPosition.BOTTOM_LEFT) },
-                                modifier = Modifier.weight(1f)
+                                onClick = { onPositionSelected(IconPosition.BOTTOM_LEFT) }
                             )
                             CornerButton(
-                                text = stringResource(R.string.settings_pos_bottom_right),
-                                icon = Icons.Default.SouthEast,
+                                position = IconPosition.BOTTOM_RIGHT,
                                 selected = selectedPosition == IconPosition.BOTTOM_RIGHT,
-                                onClick = { onPositionSelected(IconPosition.BOTTOM_RIGHT) },
-                                modifier = Modifier.weight(1f)
+                                onClick = { onPositionSelected(IconPosition.BOTTOM_RIGHT) }
                             )
                         }
                     }
@@ -446,20 +433,21 @@ fun ImmichCardAction(
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+                    ) {
                         OpenModeButton(
                             text = stringResource(R.string.settings_immich_open_mode_app),
                             icon = Icons.Default.PhoneAndroid,
                             selected = openMode == ImmichOpenMode.APP,
-                            onClick = { onOpenModeSelected(ImmichOpenMode.APP) },
-                            modifier = Modifier.weight(1f)
+                            onClick = { onOpenModeSelected(ImmichOpenMode.APP) }
                         )
                         OpenModeButton(
                             text = stringResource(R.string.settings_immich_open_mode_web),
                             icon = Icons.Default.Language,
                             selected = openMode == ImmichOpenMode.WEB,
-                            onClick = { onOpenModeSelected(ImmichOpenMode.WEB) },
-                            modifier = Modifier.weight(1f)
+                            onClick = { onOpenModeSelected(ImmichOpenMode.WEB) }
                         )
                     }
 
@@ -515,8 +503,10 @@ fun OpenModeButton(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.height(44.dp),
-        shape = RoundedCornerShape(14.dp),
+        modifier = modifier
+            .width(125.dp)
+            .height(40.dp),
+        shape = RoundedCornerShape(12.dp),
         color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
         border = BorderStroke(
             width = if (selected) 1.5.dp else 1.dp,
@@ -524,17 +514,19 @@ fun OpenModeButton(
         )
     ) {
         Row(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(16.dp),
                 tint = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.outline
             )
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(6.dp))
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelMedium,
