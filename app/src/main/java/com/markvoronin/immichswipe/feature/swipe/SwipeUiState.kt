@@ -40,7 +40,7 @@ data class SwipeUiState(
     val fullscreenButtonPosition: IconPosition = IconPosition.TOP_RIGHT,
     val immichButtonPosition: IconPosition = IconPosition.TOP_LEFT,
     val immichOpenMode: ImmichOpenMode = ImmichOpenMode.APP,
-    val immichLongPressWeb: Boolean = false,
+    val immichLongPressWeb: Boolean = true,
     val rotationButtonPosition: IconPosition = IconPosition.BOTTOM_LEFT,
     val muteButtonPosition: IconPosition = IconPosition.BOTTOM_RIGHT,
     val downloadButtonPosition: IconPosition = IconPosition.BOTTOM_LEFT,

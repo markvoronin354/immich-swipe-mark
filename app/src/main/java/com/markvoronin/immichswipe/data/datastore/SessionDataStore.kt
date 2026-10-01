@@ -110,7 +110,7 @@ class SessionDataStore(private val context: Context) {
         context.dataStore.edit { it[KEY_IMMICH_OPEN_MODE] = mode }
     }
 
-    fun getImmichLongPressWeb(): Flow<Boolean> = context.dataStore.data.map { it[KEY_IMMICH_LONG_PRESS_WEB] ?: false }
+    fun getImmichLongPressWeb(): Flow<Boolean> = context.dataStore.data.map { it[KEY_IMMICH_LONG_PRESS_WEB] ?: true }
 
     suspend fun saveImmichLongPressWeb(enabled: Boolean) {
         context.dataStore.edit { it[KEY_IMMICH_LONG_PRESS_WEB] = enabled }

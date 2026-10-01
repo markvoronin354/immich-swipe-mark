@@ -23,7 +23,7 @@ data class SwipeCardConfig(
     val showDownloadButton: Boolean = false,
     val showShareButton: Boolean = false,
     val immichOpenMode: ImmichOpenMode = ImmichOpenMode.APP,
-    val immichLongPressWeb: Boolean = false,
+    val immichLongPressWeb: Boolean = true,
     val cardDisplayMode: CardDisplayMode,
     val tapToSwipeEnabled: Boolean = false,
     val showSizeIndicator: Boolean = false,
