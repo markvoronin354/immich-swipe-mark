@@ -15,15 +15,28 @@ class BaselineProfileGenerator {
     fun generate() = baselineProfileRule.collect(
         packageName = "com.markvoronin.immichswipe",
         profileBlock = {
-            // Démarrer l'application (Splash Screen -> Login -> Home)
+            // Start the application (Splash Screen -> Main Flow)
             pressHome()
             startActivityAndWait()
-            
-            // Note: C'est un test très basique car l'application nécessite une connexion.
-            // Dans un vrai environnement, on mockerait l'API ou on insérerait des données de test
-            // avant de générer le profil.
-            
-            // Attendre que l'UI soit stable
+
+            device.waitForIdle()
+
+            // Simulate card swipe interactions to pre-compile Compose swipe & gesture code paths
+            val displayWidth = device.displayWidth
+            val displayHeight = device.displayHeight
+            val midX = displayWidth / 2
+            val midY = displayHeight / 2
+
+            // Swipe right gesture
+            device.swipe(midX, midY, displayWidth - 100, midY, 15)
+            device.waitForIdle()
+
+            // Swipe left gesture
+            device.swipe(midX, midY, 100, midY, 15)
+            device.waitForIdle()
+
+            // Vertical swipe gesture
+            device.swipe(midX, midY, midX, displayHeight - 200, 15)
             device.waitForIdle()
         }
     )

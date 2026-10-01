@@ -152,8 +152,9 @@ fun SwipeScreen(
                 } else {
                     // Preload Image to Coil RAM Cache
                     val request = ImageRequest.Builder(localCtx)
-                        .data("$baseUrl/api/assets/${nextAsset.id}/thumbnail?format=WEBP&size=preview")
+                        .data("$baseUrl/api/assets/${nextAsset.id}/thumbnail?format=WEBP&size=preview&edited=true")
                         .addHeader("x-api-key", apiKey)
+                        .memoryCacheKey("${nextAsset.id}-preview")
                         .memoryCachePolicy(CachePolicy.ENABLED)
                         .build()
                     localCtx.imageLoader.enqueue(request)

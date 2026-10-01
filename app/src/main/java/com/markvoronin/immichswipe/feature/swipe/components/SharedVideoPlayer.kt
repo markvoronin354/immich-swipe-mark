@@ -93,12 +93,11 @@ fun SharedVideoPlayer(
     controlsOffset: Dp = 0.dp,
     videoSurfaceWrapper: @Composable (surfaceContent: @Composable () -> Unit) -> Unit = { surfaceContent -> surfaceContent() }
 ) {
-    key(assetId) {
-        var currentTime by remember { mutableLongStateOf(0L) }
-        var duration by remember { mutableLongStateOf(0L) }
-        var isVideoPlaying by remember(player) { mutableStateOf(player.isPlaying) }
-        var isScrubbing by remember { mutableStateOf(false) }
-        var scrubValue by remember { mutableLongStateOf(0L) }
+    var currentTime by remember(assetId) { mutableLongStateOf(0L) }
+    var duration by remember(assetId) { mutableLongStateOf(0L) }
+    var isVideoPlaying by remember(player) { mutableStateOf(player.isPlaying) }
+    var isScrubbing by remember(assetId) { mutableStateOf(false) }
+    var scrubValue by remember(assetId) { mutableLongStateOf(0L) }
 
         val togglePlayPause = {
             if (player.playWhenReady && player.playbackState != Player.STATE_ENDED) {
@@ -111,11 +110,7 @@ fun SharedVideoPlayer(
             }
         }
 
-        val videoAlpha by animateFloatAsState(
-            targetValue = if (isVideoReady) 1f else 0f,
-            animationSpec = if (isVideoReady) tween(durationMillis = 200) else snap(),
-            label = "VideoAlpha"
-        )
+        val videoAlpha = if (isVideoReady) 1f else 0f
 
         DisposableEffect(player) {
             val listener = object : Player.Listener {
@@ -153,8 +148,10 @@ fun SharedVideoPlayer(
                         val context = LocalContext.current
                         val thumbnailRequest = remember(assetId, baseUrlClean, apiKey) {
                             ImageRequest.Builder(context)
-                                .data("$baseUrlClean/api/assets/$assetId/thumbnail?format=WEBP&size=preview")
+                                .data("$baseUrlClean/api/assets/$assetId/thumbnail?format=WEBP&size=preview&edited=true")
                                 .addHeader("x-api-key", apiKey)
+                                .memoryCacheKey("$assetId-preview")
+                                .placeholderMemoryCacheKey("$assetId-preview")
                                 .crossfade(false)
                                 .precision(Precision.INEXACT)
                                 .build()
@@ -201,13 +198,6 @@ fun SharedVideoPlayer(
                                 if (view.player != player) {
                                     AppLogger.d("VideoPlayer", "AndroidView Update: Binding player (fullscreen=$isFullscreen), asset=$assetId")
                                     view.player = player
-                                }
-
-                                // Force a "nudge" if the player is ready but the surface hasn't updated
-                                if (player.playbackState == Player.STATE_READY) {
-                                    view.post {
-                                        player.seekTo(player.currentPosition)
-                                    }
                                 }
 
                                 view.useController = false
@@ -384,5 +374,4 @@ fun SharedVideoPlayer(
                 }
             }
         }
-    }
 }

@@ -99,14 +99,8 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
 
     // Baseline Profile
-    // \"baselineProfile\"(project(\":app\"))
+    // AGP automatically includes app/src/main/baseline-prof.txt in release builds.
+    // Use BaselineProfileGenerator in androidTest to update baseline-prof.txt.
     androidTestImplementation(libs.benchmark.macro.junit4)
     androidTestImplementation(libs.uiautomator)
 }
-
-// baselineProfile {
-//     // Defines the packages to be tested when generating profiles.
-//     filter {
-//         include("com.markvoronin.immichswipe.**")
-//     }
-// }

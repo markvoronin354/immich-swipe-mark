@@ -155,6 +155,20 @@ fun FullscreenViewer(
     val swipeY = remember { Animatable(0f) }
     val swipeX = remember { Animatable(0f) }
 
+    val currentOnSwipe by rememberUpdatedState(onSwipe)
+
+    val performSwipe: (SwipeDecision) -> Unit = { decision ->
+        scope.launch {
+            if (currentIsHolding) return@launch
+            val targetX = if (decision == SwipeDecision.KEEP) 2000f else -2000f
+            launch { swipeY.animateTo(0f, tween(180)) }
+            swipeX.animateTo(targetX, tween(180))
+            currentOnSwipe(decision)
+            swipeX.snapTo(0f)
+            swipeY.snapTo(0f)
+        }
+    }
+
     var toggleControllerTrigger by remember { mutableIntStateOf(0) }
 
     var isVideoReady by remember(asset.id, providedPlayer) {
@@ -186,8 +200,6 @@ fun FullscreenViewer(
             }
         }
     }
-
-    val currentOnSwipe by rememberUpdatedState(onSwipe)
 
     var controlsVisible by remember { mutableStateOf(true) }
     val configuration = LocalConfiguration.current
@@ -240,11 +252,20 @@ fun FullscreenViewer(
 
     DisposableEffect(exoPlayer, asset.id) {
         val listener = object : Player.Listener {
+            override fun onRenderedFirstFrame() {
+                val isSameAsset = exoPlayer?.currentMediaItem?.mediaId == asset.id
+                if (isSameAsset) {
+                    isVideoReady = true
+                    showLoadingIndicator = false
+                }
+            }
             override fun onPlaybackStateChanged(state: Int) {
                 val isSameAsset = exoPlayer?.currentMediaItem?.mediaId == asset.id
                 AppLogger.d("Fullscreen", "Playback state changed: $state, asset=${asset.id}, same=$isSameAsset")
                 if (state == Player.STATE_READY && isSameAsset) {
-                    isVideoReady = true
+                    if ((exoPlayer?.videoSize?.height ?: 0) == 0) {
+                        isVideoReady = true
+                    }
                     showLoadingIndicator = false
                 } else if (state == Player.STATE_BUFFERING) {
                     if (isSameAsset) showLoadingIndicator = true
@@ -256,7 +277,6 @@ fun FullscreenViewer(
                 val isSameAsset = exoPlayer?.currentMediaItem?.mediaId == asset.id
                 AppLogger.d("Fullscreen", "Is playing changed: $isPlaying, asset=${asset.id}, same=$isSameAsset")
                 if (isPlaying && isSameAsset) {
-                    isVideoReady = true
                     showLoadingIndicator = false
                 }
             }
@@ -305,10 +325,12 @@ fun FullscreenViewer(
                 val nextScale = 0.85f + (0.15f * swipeProgress)
                 val nextAlpha = (0.6f + (0.4f * swipeProgress)) * fadeAlpha
 
-                val nextPhotoRequest = remember(nextAsset.id, baseUrl, apiKey) {
+                val nextPhotoRequest = remember(nextAsset.id, baseUrlClean, apiKeyLocal) {
                     ImageRequest.Builder(context)
-                        .data("$baseUrl/api/assets/${nextAsset.id}/thumbnail?format=WEBP&size=preview")
-                        .addHeader("x-api-key", apiKey)
+                        .data("$baseUrlClean/api/assets/${nextAsset.id}/thumbnail?format=WEBP&size=preview&edited=true")
+                        .addHeader("x-api-key", apiKeyLocal)
+                        .memoryCacheKey("${nextAsset.id}-preview")
+                        .placeholderMemoryCacheKey("${nextAsset.id}-preview")
                         .crossfade(false)
                         .precision(Precision.INEXACT)
                         .build()
@@ -353,18 +375,10 @@ fun FullscreenViewer(
 
                                     if (currentY > 120 && abs(currentX) < 100) {
                                         onClose()
-                                    } else if (currentX > 250) {
-                                        launch { swipeY.animateTo(0f, tween(200)) }
-                                        swipeX.animateTo(2000f, tween(200))
-                                        swipeX.snapTo(0f)
-                                        swipeY.snapTo(0f)
-                                        currentOnSwipe(SwipeDecision.KEEP)
-                                    } else if (currentX < -250) {
-                                        launch { swipeY.animateTo(0f, tween(200)) }
-                                        swipeX.animateTo(-2000f, tween(200))
-                                        swipeX.snapTo(0f)
-                                        swipeY.snapTo(0f)
-                                        currentOnSwipe(SwipeDecision.DELETE)
+                                    } else if (currentX > 150) {
+                                        performSwipe(SwipeDecision.KEEP)
+                                    } else if (currentX < -150) {
+                                        performSwipe(SwipeDecision.DELETE)
                                     } else {
                                         launch { swipeY.animateTo(0f) }
                                         launch { swipeX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
@@ -424,8 +438,8 @@ fun FullscreenViewer(
                                     val width = size.width.toFloat()
                                     if (tapToSwipeEnabled && !isZoomedIn && (offset.x < width * 0.3f || offset.x > width * 0.7f)) {
                                         when {
-                                            offset.x < width * 0.3f -> currentOnSwipe(SwipeDecision.DELETE)
-                                            offset.x > width * 0.7f -> currentOnSwipe(SwipeDecision.KEEP)
+                                            offset.x < width * 0.3f -> performSwipe(SwipeDecision.DELETE)
+                                            offset.x > width * 0.7f -> performSwipe(SwipeDecision.KEEP)
                                         }
                                     } else if (asset.type == "VIDEO") {
                                         onToggleMute()
@@ -449,11 +463,11 @@ fun FullscreenViewer(
                                     if (tapToSwipeEnabled && !isZoomedIn && (offset.x < width * 0.3f || offset.x > width * 0.7f)) {
                                         when {
                                             offset.x < width * 0.3f -> {
-                                                currentOnSwipe(SwipeDecision.DELETE)
+                                                performSwipe(SwipeDecision.DELETE)
                                                 ignoreNextTap = true
                                             }
                                             offset.x > width * 0.7f -> {
-                                                currentOnSwipe(SwipeDecision.KEEP)
+                                                performSwipe(SwipeDecision.KEEP)
                                                 ignoreNextTap = true
                                             }
                                         }
@@ -519,8 +533,8 @@ fun FullscreenViewer(
                             val width = size.width.toFloat()
                             if (tapToSwipeEnabled && !isZoomedIn && (offset.x < width * 0.3f || offset.x > width * 0.7f)) {
                                 when {
-                                    offset.x < width * 0.3f -> currentOnSwipe(SwipeDecision.DELETE)
-                                    offset.x > width * 0.7f -> currentOnSwipe(SwipeDecision.KEEP)
+                                    offset.x < width * 0.3f -> performSwipe(SwipeDecision.DELETE)
+                                    offset.x > width * 0.7f -> performSwipe(SwipeDecision.KEEP)
                                 }
                             }
                         }
@@ -539,11 +553,11 @@ fun FullscreenViewer(
                             if (tapToSwipeEnabled && !isZoomedIn && (offset.x < width * 0.3f || offset.x > width * 0.7f)) {
                                 when {
                                     offset.x < width * 0.3f -> {
-                                        currentOnSwipe(SwipeDecision.DELETE)
+                                        performSwipe(SwipeDecision.DELETE)
                                         ignoreNextTap = true
                                     }
                                     offset.x > width * 0.7f -> {
-                                        currentOnSwipe(SwipeDecision.KEEP)
+                                        performSwipe(SwipeDecision.KEEP)
                                         ignoreNextTap = true
                                     }
                                 }
@@ -572,6 +586,8 @@ fun FullscreenViewer(
                         ImageRequest.Builder(context)
                             .data("$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview&edited=true")
                             .addHeader("x-api-key", apiKeyLocal)
+                            .memoryCacheKey("${asset.id}-preview")
+                            .placeholderMemoryCacheKey("${asset.id}-preview")
                             .crossfade(false)
                             .precision(Precision.INEXACT)
                             .build()

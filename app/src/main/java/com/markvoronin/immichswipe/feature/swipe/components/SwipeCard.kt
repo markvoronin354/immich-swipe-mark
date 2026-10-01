@@ -245,10 +245,19 @@ fun SwipeCard(
 
     DisposableEffect(exoPlayer, lifecycleOwner, asset.id) {
         val listener = object : Player.Listener {
+            override fun onRenderedFirstFrame() {
+                val isSameAsset = exoPlayer?.currentMediaItem?.mediaId == asset.id
+                if (isSameAsset) {
+                    isVideoReady = true
+                    showLoadingIndicator = false
+                }
+            }
             override fun onPlaybackStateChanged(state: Int) {
                 val isSameAsset = exoPlayer?.currentMediaItem?.mediaId == asset.id
                 if (state == Player.STATE_READY && isSameAsset) {
-                    isVideoReady = true
+                    if ((exoPlayer?.videoSize?.height ?: 0) == 0) {
+                        isVideoReady = true
+                    }
                     showLoadingIndicator = false
                 } else if (state == Player.STATE_BUFFERING) {
                     // Only show indicator if buffering the correct asset, but keep isVideoReady true if it was already ready
@@ -260,12 +269,10 @@ fun SwipeCard(
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 val isSameAsset = exoPlayer?.currentMediaItem?.mediaId == asset.id
                 if (isPlaying && isSameAsset) {
-                    isVideoReady = true
                     showLoadingIndicator = false
                 }
             }
         }
-
         val isSameAssetInit = exoPlayer?.currentMediaItem?.mediaId == asset.id
         if (exoPlayer?.playbackState == Player.STATE_READY && isSameAssetInit) {
             isVideoReady = true
@@ -478,8 +485,10 @@ fun SwipeCard(
                 if (asset.type == "VIDEO") {
                     val placeholderRequest = remember(asset.id, baseUrl, apiKey) {
                         ImageRequest.Builder(context)
-                            .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                            .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview&edited=true")
                             .addHeader("x-api-key", apiKey)
+                            .memoryCacheKey("${asset.id}-preview")
+                            .placeholderMemoryCacheKey("${asset.id}-preview")
                             .crossfade(false)
                             .precision(Precision.INEXACT)
                             .build()
@@ -613,6 +622,8 @@ fun SwipeCard(
                         ImageRequest.Builder(context)
                             .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview&edited=true")
                             .addHeader("x-api-key", apiKey)
+                            .memoryCacheKey("${asset.id}-preview")
+                            .placeholderMemoryCacheKey("${asset.id}-preview")
                             .crossfade(false)
                             .precision(Precision.INEXACT)
                             .build()

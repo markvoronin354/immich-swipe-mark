@@ -1,0 +1,8 @@
+# Baseline Profile Rules for Immich Swipe
+HSPLcom/markvoronin/immichswipe/ImmichSwipeApplication;->onCreate()V
+Lcom/markvoronin/immichswipe/ImmichSwipeApplication;
+HSPLcom/markvoronin/immichswipe/MainActivity;->onCreate(Landroid/os/Bundle;)V
+Lcom/markvoronin/immichswipe/MainActivity;
+Lcom/markvoronin/immichswipe/feature/swipe/SwipeScreenKt;
+Lcom/markvoronin/immichswipe/feature/swipe/SwipeViewModel;
+Lcom/markvoronin/immichswipe/navigation/NavGraphKt;
