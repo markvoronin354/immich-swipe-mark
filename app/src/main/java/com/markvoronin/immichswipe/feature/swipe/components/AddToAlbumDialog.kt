@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,7 +35,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -136,13 +134,13 @@ fun AddToAlbumDialog(
                 ) {
                     IconButton(
                         onClick = onDismiss,
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(44.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = stringResource(R.string.common_close),
-                            tint = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(20.dp)
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(26.dp)
                         )
                     }
                     Row(
@@ -165,7 +163,7 @@ fun AddToAlbumDialog(
                             textAlign = TextAlign.Center
                         )
                     }
-                    Spacer(modifier = Modifier.size(36.dp))
+                    Spacer(modifier = Modifier.size(44.dp))
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -286,28 +284,6 @@ fun AddToAlbumDialog(
                                 }
                             }
                         }
-                    }
-                }
-
-                Spacer(Modifier.height(8.dp))
-                HorizontalDivider(
-                    thickness = 0.5.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
-                Spacer(Modifier.height(8.dp))
-
-                // Footer Cancel button
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(
-                            text = stringResource(R.string.common_cancel),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
                     }
                 }
             }
