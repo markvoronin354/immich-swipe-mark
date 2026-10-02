@@ -13,8 +13,8 @@ android {
         applicationId = "com.markvoronin.immichswipe"
         minSdk = 26
         targetSdk = 36
-        versionCode = 31
-        versionName = "3.3.0"
+        versionCode = 32
+        versionName = "3.3.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
