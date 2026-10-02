@@ -1,5 +1,7 @@
 package com.markvoronin.immichswipe.feature.swipe.components
 
+import com.markvoronin.immichswipe.feature.home.components.ErrorView
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -81,18 +83,8 @@ fun SwipeCardDeck(
                 }
             }
         } else if (uiState.error != null && uiState.assets.isEmpty()) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = uiState.error!!,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(16.dp),
-                    textAlign = TextAlign.Center
-                )
-                Button(onClick = { viewModel.retryLoading() }) {
-                    Icon(Icons.Default.Refresh, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.common_retry))
-                }
+            ErrorView(error = uiState.error!!) {
+                viewModel.retryLoading()
             }
         } else if (uiState.currentIndex < uiState.assets.size) {
             val currentIndex = uiState.currentIndex
