@@ -254,4 +254,6 @@
     <string name="settings_clear_cache_confirm_msg">Cela supprimera tous les fichiers temporaires et les images en cache. Ils seront re-téléchargés depuis le serveur si nécessaire. Voulez-vous continuer ?</string>
     <string name="settings_tap_to_swipe_label">Appuyer pour trier</string>
     <string name="settings_tap_to_swipe_desc">Appuyez sur le tiers gauche pour supprimer, et le tiers droit pour garder. Le tiers central reste pour les contrôles.</string>
+    <string name="settings_privacy_policy_label">Politique de confidentialité</string>
+    <string name="settings_privacy_policy_desc">Lire notre politique de confidentialité concernant les données et permissions</string>
 </resources>

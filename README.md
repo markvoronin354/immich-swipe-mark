@@ -5,7 +5,7 @@
 ![Kotlin](https://img.shields.io/badge/language-Kotlin-purple)
 ![Android](https://img.shields.io/badge/platform-Android-green)
 
-[Version française disponible ici](README.fr.md)
+[Version française disponible ici](README.fr.md) | [Privacy Policy](PRIVACY_POLICY.md)
 
 Immich Swipe is an open-source Android application designed to make sorting your photos and videos hosted on your [Immich](https://immich.app/) server easy and fun.
 

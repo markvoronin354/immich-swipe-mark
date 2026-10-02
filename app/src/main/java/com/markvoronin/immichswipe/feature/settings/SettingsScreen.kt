@@ -48,6 +48,7 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhonelinkErase
+import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.SettingsSuggest
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TouchApp
@@ -407,6 +408,13 @@ fun SettingsScreen(
                     icon = Icons.Default.DeleteSweep,
                     isDestructive = true,
                     onClick = { viewModel.setShowClearCacheConfirmation(true) }
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
+                SettingsClickableItem(
+                    title = stringResource(R.string.settings_privacy_policy_label),
+                    subtitle = stringResource(R.string.settings_privacy_policy_desc),
+                    icon = Icons.Default.PrivacyTip,
+                    onClick = { uriHandler.openUri("https://github.com/markvoronin354/immich-swipe-android/blob/main/PRIVACY_POLICY.md") }
                 )
             }
         }

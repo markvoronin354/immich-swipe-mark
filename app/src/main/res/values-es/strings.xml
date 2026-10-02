@@ -253,4 +253,6 @@
     <string name="settings_clear_cache_confirm_msg">Esto eliminará todos los archivos temporales e imágenes en caché. Se volverán a descargar del servidor según sea necesario. ¿Desea continuar?</string>
     <string name="settings_tap_to_swipe_label">Tocar para clasificar</string>
     <string name="settings_tap_to_swipe_desc">Toca el tercio izquierdo para eliminar y el tercio derecho para conservar. El tercio central permanece para los controles.</string>
+    <string name="settings_privacy_policy_label">Política de privacidad</string>
+    <string name="settings_privacy_policy_desc">Lea nuestra política de privacidad sobre datos y permisos</string>
 </resources>

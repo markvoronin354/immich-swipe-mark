@@ -253,4 +253,6 @@
     <string name="settings_clear_cache_confirm_msg">This will delete all temporary files and cached images. They will be re-downloaded from the server as needed. Do you want to proceed?</string>
     <string name="settings_tap_to_swipe_label">Tap to swipe</string>
     <string name="settings_tap_to_swipe_desc">Tap the left ⅓ of the card to delete, and the right ⅓ to keep. Middle ⅓ remains for controls.</string>
+    <string name="settings_privacy_policy_label">Privacy Policy</string>
+    <string name="settings_privacy_policy_desc">Read our privacy policy regarding data and permissions</string>
 </resources>
