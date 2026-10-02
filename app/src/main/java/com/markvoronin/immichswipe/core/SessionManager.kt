@@ -87,6 +87,7 @@ class SessionManager @Inject constructor(
         this._sessionConfig.value = config
         this._api = RetrofitFactory.create(config)
         this._connectionStatus.value = ConnectionStatus(ConnectionLevel.ONLINE, DiagStatus.CONNECTED)
+        AppLogger.i("SessionManager", "Session initialized for user ${config.userId} at ${config.baseUrl}")
     }
 
     @Synchronized
@@ -96,6 +97,7 @@ class SessionManager @Inject constructor(
         _sessionConfig.value = null
         _api = null
         _connectionStatus.value = ConnectionStatus(ConnectionLevel.OFFLINE, DiagStatus.LOGGED_OUT)
+        AppLogger.i("SessionManager", "Session cleared / user logged out")
     }
 
     fun isLoggedIn(): Boolean = _api != null

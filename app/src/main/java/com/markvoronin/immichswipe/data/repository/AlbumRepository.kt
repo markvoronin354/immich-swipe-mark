@@ -77,7 +77,7 @@ class AlbumRepository @Inject constructor(
             )
             response.isSuccessful
         } catch (e: Exception) {
-            AppLogger.e("AlbumRepository", "Erreur ajout asset à l'album $albumId", e)
+            AppLogger.e("AlbumRepository", "Error adding asset to album $albumId", e)
             false
         }
     }

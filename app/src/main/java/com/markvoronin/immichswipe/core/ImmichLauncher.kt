@@ -20,6 +20,7 @@ object ImmichLauncher {
         mode: ImmichOpenMode = ImmichOpenMode.APP
     ) {
         if (assetId.isBlank()) return
+        AppLogger.i("ImmichLauncher", "Opening asset $assetId in Immich (mode=$mode)")
 
         if (mode == ImmichOpenMode.WEB) {
             if (!baseUrl.isNullOrBlank()) {

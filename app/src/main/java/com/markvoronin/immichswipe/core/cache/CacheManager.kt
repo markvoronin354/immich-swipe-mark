@@ -42,21 +42,21 @@ object CacheManager {
 
     /**
      * Effectue une maintenance complète du cache.
-     * À appeler au démarrage de l'application.
+     * Call on app startup.
      */
     suspend fun performMaintenance(context: Context) = withContext(Dispatchers.IO) {
         try {
-            AppLogger.d(TAG, "Démarrage de la maintenance du cache")
+            AppLogger.d(TAG, "Starting cache maintenance")
             
-            // 1. Nettoyage des assets partagés expirés
+            // 1. Clean expired shared assets
             cleanSharedAssets(context)
             
-            // 2. Vérification de la taille globale et nettoyage si nécessaire
+            // 2. Check global size and clean if necessary
             checkAndLimitGlobalCache(context)
             
-            AppLogger.d(TAG, "Maintenance du cache terminée")
+            AppLogger.d(TAG, "Cache maintenance finished")
         } catch (e: Exception) {
-            AppLogger.e(TAG, "Erreur lors de la maintenance du cache", e)
+            AppLogger.e(TAG, "Error during cache maintenance", e)
         }
     }
 
@@ -82,7 +82,7 @@ object CacheManager {
         }
 
         if (deletedCount > 0) {
-            AppLogger.i(TAG, "Nettoyage shared_assets : $deletedCount fichiers supprimés (${deletedSize / 1024} KB)")
+            AppLogger.i(TAG, "Shared assets cleanup: $deletedCount files deleted (${deletedSize / 1024} KB freed)")
         }
     }
 
@@ -94,7 +94,7 @@ object CacheManager {
         val totalSize = getFolderSize(cacheDir)
 
         if (totalSize > MAX_CACHE_SIZE) {
-            AppLogger.i(TAG, "Cache trop volumineux (${totalSize / (1024 * 1024)} MB). Lancement d'un nettoyage agressif.")
+            AppLogger.i(TAG, "Cache too large (${totalSize / (1024 * 1024)} MB). Launching aggressive cleanup...")
             
             // On récupère tous les fichiers (récursif) et on les trie par date
             val allFiles = getAllFiles(cacheDir).sortedBy { it.lastModified() }
@@ -117,7 +117,7 @@ object CacheManager {
                     deletedCount++
                 }
             }
-            AppLogger.i(TAG, "Nettoyage agressif terminé : $deletedCount fichiers supprimés. Nouvelle taille : ${currentSize / (1024 * 1024)} MB")
+            AppLogger.i(TAG, "Aggressive cleanup finished: $deletedCount files deleted. New size: ${currentSize / (1024 * 1024)} MB")
         }
     }
 

@@ -108,7 +108,7 @@ class AuthViewModel @Inject constructor(
             val baseUrl = _uiState.value.baseUrl.trim()
             val apiKey = _uiState.value.apiKey.trim()
 
-            AppLogger.i("Auth", "Tentative de connexion à $baseUrl")
+            AppLogger.i("Auth", "Attempting connection to $baseUrl")
 
             // Validation basique
             if (baseUrl.isEmpty() || apiKey.isEmpty()) {
@@ -121,7 +121,7 @@ class AuthViewModel @Inject constructor(
             try {
                 // 1. On demande au Repository de vérifier les identifiants
                 val user = authRepository.checkCredentials(baseUrl, apiKey)
-                AppLogger.i("Auth", "Identifiants valides. Utilisateur: ${user.name} (${user.id})")
+                AppLogger.i("Auth", "Valid credentials. User: ${user.name} (${user.id})")
 
                 // 2. Si on arrive ici, c'est que la connexion a réussi !
                 val config = SessionConfig(baseUrl = baseUrl, apiKey = apiKey, userId = user.id)
@@ -151,7 +151,7 @@ class AuthViewModel @Inject constructor(
                     else -> AuthError.Unknown(e.localizedMessage)
                 }
 
-                AppLogger.e("Auth", "Échec de connexion : $error", e)
+                AppLogger.e("Auth", "Connection failed: $error", e)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = error

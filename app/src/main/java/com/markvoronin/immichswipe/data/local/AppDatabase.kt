@@ -32,14 +32,14 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         private val MIGRATION_11_12 = object : Migration(11, 12) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                AppLogger.i("Database", "Exécution Migration 11 -> 12 (Ajout rotation à album_assets)")
+                AppLogger.i("Database", "Executing Migration 11 -> 12 (Adding rotation to album_assets)")
                 db.execSQL("ALTER TABLE album_assets ADD COLUMN rotation INTEGER NOT NULL DEFAULT 0")
             }
         }
 
         private val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                AppLogger.i("Database", "Exécution Migration 10 -> 11 (Ajout métadonnées à album_assets)")
+                AppLogger.i("Database", "Executing Migration 10 -> 11 (Adding metadata to album_assets)")
                 db.execSQL("ALTER TABLE album_assets ADD COLUMN type TEXT")
                 db.execSQL("ALTER TABLE album_assets ADD COLUMN fileCreatedAt TEXT")
                 db.execSQL("ALTER TABLE album_assets ADD COLUMN originalFileName TEXT")
@@ -55,7 +55,7 @@ abstract class AppDatabase : RoomDatabase() {
          */
         private val MIGRATION_9_10 = object : Migration(9, 10) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                AppLogger.i("Database", "Exécution Migration 9 -> 10 (Modification album_assets)")
+                AppLogger.i("Database", "Executing Migration 9 -> 10 (Modifying album_assets)")
                 // 1. Supprimer l'ancienne table (on repart à zéro car on n'a pas les userId)
                 db.execSQL("DROP TABLE IF EXISTS album_assets")
                 
@@ -81,7 +81,7 @@ abstract class AppDatabase : RoomDatabase() {
          */
         private val MIGRATION_8_9 = object : Migration(8, 9) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                AppLogger.i("Database", "Exécution Migration 8 -> 9 (Ajout user_accounts)")
+                AppLogger.i("Database", "Executing Migration 8 -> 9 (Adding user_accounts)")
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS user_accounts (
                         userId TEXT NOT NULL,
@@ -103,7 +103,7 @@ abstract class AppDatabase : RoomDatabase() {
          */
         private val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                AppLogger.i("Database", "Exécution Migration 7 -> 8 (Ajout wasSyncedSkip)")
+                AppLogger.i("Database", "Executing Migration 7 -> 8 (Adding wasSyncedSkip)")
                 db.execSQL("ALTER TABLE swipe_decisions ADD COLUMN wasSyncedSkip INTEGER NOT NULL DEFAULT 0")
             }
         }
@@ -114,7 +114,7 @@ abstract class AppDatabase : RoomDatabase() {
          */
         private val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                AppLogger.i("Database", "Exécution Migration 6 -> 7 (Modification PK swipe_decisions)")
+                AppLogger.i("Database", "Executing Migration 6 -> 7 (Modifying PK swipe_decisions)")
                 // 1. Créer la nouvelle table sans albumId dans la PK
                 db.execSQL("""
                     CREATE TABLE swipe_decisions_new (
@@ -149,7 +149,7 @@ abstract class AppDatabase : RoomDatabase() {
          */
         private val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                AppLogger.i("Database", "Exécution Migration 5 -> 6 (Ajout album_assets)")
+                AppLogger.i("Database", "Executing Migration 5 -> 6 (Adding album_assets)")
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS album_assets (
                         albumId TEXT NOT NULL,
@@ -166,7 +166,7 @@ abstract class AppDatabase : RoomDatabase() {
          */
         private val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                AppLogger.i("Database", "Exécution Migration 2 -> 3 (Ajout fileSize)")
+                AppLogger.i("Database", "Executing Migration 2 -> 3 (Adding fileSize)")
                 db.execSQL("ALTER TABLE swipe_decisions ADD COLUMN fileSize INTEGER DEFAULT NULL")
             }
         }
@@ -178,7 +178,7 @@ abstract class AppDatabase : RoomDatabase() {
          */
         private val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                AppLogger.i("Database", "Exécution Migration 3 -> 4 (Ajout userId PK)")
+                AppLogger.i("Database", "Executing Migration 3 -> 4 (Adding userId PK)")
                 // 1. Créer la nouvelle table avec la nouvelle structure
                 db.execSQL("""
                     CREATE TABLE swipe_decisions_new (
@@ -213,7 +213,7 @@ abstract class AppDatabase : RoomDatabase() {
          */
         private val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                AppLogger.i("Database", "Exécution Migration 4 -> 5 (Ajout sync_history)")
+                AppLogger.i("Database", "Executing Migration 4 -> 5 (Adding sync_history)")
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS sync_history (
                         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,

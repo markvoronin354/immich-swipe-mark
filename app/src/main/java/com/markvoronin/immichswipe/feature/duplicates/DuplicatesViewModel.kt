@@ -248,6 +248,8 @@ class DuplicatesViewModel @Inject constructor(
                 val toDeleteSet = currentDecisions.filter { it.value == DuplicateDecision.DELETE }.keys.toSet()
                 val toKeepSet = currentDecisions.filter { it.value == DuplicateDecision.KEEP }.keys.toSet()
 
+                AppLogger.i("Duplicates", "Syncing duplicate resolutions: ${toDeleteSet.size} to delete, ${toKeepSet.size} to keep")
+
                 if (toDeleteSet.isNotEmpty()) {
                     val allAssets = _uiState.value.clusters.flatMap { it.assets }
                     val assetsToDelete = allAssets.filter { it.id in toDeleteSet }
@@ -284,6 +286,7 @@ class DuplicatesViewModel @Inject constructor(
                     }
                 }
                 
+                AppLogger.i("Duplicates", "Successfully synced duplicate deletions")
                 // Refresh list after successful deletion
                 fetchDuplicates()
             } catch (e: Exception) {

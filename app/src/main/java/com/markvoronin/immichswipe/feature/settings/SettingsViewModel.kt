@@ -51,7 +51,7 @@ class SettingsViewModel @Inject constructor(
                     userQuotaBytes = user.quotaUsageInBytes
                 )
             } catch (e: Exception) {
-                AppLogger.e("SettingsVM", "Erreur chargement user", e)
+                AppLogger.e("SettingsVM", "Error loading user", e)
             }
         }
     }

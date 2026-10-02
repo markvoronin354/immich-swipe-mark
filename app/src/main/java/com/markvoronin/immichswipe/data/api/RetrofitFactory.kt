@@ -38,17 +38,17 @@ object RetrofitFactory {
                         // Success response
                     }
                     401, 403 -> {
-                        AppLogger.e("Retrofit", "Erreur d'authentification (${response.code}) sur $urlPath")
+                        AppLogger.e("Retrofit", "Authentication error (${response.code}) on $urlPath")
                     }
                     404 -> {
-                        AppLogger.d("Retrofit", "Ressource non trouvée (404) sur $urlPath")
+                        AppLogger.d("Retrofit", "Resource not found (404) on $urlPath")
                     }
                     502, 503, 504 -> {
-                        AppLogger.e("Retrofit", "Serveur indisponible (${response.code}) sur $urlPath")
+                        AppLogger.e("Retrofit", "Server unavailable (${response.code}) on $urlPath")
                     }
                     else -> {
                         if (response.code >= 500) {
-                            AppLogger.w("Retrofit", "Erreur serveur (${response.code}) sur $urlPath")
+                            AppLogger.w("Retrofit", "Server error (${response.code}) on $urlPath")
                         }
                     }
                 }
@@ -65,7 +65,7 @@ object RetrofitFactory {
                         is IOException -> "NO_INTERNET"
                         else -> "CONNECTION_ERROR"
                     }
-                    AppLogger.e("Retrofit", "Erreur réseau ($statusStr) sur $urlPath: ${e.message}", e)
+                    AppLogger.e("Retrofit", "Network error ($statusStr) on $urlPath: ${e.message}", e)
                 }
                 throw e
             }

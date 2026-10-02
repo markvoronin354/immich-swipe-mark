@@ -380,6 +380,8 @@ class SwipeViewModel @Inject constructor(
         val currentState = _uiState.value
         val currentAsset = currentState.currentAsset ?: return
         
+        AppLogger.d("SwipeViewModel", "Swiped asset ${currentAsset.id}: $decision")
+
         // Optimistic UI update for immediate response
         val newDecisions = currentState.decisions.toMutableMap()
         newDecisions[currentAsset.id] = decision
@@ -642,6 +644,8 @@ class SwipeViewModel @Inject constructor(
                 val toDelete = currentDecisions.filter { it.value == SwipeDecision.DELETE }.keys.toList()
                 val allSwipedIds = currentDecisions.keys.toList()
                 
+                AppLogger.i("SwipeViewModel", "Applying changes: ${toDelete.size} to delete, ${currentState.keptCount} kept, ${currentState.archiveCount} archive, ${currentState.lockedCount} locked")
+
                 // 1. Delete on server (and local cache via AssetRepository)
                 if (toDelete.isNotEmpty()) {
                     assetRepository.deleteAssets(toDelete)
@@ -733,6 +737,7 @@ class SwipeViewModel @Inject constructor(
                 delay(2000)
                 _uiState.update { it.copy(showSuccessAnimation = false) }
             } catch (e: Exception) {
+                AppLogger.e("SwipeViewModel", "Error applying changes: ${e.message}", e)
                 _uiState.update { it.copy(isSyncing = false, error = e.message) }
             }
         }

@@ -380,9 +380,16 @@ class AssetRepository @Inject constructor(
 
     suspend fun deleteAssets(assetIds: List<String>) {
         if (assetIds.isNotEmpty()) {
-            api.deleteAssets(DeleteAssetsRequest(ids = assetIds, force = false))
-            assetIds.chunked(500).forEach { chunk ->
-                albumAssetDao?.deleteAssets(chunk)
+            AppLogger.i("AssetRepo", "Deleting ${assetIds.size} assets from Immich server...")
+            try {
+                api.deleteAssets(DeleteAssetsRequest(ids = assetIds, force = false))
+                assetIds.chunked(500).forEach { chunk ->
+                    albumAssetDao?.deleteAssets(chunk)
+                }
+                AppLogger.i("AssetRepo", "Successfully deleted ${assetIds.size} assets from Immich server")
+            } catch (e: Exception) {
+                AppLogger.e("AssetRepo", "Failed to delete ${assetIds.size} assets from Immich server: ${e.message}", e)
+                throw e
             }
         }
     }
@@ -393,13 +400,20 @@ class AssetRepository @Inject constructor(
         visibility: String? = null
     ) {
         if (assetIds.isNotEmpty()) {
-            api.updateAssets(
-                UpdateAssetsRequest(
-                    ids = assetIds,
-                    isFavorite = isFavorite,
-                    visibility = visibility
+            AppLogger.i("AssetRepo", "Updating ${assetIds.size} assets on Immich server (isFavorite=$isFavorite, visibility=$visibility)...")
+            try {
+                api.updateAssets(
+                    UpdateAssetsRequest(
+                        ids = assetIds,
+                        isFavorite = isFavorite,
+                        visibility = visibility
+                    )
                 )
-            )
+                AppLogger.i("AssetRepo", "Successfully updated ${assetIds.size} assets on Immich server")
+            } catch (e: Exception) {
+                AppLogger.e("AssetRepo", "Failed to update ${assetIds.size} assets on Immich server: ${e.message}", e)
+                throw e
+            }
         }
     }
 

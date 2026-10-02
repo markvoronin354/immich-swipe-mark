@@ -224,7 +224,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                AppLogger.d("Home", "Chargement des données utilisateur et albums")
+                AppLogger.d("Home", "Loading user data and albums")
                 
                 // 1. Récupération du profil utilisateur (très rapide)
                 val user = userRepository.getCurrentUser()
@@ -242,7 +242,7 @@ class HomeViewModel @Inject constructor(
                     // Albums : on récupère la liste brute immédiatement
                     val rawAlbums = albumRepository.getAlbumsRaw()
                     
-                    AppLogger.i("Home", "Liste brute des albums récupérée: ${rawAlbums.size}")
+                    AppLogger.i("Home", "Raw album list retrieved: ${rawAlbums.size}")
                     
                     _uiState.update { 
                         it.copy(
@@ -262,10 +262,10 @@ class HomeViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                AppLogger.e("Home", "Erreur lors du chargement initial", e)
+                AppLogger.e("Home", "Error during initial loading", e)
                 _uiState.update { 
                     it.copy(
-                        error = e.message ?: "Erreur de chargement", 
+                        error = e.message ?: "Loading error", 
                         isLoading = false
                     )
                 }
@@ -314,7 +314,7 @@ class HomeViewModel @Inject constructor(
                     _uiState.update { it.copy(isRefreshing = false, error = null) }
                 }
             } catch (e: Exception) {
-                AppLogger.e("Home", "Erreur refreshAlbums", e)
+                AppLogger.e("Home", "Error in refreshAlbums", e)
                 _uiState.update { it.copy(isRefreshing = false) }
             }
         }
