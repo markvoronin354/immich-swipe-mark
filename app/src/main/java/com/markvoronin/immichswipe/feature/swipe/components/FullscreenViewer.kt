@@ -317,9 +317,12 @@ fun FullscreenViewer(
                 val nextScale = 0.85f + (0.15f * swipeProgress)
                 val nextAlpha = (0.6f + (0.4f * swipeProgress)) * fadeAlpha
 
-                val nextPhotoRequest = remember(nextAsset.id, baseUrlClean, apiKeyLocal) {
+                val nextPhotoRequest = remember(nextAsset.id, baseUrlClean, apiKeyLocal, nextAsset.isGif) {
                     ImageRequest.Builder(context)
-                        .data("$baseUrlClean/api/assets/${nextAsset.id}/thumbnail?format=WEBP&size=preview&edited=true")
+                        .data(
+                            if (nextAsset.isGif) "$baseUrlClean/api/assets/${nextAsset.id}/original"
+                            else "$baseUrlClean/api/assets/${nextAsset.id}/thumbnail?format=WEBP&size=preview&edited=true"
+                        )
                         .addHeader("x-api-key", apiKeyLocal)
                         .memoryCacheKey("${nextAsset.id}-preview")
                         .placeholderMemoryCacheKey("${nextAsset.id}-preview")
@@ -574,9 +577,12 @@ fun FullscreenViewer(
                 ) {
                     val animatedRotation by animateFloatAsState(targetValue = rotation.toFloat(), label = "FullscreenRotation")
 
-                    val photoRequest = remember(asset.id, baseUrlClean, apiKeyLocal) {
+                    val photoRequest = remember(asset.id, baseUrlClean, apiKeyLocal, asset.isGif) {
                         ImageRequest.Builder(context)
-                            .data("$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview&edited=true")
+                            .data(
+                                if (asset.isGif) "$baseUrlClean/api/assets/${asset.id}/original"
+                                else "$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview&edited=true"
+                            )
                             .addHeader("x-api-key", apiKeyLocal)
                             .memoryCacheKey("${asset.id}-preview")
                             .placeholderMemoryCacheKey("${asset.id}-preview")

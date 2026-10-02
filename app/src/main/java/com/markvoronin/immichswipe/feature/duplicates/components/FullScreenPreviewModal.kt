@@ -319,9 +319,12 @@ fun FullScreenPreviewModal(
                     label = "PagePanY"
                 )
 
-                val imageRequest = remember(currentAsset.id, baseUrlClean, apiKey) {
+                val imageRequest = remember(currentAsset.id, baseUrlClean, apiKey, currentAsset.isGif) {
                     ImageRequest.Builder(context)
-                        .data("$baseUrlClean/api/assets/${currentAsset.id}/thumbnail?format=WEBP&size=preview")
+                        .data(
+                            if (currentAsset.isGif) "$baseUrlClean/api/assets/${currentAsset.id}/original"
+                            else "$baseUrlClean/api/assets/${currentAsset.id}/thumbnail?format=WEBP&size=preview"
+                        )
                         .addHeader("x-api-key", apiKey)
                         .crossfade(false)
                         .build()
@@ -530,9 +533,12 @@ fun FullScreenPreviewModal(
                                         selectedIndex = index
                                     }
                             ) {
-                                val thumbRequest = remember(asset.id, baseUrlClean, apiKey) {
+                                val thumbRequest = remember(asset.id, baseUrlClean, apiKey, asset.isGif) {
                                     ImageRequest.Builder(context)
-                                        .data("$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                                        .data(
+                                            if (asset.isGif) "$baseUrlClean/api/assets/${asset.id}/original"
+                                            else "$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview"
+                                        )
                                         .addHeader("x-api-key", apiKey)
                                         .crossfade(false)
                                         .build()

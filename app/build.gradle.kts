@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.coil.compose)
     implementation(libs.coil.video) // Pour les miniatures vidéo
+    implementation(libs.coil.gif) // Pour la lecture des GIFs animés
 
     // Media3 pour la lecture vidéo
     implementation(libs.media3.exoplayer)

@@ -406,6 +406,22 @@ fun DeletedAssetThumbnail(
                     .size(16.dp)
                     .background(Color.Black.copy(alpha = 0.4f), CircleShape)
             )
+        } else if (asset.isGif) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(4.dp)
+                    .background(Color.Black.copy(alpha = 0.65f), shape = RoundedCornerShape(3.dp))
+                    .padding(horizontal = 3.dp, vertical = 1.dp)
+            ) {
+                Text(
+                    text = "GIF",
+                    color = Color.White,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 10.sp
+                )
+            }
         }
 
         val assetSize = asset.exifInfo?.fileSizeInBytes ?: 0L
@@ -519,9 +535,12 @@ fun SummaryFullscreenPreviewDialog(
                             contentScale = ContentScale.Fit
                         )
                     } else {
-                        val photoRequest = remember(asset.id, baseUrlClean, apiKey) {
+                        val photoRequest = remember(asset.id, baseUrlClean, apiKey, asset.isGif) {
                             ImageRequest.Builder(context)
-                                .data("$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                                .data(
+                                    if (asset.isGif) "$baseUrlClean/api/assets/${asset.id}/original"
+                                    else "$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview"
+                                )
                                 .addHeader("x-api-key", apiKey)
                                 .crossfade(true)
                                 .build()

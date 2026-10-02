@@ -25,6 +25,10 @@ data class Asset(
 ) {
     val effectiveDate: String
         get() = exifInfo?.dateTimeOriginal?.takeIf { it.isNotBlank() } ?: fileCreatedAt
+
+    val isGif: Boolean
+        get() = fileExtension?.removePrefix(".")?.equals("gif", ignoreCase = true) == true ||
+                originalFileName?.endsWith(".gif", ignoreCase = true) == true
 }
 
 data class ExifInfo(

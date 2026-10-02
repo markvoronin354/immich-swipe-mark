@@ -80,6 +80,7 @@ class AssetRepository @Inject constructor(
                     fileCreatedAt = entity.fileCreatedAt ?: "",
                     type = entity.type ?: "IMAGE",
                     originalFileName = entity.originalFileName,
+                    fileExtension = entity.originalFileName?.substringAfterLast('.', "")?.takeIf { it.isNotEmpty() },
                     exifInfo = com.markvoronin.immichswipe.domain.model.ExifInfo(
                         fileSizeInBytes = entity.fileSizeInBytes,
                         imageWidth = entity.imageWidth,
@@ -269,6 +270,7 @@ class AssetRepository @Inject constructor(
                     fileCreatedAt = entity.fileCreatedAt ?: "",
                     type = entity.type ?: "IMAGE",
                     originalFileName = entity.originalFileName,
+                    fileExtension = entity.originalFileName?.substringAfterLast('.', "")?.takeIf { it.isNotEmpty() },
                     exifInfo = ExifInfo(
                         fileSizeInBytes = entity.fileSizeInBytes,
                         imageWidth = entity.imageWidth,

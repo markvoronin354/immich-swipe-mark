@@ -143,8 +143,10 @@ fun SwipeScreen(
                     )
                 } else {
                     // Preload Image to Coil RAM Cache
+                    val imageUrl = if (nextAsset.isGif) "$baseUrl/api/assets/${nextAsset.id}/original"
+                    else "$baseUrl/api/assets/${nextAsset.id}/thumbnail?format=WEBP&size=preview&edited=true"
                     val request = ImageRequest.Builder(localCtx)
-                        .data("$baseUrl/api/assets/${nextAsset.id}/thumbnail?format=WEBP&size=preview&edited=true")
+                        .data(imageUrl)
                         .addHeader("x-api-key", apiKey)
                         .memoryCacheKey("${nextAsset.id}-preview")
                         .memoryCachePolicy(CachePolicy.ENABLED)
@@ -340,7 +342,7 @@ fun SwipeScreen(
                 }
 
                 val body = response.body!!
-                val mimeType = if (asset.type == "VIDEO") "video/*" else "image/*"
+                val mimeType = if (asset.type == "VIDEO") "video/*" else if (asset.isGif) "image/gif" else "image/*"
 
                 try {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -452,7 +454,7 @@ fun SwipeScreen(
                     )
 
                     val intent = Intent(Intent.ACTION_SEND).apply {
-                        type = if (asset.type == "VIDEO") "video/*" else "image/*"
+                        type = if (asset.type == "VIDEO") "video/*" else if (asset.isGif) "image/gif" else "image/*"
                         putExtra(Intent.EXTRA_STREAM, contentUri)
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }

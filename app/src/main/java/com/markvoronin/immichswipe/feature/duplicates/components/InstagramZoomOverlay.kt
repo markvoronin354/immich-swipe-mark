@@ -132,9 +132,12 @@ fun InstagramZoomOverlay(
                 .clip(RoundedCornerShape(8.dp))
                 .border(3.dp, borderColor, RoundedCornerShape(8.dp))
         ) {
-            val imageRequest = remember(zoomData.asset.id, baseUrlClean, apiKey) {
+            val imageRequest = remember(zoomData.asset.id, baseUrlClean, apiKey, zoomData.asset.isGif) {
                 ImageRequest.Builder(context)
-                    .data("$baseUrlClean/api/assets/${zoomData.asset.id}/thumbnail?format=WEBP&size=preview")
+                    .data(
+                        if (zoomData.asset.isGif) "$baseUrlClean/api/assets/${zoomData.asset.id}/original"
+                        else "$baseUrlClean/api/assets/${zoomData.asset.id}/thumbnail?format=WEBP&size=preview"
+                    )
                     .addHeader("x-api-key", apiKey)
                     .crossfade(true)
                     .build()

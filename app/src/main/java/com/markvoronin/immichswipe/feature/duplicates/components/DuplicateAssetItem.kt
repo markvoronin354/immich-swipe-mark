@@ -161,9 +161,12 @@ fun DuplicateAssetItem(
                     }
                 }
         ) {
-            val imageRequest = remember(asset.id, baseUrlClean, apiKey) {
+            val imageRequest = remember(asset.id, baseUrlClean, apiKey, asset.isGif) {
                 ImageRequest.Builder(context)
-                    .data("$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                    .data(
+                        if (asset.isGif) "$baseUrlClean/api/assets/${asset.id}/original"
+                        else "$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview"
+                    )
                     .addHeader("x-api-key", apiKey)
                     .crossfade(true)
                     .build()
@@ -189,6 +192,21 @@ fun DuplicateAssetItem(
                         contentDescription = "Video",
                         tint = Color.White,
                         modifier = Modifier.size(16.dp)
+                    )
+                }
+            } else if (asset.isGif) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(6.dp)
+                        .background(Color.Black.copy(alpha = 0.6f), shape = RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "GIF",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }

@@ -639,9 +639,12 @@ fun SwipeCard(
                         )
                     }
                 } else {
-                    val photoRequest = remember(asset.id, baseUrl, apiKey) {
+                    val photoRequest = remember(asset.id, baseUrl, apiKey, asset.isGif) {
                         ImageRequest.Builder(context)
-                            .data("$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview&edited=true")
+                            .data(
+                                if (asset.isGif) "$baseUrl/api/assets/${asset.id}/original"
+                                else "$baseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview&edited=true"
+                            )
                             .addHeader("x-api-key", apiKey)
                             .memoryCacheKey("${asset.id}-preview")
                             .placeholderMemoryCacheKey("${asset.id}-preview")
