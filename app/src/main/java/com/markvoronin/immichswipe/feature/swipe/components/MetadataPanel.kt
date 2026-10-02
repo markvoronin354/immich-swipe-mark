@@ -51,7 +51,7 @@ fun MetadataPanel(
     asset: Asset,
     onClose: () -> Unit,
     onDrag: (Float) -> Unit = {},
-    onDragEnd: () -> Unit = {},
+    onDragEnd: (Float) -> Unit = {},
     panelProgress: Float = 0f,
     maxHeightPx: Float = 0f
 ) {
@@ -93,7 +93,8 @@ fun MetadataPanel(
             }
 
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-                onDragEnd()
+                val totalVelocityY = consumed.y + available.y
+                onDragEnd(totalVelocityY)
                 return super.onPostFling(consumed, available)
             }
         }
