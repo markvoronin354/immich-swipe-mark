@@ -48,7 +48,7 @@ data class SettingsUiState(
     val defaultCardDisplayMode: CardDisplayMode = CardDisplayMode.FIT,
     val showSwipeButtons: Boolean = false,
     val showArchiveButton: Boolean = true,
-    val showLockButton: Boolean = true,
+    val showLockButton: Boolean = false,
     val showAddToAlbumButton: Boolean = true,
     val syncLocalDeletion: Boolean = false,
     val trashLocalDeletion: Boolean = true,

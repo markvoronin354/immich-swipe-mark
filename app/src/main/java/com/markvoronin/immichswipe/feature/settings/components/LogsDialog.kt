@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.markvoronin.immichswipe.R
@@ -105,9 +107,9 @@ fun LogsDialog(
                     modifier = Modifier.verticalScroll(scroll)
                 )
 
-                if (rawLogs.isNotEmpty() && (scroll.maxValue > 0)) {
+                val isScrollable = remember { derivedStateOf { scroll.maxValue > 0 } }
+                if (rawLogs.isNotEmpty() && isScrollable.value) {
                     val indicatorHeightFraction = 0.1f
-                    val scrollFraction = scroll.value.toFloat() / scroll.maxValue
                     val availableHeight = maxHeight
                     
                     Box(
@@ -121,7 +123,9 @@ fun LogsDialog(
                             modifier = Modifier
                                 .fillMaxHeight(indicatorHeightFraction)
                                 .fillMaxWidth()
-                                .offset(y = availableHeight * (scrollFraction * (1f - indicatorHeightFraction)))
+                                .offset {
+                                    IntOffset(x = 0, y = (availableHeight.toPx() * (scroll.value.toFloat() / scroll.maxValue) * (1f - indicatorHeightFraction)).toInt())
+                                }
                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f), RoundedCornerShape(2.dp))
                         )
                     }

@@ -65,7 +65,7 @@ data class SwipeUiState(
     val cardDisplayMode: CardDisplayMode = CardDisplayMode.FIT,
     val showSwipeButtons: Boolean = false,
     val showArchiveButton: Boolean = true,
-    val showLockButton: Boolean = true,
+    val showLockButton: Boolean = false,
     val showAddToAlbumButton: Boolean = true,
     val showAddToAlbumDialog: Boolean = false,
     val albumsForAddToAlbum: List<Album> = emptyList(),

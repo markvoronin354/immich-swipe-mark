@@ -25,8 +25,11 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideSessionRepository(@ApplicationContext context: Context): SessionRepository {
-        return SessionRepository(context)
+    fun provideSessionRepository(
+        @ApplicationContext context: Context,
+        accountRepository: AccountRepository
+    ): SessionRepository {
+        return SessionRepository(context, accountRepository)
     }
 
     @Provides

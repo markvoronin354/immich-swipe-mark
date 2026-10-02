@@ -315,7 +315,12 @@ fun SettingsToggleItemSmall(
     ) {
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(12.dp))
-        Text(text = title, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f)
+        )
         Switch(
             checked = checked, 
             onCheckedChange = onCheckedChange,

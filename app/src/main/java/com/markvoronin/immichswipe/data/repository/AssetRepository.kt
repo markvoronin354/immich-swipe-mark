@@ -9,9 +9,7 @@ import com.markvoronin.immichswipe.data.api.AssetEditActionItem
 import com.markvoronin.immichswipe.data.api.DeleteAssetsRequest
 import com.markvoronin.immichswipe.data.api.EditAssetRequest
 import com.markvoronin.immichswipe.data.api.ImmichApi
-import com.markvoronin.immichswipe.data.api.RotateAssetRequest
 import com.markvoronin.immichswipe.data.api.SearchAssetsRequest
-import com.markvoronin.immichswipe.data.api.UpdateAssetDetailRequest
 import com.markvoronin.immichswipe.data.api.UpdateAssetsRequest
 import com.markvoronin.immichswipe.data.local.dao.AlbumAssetDao
 import com.markvoronin.immichswipe.data.local.entity.AlbumAssetEntity
@@ -19,8 +17,6 @@ import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.domain.model.ExifInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -28,6 +24,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
+import javax.inject.Inject
+import javax.inject.Singleton
 
 data class AssetBatch(
     val assets: List<Asset>,

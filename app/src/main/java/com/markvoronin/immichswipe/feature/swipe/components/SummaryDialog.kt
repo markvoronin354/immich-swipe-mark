@@ -252,7 +252,7 @@ fun SummaryDialog(
                 )
             }
         },
-        shape = RoundedCornerShape(32.dp)
+        shape = RoundedCornerShape(28.dp)
     )
 }
 
@@ -268,9 +268,9 @@ fun StatSummaryBox(
 ) {
     Surface(
         modifier = modifier.height(72.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         color = color.copy(alpha = 0.12f),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.25f))
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Box(modifier = Modifier.padding(10.dp)) {
             Icon(

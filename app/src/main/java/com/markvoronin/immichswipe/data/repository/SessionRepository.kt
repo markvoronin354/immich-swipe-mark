@@ -11,12 +11,12 @@ import com.markvoronin.immichswipe.core.SessionConfig
 import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.data.datastore.SessionDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Repository gérant la persistence de la session utilisateur.
@@ -24,10 +24,26 @@ import kotlinx.coroutines.flow.map
  */
 @Singleton
 class SessionRepository @Inject constructor(
-    @ApplicationContext context: Context
+    @ApplicationContext context: Context,
+    private val accountRepository: AccountRepository
 ) {
 
     private val dataStore = SessionDataStore(context)
+
+    /**
+     * Expose la liste des URLs de serveur sauvegardées.
+     */
+    val savedServerUrls: Flow<List<String>> = combine(
+        dataStore.getSavedServerUrls(),
+        accountRepository.allAccounts
+    ) { dataStoreUrls, accounts ->
+        val accountUrls = accounts.map { it.baseUrl }.toSet()
+        (dataStoreUrls + accountUrls)
+            .filter { it.isNotBlank() }
+            .map { it.trim().removeSuffix("/") }
+            .distinct()
+            .sorted()
+    }
 
     /**
      * Expose la configuration de session actuelle sous forme de Flow.
@@ -285,5 +301,13 @@ class SessionRepository @Inject constructor(
      */
     suspend fun clearSession() {
         dataStore.clearSession()
+    }
+
+    suspend fun saveRecentServerUrl(url: String) {
+        dataStore.saveRecentServerUrl(url)
+    }
+
+    suspend fun removeSavedServerUrl(url: String) {
+        dataStore.removeSavedServerUrl(url)
     }
 }

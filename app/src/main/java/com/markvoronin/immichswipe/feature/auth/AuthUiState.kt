@@ -18,5 +18,6 @@ data class AuthUiState(
     val apiKey: String = "",
     val isLoading: Boolean = false,
     val error: AuthError? = null,
-    val success: Boolean = false
+    val success: Boolean = false,
+    val savedServerUrls: List<String> = emptyList()
 )

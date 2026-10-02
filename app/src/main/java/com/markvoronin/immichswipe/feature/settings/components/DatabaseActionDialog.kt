@@ -17,14 +17,62 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.feature.settings.DatabaseAction
 import com.markvoronin.immichswipe.feature.settings.DatabaseScope
+
+@Composable
+fun AutoResizedText(
+    text: String,
+    modifier: Modifier = Modifier,
+    style: TextStyle = MaterialTheme.typography.titleLarge,
+    color: Color = Color.Unspecified,
+    fontWeight: FontWeight? = FontWeight.Bold
+) {
+    var resizedTextStyle by remember(text, style) { mutableStateOf(style) }
+    var shouldDraw by remember(text, style) { mutableStateOf(false) }
+
+    Text(
+        text = text,
+        color = color,
+        fontWeight = fontWeight,
+        modifier = modifier.drawWithContent {
+            if (shouldDraw) {
+                drawContent()
+            }
+        },
+        softWrap = false,
+        maxLines = 1,
+        style = resizedTextStyle,
+        onTextLayout = { result ->
+            if (result.didOverflowWidth) {
+                if (resizedTextStyle.fontSize.isSp && resizedTextStyle.fontSize.value > 12f) {
+                    resizedTextStyle = resizedTextStyle.copy(
+                        fontSize = (resizedTextStyle.fontSize.value * 0.9f).sp
+                    )
+                } else {
+                    shouldDraw = true
+                }
+            } else {
+                shouldDraw = true
+            }
+        }
+    )
+}
 
 @Composable
 fun DatabaseActionDialog(
@@ -43,7 +91,11 @@ fun DatabaseActionDialog(
                 DatabaseAction.EXPORT -> R.string.settings_db_confirm_export_title
                 DatabaseAction.IMPORT -> R.string.settings_db_confirm_import_title
             }
-            Text(stringResource(titleRes))
+            AutoResizedText(
+                text = stringResource(titleRes),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -57,7 +109,7 @@ fun DatabaseActionDialog(
                 if (action != DatabaseAction.IMPORT) {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = "Portée de l'opération :",
+                        text = stringResource(R.string.settings_db_scope_label),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary
                     )

@@ -3,9 +3,9 @@ package com.markvoronin.immichswipe.data.repository
 import com.markvoronin.immichswipe.data.local.dao.UserAccountDao
 import com.markvoronin.immichswipe.data.local.entity.UserAccountEntity
 import com.markvoronin.immichswipe.domain.model.User
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.flow.Flow
 
 @Singleton
 class AccountRepository @Inject constructor(private val userAccountDao: UserAccountDao) {

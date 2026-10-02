@@ -38,7 +38,7 @@
     <string name="home_status_completed">Terminés</string>
     <string name="home_status_virtual">Collections spéciales</string>
     <string name="home_album_completed">Terminé</string>
-    <string name="home_unsynced_changes">Contiene %1$d changements non synchronisés</string>
+    <string name="home_unsynced_changes">Contient %1$d changements non synchronisés</string>
     <string name="home_sorted_count">%1$d / %2$d triés</string>
     <string name="home_select_album">Sélectionnez un album pour commencer !</string>
     <string name="home_session_title">Session de tri : %1$s</string>
@@ -71,7 +71,7 @@
     <string name="settings_theme_system">Système</string>
     <string name="settings_theme_light">Clair</string>
     <string name="settings_theme_dark">Sombre</string>
-    <string name="settings_dynamic_color_label">Couleurs système (Material You)</string>
+    <string name="settings_dynamic_color_label">Couleurs système</string>
     <string name="settings_dynamic_color_desc">Utilise les couleurs de votre fond d\'écran et du système. Si désactivé, les couleurs par défaut de l\'app seront utilisées.</string>
     <string name="settings_layout_label">Affichage par défaut</string>
     <string name="settings_layout_list">Liste</string>
@@ -145,6 +145,9 @@
     <string name="add_to_album_success">Ajouté à %1$s</string>
     <string name="add_to_album_error">Erreur lors de l\'ajout à l\'album : %1$s</string>
     <string name="add_to_album_items_count">%1$d éléments</string>
+    <string name="add_to_album_lock_folder">Dossier verrouillé</string>
+    <string name="add_to_album_lock_subtitle">Placer dans le dossier verrouillé</string>
+    <string name="add_to_album_lock_success">Élément verrouillé</string>
     <string name="swipe_locked">Verrouiller</string>
     <string name="swipe_undo">Annuler</string>
     <string name="swipe_summary_title">Résumé du tri</string>
@@ -187,7 +190,10 @@
     <string name="duplicates_delete_button_title">Supprimer %1$d éléments marqués</string>
     <string name="duplicates_delete_frees_space">Libère %1$s</string>
     <string name="duplicates_delete_confirm_title">Supprimer les doublons ?</string>
-    <string name="duplicates_delete_confirm_msg">Cela supprimera définitivement %1$d photos (%2$s) de votre serveur Immich. Êtes-vous sûr ?</string>
+    <plurals name="duplicates_delete_confirm_msg">
+        <item quantity="one">Cela supprimera définitivement %1$d photo (%2$s) de votre serveur Immich. Êtes-vous sûr ?</item>
+        <item quantity="other">Cela supprimera définitivement %1$d photos (%2$s) de votre serveur Immich. Êtes-vous sûr ?</item>
+    </plurals>
     <string name="duplicates_reset_confirm_title">Réinitialiser les choix ?</string>
     <string name="duplicates_reset_confirm_msg">Cela effacera tous les choix locaux (GARDER/SUPPRIMER) pour les doublons.</string>
 
@@ -210,6 +216,7 @@
     <string name="settings_db_export_desc">Sauvegarder vos données dans un fichier JSON.</string>
     <string name="settings_db_import_label">Importer une base</string>
     <string name="settings_db_import_desc">Restaurer des données depuis un fichier JSON.</string>
+    <string name="settings_db_scope_label">Portée de l\'opération :</string>
     <string name="settings_db_scope_user">Uniquement mon compte (%1$s)</string>
     <string name="settings_db_scope_all">Tous les comptes (Total)</string>
     <string name="settings_db_confirm_delete_title">⚠️ SUPPRESSION DÉFINITIVE</string>
@@ -218,9 +225,15 @@
     <string name="settings_db_confirm_import_title">Importer les données</string>
     <string name="settings_db_confirm_import_msg">L\'importation va ajouter les données du fichier à votre base actuelle. Les décisions déjà existantes seront mises à jour.\n\nVoulez-vous continuer ?</string>
     <string name="settings_db_delete_success">Données supprimées avec succès</string>
-    <string name="settings_db_export_success">Export terminé (%1$d décisions)</string>
+    <plurals name="settings_db_export_success">
+        <item quantity="one">Export terminé (%1$d décision)</item>
+        <item quantity="other">Export terminé (%1$d décisions)</item>
+    </plurals>
     <string name="settings_db_export_error">Erreur export: %1$s</string>
-    <string name="settings_db_import_success">Import réussi (%1$d décisions)</string>
+    <plurals name="settings_db_import_success">
+        <item quantity="one">Import réussi (%1$d décision)</item>
+        <item quantity="other">Import réussi (%1$d décisions)</item>
+    </plurals>
     <string name="settings_db_import_error">Erreur import: %1$s</string>
 
     <!-- Débogage -->

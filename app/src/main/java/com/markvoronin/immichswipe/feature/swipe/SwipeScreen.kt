@@ -1,15 +1,12 @@
 package com.markvoronin.immichswipe.feature.swipe
 
-import android.app.DownloadManager
 import android.content.ContentValues
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
-import java.io.IOException
-import kotlinx.coroutines.withContext
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,7 +22,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,15 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.markvoronin.immichswipe.R
 import androidx.core.content.FileProvider
-import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -59,29 +52,28 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import coil.imageLoader
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.ConnectionLevel
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.core.cache.VideoCache
 import com.markvoronin.immichswipe.core.cache.VideoPreloader
-import com.markvoronin.immichswipe.data.repository.AssetRepository
-import com.markvoronin.immichswipe.data.repository.SessionRepository
-import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
 import com.markvoronin.immichswipe.domain.model.Album
+import com.markvoronin.immichswipe.feature.swipe.components.AddToAlbumDialog
 import com.markvoronin.immichswipe.feature.swipe.components.ResetConfirmationDialog
 import com.markvoronin.immichswipe.feature.swipe.components.SwipeActionBar
 import com.markvoronin.immichswipe.feature.swipe.components.SwipeBulkOverlay
 import com.markvoronin.immichswipe.feature.swipe.components.SwipeCardDeck
-import androidx.activity.compose.BackHandler
-import com.markvoronin.immichswipe.feature.swipe.components.AddToAlbumDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.File
+import java.io.IOException
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -597,10 +589,12 @@ fun SwipeScreen(
     if (uiState.showAddToAlbumDialog) {
         val successTemplate = stringResource(R.string.add_to_album_success)
         val errorTemplate = stringResource(R.string.add_to_album_error)
+        val lockSuccessMessage = stringResource(R.string.add_to_album_lock_success)
 
         AddToAlbumDialog(
             albums = uiState.albumsForAddToAlbum,
             isLoading = uiState.isFetchingAlbumsForDialog,
+            showLockButton = uiState.showLockButton,
             baseUrl = uiState.baseUrl,
             apiKey = uiState.apiKey,
             onAlbumSelect = { targetAlbum ->
@@ -613,6 +607,11 @@ fun SwipeScreen(
                     }
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 }
+            },
+            onLockSelect = {
+                viewModel.toggleLock()
+                viewModel.dismissAddToAlbumDialog()
+                Toast.makeText(context, lockSuccessMessage, Toast.LENGTH_SHORT).show()
             },
             onDismiss = { viewModel.dismissAddToAlbumDialog() }
         )

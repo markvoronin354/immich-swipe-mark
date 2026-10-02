@@ -5,11 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.data.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /**
  * ViewModel principal de l'application (niveau Activity).

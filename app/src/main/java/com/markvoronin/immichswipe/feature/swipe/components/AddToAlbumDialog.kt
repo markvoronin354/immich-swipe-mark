@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LibraryAdd
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
@@ -43,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -71,9 +73,11 @@ private fun String.normalizeForSearch(): String {
 fun AddToAlbumDialog(
     albums: List<Album>,
     isLoading: Boolean,
+    showLockButton: Boolean = false,
     baseUrl: String = "",
     apiKey: String = "",
     onAlbumSelect: (Album) -> Unit,
+    onLockSelect: (() -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -88,6 +92,20 @@ fun AddToAlbumDialog(
             albums.filter { album ->
                 album.albumName.normalizeForSearch().contains(queryNormalized)
             }
+        }
+    }
+
+    val lockFolderTitle = stringResource(R.string.add_to_album_lock_folder)
+    val showLockInDialog = !showLockButton && onLockSelect != null && remember(searchQuery, lockFolderTitle) {
+        val trimmed = searchQuery.trim()
+        if (trimmed.isEmpty()) {
+            true
+        } else {
+            val q = trimmed.normalizeForSearch()
+            lockFolderTitle.normalizeForSearch().contains(q) ||
+                    "lock".contains(q) ||
+                    "verrouil".contains(q) ||
+                    "bloque".contains(q)
         }
     }
 
@@ -149,12 +167,15 @@ fun AddToAlbumDialog(
 
                 Spacer(Modifier.height(16.dp))
 
+                val searchShape = RoundedCornerShape(16.dp)
+
                 // Search field styled like Settings search/input cards
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clip(searchShape)
                         .height(52.dp),
                     placeholder = {
                         Text(
@@ -184,7 +205,7 @@ fun AddToAlbumDialog(
                         }
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = searchShape,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -214,7 +235,7 @@ fun AddToAlbumDialog(
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
-                        filteredAlbums.isEmpty() -> {
+                        filteredAlbums.isEmpty() && !showLockInDialog -> {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
@@ -242,6 +263,12 @@ fun AddToAlbumDialog(
                                     .verticalFadingEdges(listState, length = 24.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
+                                if (showLockInDialog && onLockSelect != null) {
+                                    item(key = "locked_folder_item") {
+                                        LockedFolderSelectionItem(onClick = onLockSelect)
+                                    }
+                                }
+
                                 items(
                                     items = filteredAlbums,
                                     key = { it.id }
@@ -376,3 +403,67 @@ private fun AlbumSelectionItem(
         }
     }
 }
+
+@Composable
+private fun LockedFolderSelectionItem(
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.primary
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.add_to_album_lock_folder),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = stringResource(R.string.add_to_album_lock_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+    }
+}
+

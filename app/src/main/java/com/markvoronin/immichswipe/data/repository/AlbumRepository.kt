@@ -6,13 +6,13 @@ import com.markvoronin.immichswipe.data.api.AddAssetsToAlbumRequest
 import com.markvoronin.immichswipe.data.api.ImmichApi
 import com.markvoronin.immichswipe.data.api.SearchAssetsRequest
 import com.markvoronin.immichswipe.domain.model.Album
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Repository gérant la récupération des albums depuis le serveur Immich.

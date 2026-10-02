@@ -55,12 +55,12 @@ fun DuplicateAssetItem(
     asset: Asset,
     decision: DuplicateDecision,
     isBeingZoomed: Boolean,
-    baseUrl: String = "",
-    apiKey: String = "",
-    modifier: Modifier = Modifier,
     onToggle: () -> Unit,
     onLongPress: () -> Unit,
-    onZoomStateUpdate: (ZoomData?) -> Unit
+    onZoomStateUpdate: (ZoomData?) -> Unit,
+    modifier: Modifier = Modifier,
+    baseUrl: String = "",
+    apiKey: String = "",
 ) {
     val context = LocalContext.current
     val baseUrlClean = baseUrl.removeSuffix("/")
@@ -92,8 +92,8 @@ fun DuplicateAssetItem(
                 .graphicsLayer {
                     alpha = if (isBeingZoomed) 0f else 1f
                 }
-                .clip(RoundedCornerShape(8.dp))
-                .border(3.dp, borderColor, RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(14.dp))
+                .border(2.dp, borderColor, RoundedCornerShape(14.dp))
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onTap = { currentOnToggle() },

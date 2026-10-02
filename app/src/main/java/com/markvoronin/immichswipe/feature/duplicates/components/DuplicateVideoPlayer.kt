@@ -1,5 +1,6 @@
 package com.markvoronin.immichswipe.feature.duplicates.components
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
@@ -61,7 +62,7 @@ import coil.request.ImageRequest
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.cache.VideoCache
-import com.markvoronin.immichswipe.data.repository.SessionRepository
+import com.markvoronin.immichswipe.data.datastore.SessionDataStore
 import com.markvoronin.immichswipe.domain.model.Asset
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
@@ -76,8 +77,11 @@ fun DuplicateVideoPlayer(
     contentScale: ContentScale = ContentScale.Fit
 ) {
     val context = LocalContext.current
-    val sessionRepository = remember(context) { SessionRepository(context.applicationContext) }
-    val playbackBehavior by sessionRepository.playbackBehavior.collectAsState(initial = PlaybackBehavior.PAUSE_OTHERS)
+    val sessionDataStore = remember(context) { SessionDataStore(context.applicationContext) }
+    val playbackBehaviorStr by sessionDataStore.getAudioFocusMode().collectAsState(initial = null)
+    val playbackBehavior = remember(playbackBehaviorStr) {
+        playbackBehaviorStr?.let { try { PlaybackBehavior.valueOf(it) } catch(_: Exception) { PlaybackBehavior.PAUSE_OTHERS } } ?: PlaybackBehavior.PAUSE_OTHERS
+    }
     val handleAudioFocus = (playbackBehavior != PlaybackBehavior.IGNORE)
 
     val baseUrlClean = baseUrl.removeSuffix("/")
@@ -175,6 +179,7 @@ fun DuplicateVideoPlayer(
             modifier = Modifier.fillMaxSize()
         )
 
+        @SuppressLint("InflateParams")
         AndroidView(
             factory = { ctx ->
                 val view = LayoutInflater.from(ctx).inflate(R.layout.view_player_texture, null) as PlayerView

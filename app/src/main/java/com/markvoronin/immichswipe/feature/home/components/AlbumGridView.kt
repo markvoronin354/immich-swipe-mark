@@ -1,13 +1,11 @@
 package com.markvoronin.immichswipe.feature.home.components
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,7 +14,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,8 +26,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandMore
@@ -44,9 +43,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -68,6 +70,8 @@ import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.feature.home.AlbumStatus
 import com.markvoronin.immichswipe.feature.settings.components.verticalFadingEdges
 import com.markvoronin.immichswipe.ui.theme.VirtualGold
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,15 +81,17 @@ fun AlbumGrid(
     unsyncedChanges: Map<String, Int>,
     collapsedCategories: Set<AlbumStatus>,
     isRefreshing: Boolean,
-    baseUrl: String = "",
-    apiKey: String = "",
     onRefresh: () -> Unit,
     onAlbumClick: (Album) -> Unit,
-    onToggleCategory: (AlbumStatus) -> Unit
+    onToggleCategory: (AlbumStatus) -> Unit,
+    modifier: Modifier = Modifier,
+    baseUrl: String = "",
+    apiKey: String = "",
 ) {
     val state = rememberLazyGridState()
+    var expansionTimes by remember { mutableStateOf<Map<AlbumStatus, Long>>(emptyMap()) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize()) {
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = onRefresh,
@@ -101,91 +107,81 @@ fun AlbumGrid(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val statusOrder = listOf(AlbumStatus.IN_PROGRESS, AlbumStatus.NOT_STARTED, AlbumStatus.COMPLETED, AlbumStatus.VIRTUAL)
+                val statusOrder = listOf(
+                    AlbumStatus.IN_PROGRESS,
+                    AlbumStatus.NOT_STARTED,
+                    AlbumStatus.COMPLETED,
+                    AlbumStatus.VIRTUAL
+                )
 
                 statusOrder.forEach { status ->
                     val albumsInStatus = groupedAlbums[status]
                     if (!albumsInStatus.isNullOrEmpty()) {
                         val isCollapsed = collapsedCategories.contains(status)
-                        item(span = { GridItemSpan(maxLineSpan) }, key = "group_${status.name}") {
+
+                        item(
+                            span = { GridItemSpan(maxLineSpan) },
+                            key = "header_${status.name}"
+                        ) {
                             val statusLabel = when(status) {
                                 AlbumStatus.IN_PROGRESS -> stringResource(R.string.home_status_in_progress)
                                 AlbumStatus.NOT_STARTED -> stringResource(R.string.home_status_not_started)
                                 AlbumStatus.COMPLETED -> stringResource(R.string.home_status_completed)
                                 AlbumStatus.VIRTUAL -> stringResource(R.string.home_status_virtual)
                             }
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { onToggleCategory(status) }
-                                        .padding(top = 8.dp, bottom = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = statusLabel,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = if (status == AlbumStatus.VIRTUAL)
-                                            VirtualGold
-                                        else
-                                            MaterialTheme.colorScheme.primary
-                                    )
-                                    
-                                    val rotation by animateFloatAsState(
-                                        targetValue = if (isCollapsed) -90f else 0f,
-                                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
-                                        label = "chevronRotation"
-                                    )
-                                    Icon(
-                                        imageVector = Icons.Default.ExpandMore,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.outline,
-                                        modifier = Modifier.graphicsLayer { rotationZ = rotation }
-                                    )
-                                }
-
-                                AnimatedVisibility(
-                                    visible = !isCollapsed,
-                                    enter = expandVertically(
-                                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
-                                    ) + fadeIn(
-                                        animationSpec = tween(durationMillis = 300)
-                                    ),
-                                    exit = shrinkVertically(
-                                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
-                                    ) + fadeOut(
-                                        animationSpec = tween(durationMillis = 200)
-                                    )
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        albumsInStatus.chunked(3).forEach { rowAlbums ->
-                                            Row(
-                                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                rowAlbums.forEach { album ->
-                                                    AlbumGridItem(
-                                                        album = album,
-                                                        treatedCount = treatedCounts[album.id] ?: 0,
-                                                        unsyncedCount = unsyncedChanges[album.id] ?: 0,
-                                                        baseUrl = baseUrl,
-                                                        apiKey = apiKey,
-                                                        onClick = { onAlbumClick(album) },
-                                                        modifier = Modifier.weight(1f)
-                                                    )
-                                                }
-                                                repeat(3 - rowAlbums.size) {
-                                                    Spacer(modifier = Modifier.weight(1f))
-                                                }
-                                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        if (isCollapsed) {
+                                            expansionTimes = expansionTimes + (status to System.currentTimeMillis())
                                         }
+                                        onToggleCategory(status)
                                     }
-                                }
+                                    .padding(top = 8.dp, bottom = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = statusLabel,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = if (status == AlbumStatus.VIRTUAL)
+                                        VirtualGold
+                                    else
+                                        MaterialTheme.colorScheme.primary
+                                )
+                                
+                                val rotation by animateFloatAsState(
+                                    targetValue = if (isCollapsed) -90f else 0f,
+                                    animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+                                    label = "chevronRotation"
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ExpandMore,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.outline,
+                                    modifier = Modifier.graphicsLayer { rotationZ = rotation }
+                                )
+                            }
+                        }
+
+                        if (!isCollapsed) {
+                            itemsIndexed(
+                                items = albumsInStatus,
+                                key = { _, album -> "album_grid_${status.name}_${album.id}" }
+                            ) { index, album ->
+                                AlbumGridItem(
+                                    album = album,
+                                    treatedCount = treatedCounts[album.id] ?: 0,
+                                    unsyncedCount = unsyncedChanges[album.id] ?: 0,
+                                    baseUrl = baseUrl,
+                                    apiKey = apiKey,
+                                    itemIndex = index,
+                                    expansionTime = expansionTimes[status] ?: 0L,
+                                    onClick = { onAlbumClick(album) },
+                                    modifier = Modifier.animateItem()
+                                )
                             }
                         }
                     }
@@ -247,10 +243,12 @@ fun AlbumGridItem(
     album: Album,
     treatedCount: Int,
     unsyncedCount: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     baseUrl: String = "",
     apiKey: String = "",
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    itemIndex: Int = 0,
+    expansionTime: Long = 0L,
 ) {
     val context = LocalContext.current
     val baseUrlClean = baseUrl.removeSuffix("/")
@@ -258,15 +256,43 @@ fun AlbumGridItem(
     val isCompleted = album.assetCount in 1..treatedCount
     val hasUnsyncedChanges = unsyncedCount > 0
 
+    val isRecentExpansion = remember(album.id, expansionTime) {
+        val elapsed = System.currentTimeMillis() - expansionTime
+        expansionTime > 0L && elapsed < 400L
+    }
+
+    val alphaAnim = remember(album.id, expansionTime) { Animatable(if (isRecentExpansion) 0f else 1f) }
+    val translateYAnim = remember(album.id, expansionTime) { Animatable(if (isRecentExpansion) -16f else 0f) }
+
+    LaunchedEffect(album.id, expansionTime) {
+        if (isRecentExpansion) {
+            val row = itemIndex / 3
+            val col = itemIndex % 3
+            val delayMs = (row * 40 + col * 15).coerceAtMost(280)
+            delay(delayMs.toLong())
+            launch {
+                alphaAnim.animateTo(1f, tween(durationMillis = 220, easing = LinearOutSlowInEasing))
+            }
+            launch {
+                translateYAnim.animateTo(0f, tween(durationMillis = 220, easing = FastOutSlowInEasing))
+            }
+        }
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(0.8f)
+            .graphicsLayer {
+                alpha = alphaAnim.value
+                translationY = translateYAnim.value
+            }
             .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = MaterialTheme.shapes.medium
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = modifier.fillMaxSize()) {
             if (album.albumThumbnailAssetId != null && baseUrlClean.isNotEmpty()) {
                 val imageRequest = remember(album.albumThumbnailAssetId, baseUrlClean, apiKey) {
                     ImageRequest.Builder(context)

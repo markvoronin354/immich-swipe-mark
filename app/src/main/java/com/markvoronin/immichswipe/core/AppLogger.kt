@@ -19,7 +19,7 @@ object AppLogger {
     private const val MAX_FILE_SIZE = 1024 * 1024 // 1 MB
     
     private var logsDir: File? = null
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
 
     /**
      * Initialise le logger avec le contexte de l'application.

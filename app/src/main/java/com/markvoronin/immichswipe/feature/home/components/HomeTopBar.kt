@@ -39,7 +39,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
@@ -61,12 +60,8 @@ import com.markvoronin.immichswipe.feature.settings.SettingsSubMenu
 fun HomeTopBar(
     isHome: Boolean,
     isSwipeTab: Boolean,
-    isSettingsTab: Boolean = false,
-    activeSubMenu: SettingsSubMenu = SettingsSubMenu.NONE,
     user: User?,
     connectionStatus: ConnectionStatus,
-    baseUrl: String = "",
-    apiKey: String = "",
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onOpenStats: () -> Unit,
@@ -74,6 +69,10 @@ fun HomeTopBar(
     onSwipeReset: () -> Unit,
     onOpenProfile: () -> Unit,
     modifier: Modifier = Modifier,
+    isSettingsTab: Boolean = false,
+    activeSubMenu: SettingsSubMenu = SettingsSubMenu.NONE,
+    baseUrl: String = "",
+    apiKey: String = "",
     onBack: () -> Unit = {},
 ) {
     Column(modifier = modifier) {
@@ -217,12 +216,14 @@ fun HomeTopBar(
         )
 
         if (isHome) {
+            val searchShape = RoundedCornerShape(16.dp)
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .clip(searchShape)
                     .height(52.dp),
                 placeholder = { Text(stringResource(R.string.home_search_placeholder), fontSize = 13.sp) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
@@ -234,12 +235,12 @@ fun HomeTopBar(
                     }
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = searchShape,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent
+                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 ),
                 textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
             )

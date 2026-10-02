@@ -1,7 +1,5 @@
 package com.markvoronin.immichswipe.feature.duplicates.components
 
-import android.content.Intent
-import com.markvoronin.immichswipe.core.ImmichLauncher
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -73,12 +71,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.markvoronin.immichswipe.feature.settings.components.horizontalFadingEdges
-import androidx.core.net.toUri
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.markvoronin.immichswipe.core.ImmichLauncher
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.feature.duplicates.DuplicateDecision
+import com.markvoronin.immichswipe.feature.settings.components.horizontalFadingEdges
 import kotlin.math.abs
 
 @Composable

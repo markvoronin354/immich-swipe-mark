@@ -47,6 +47,8 @@
     <string name="home_virtual_all_assets_desc">Colección de toda su biblioteca (según sus derechos de acceso)</string>
     <string name="home_virtual_orphans">Huérfanos</string>
     <string name="home_virtual_orphans_desc">Colección de medios que no están en ningún álbum</string>
+    <string name="home_virtual_duplicates">Duplicados</string>
+    <string name="home_virtual_duplicates_desc">Fotos exactamente o casi idénticas encontradas por el servidor Immich</string>
     <string name="home_user_fallback">Usuario</string>
 
     <!-- Ventana de perfil y diagnóstico -->
@@ -68,7 +70,7 @@
     <string name="settings_theme_system">Sistema</string>
     <string name="settings_theme_light">Claro</string>
     <string name="settings_theme_dark">Oscuro</string>
-    <string name="settings_dynamic_color_label">Colores del sistema (Material You)</string>
+    <string name="settings_dynamic_color_label">Colores del sistema</string>
     <string name="settings_dynamic_color_desc">Utiliza los colores de tu fondo de pantalla y del sistema. Si está desactivado, se utilizarán los colores por defecto de la aplicación.</string>
     <string name="settings_layout_label">Diseño predeterminado</string>
     <string name="settings_layout_list">Lista</string>
@@ -123,7 +125,7 @@
     <string name="settings_show_add_to_album_label">Botón Añadir a un álbum</string>
     <string name="settings_show_swipe_buttons_label">Mostrar botones Keep/Delete</string>
     <string name="settings_show_archive_label">Botón Archivar</string>
-    <string name="settings_show_lock_label">Botón Bloquear</string>
+    <string name="settings_show_lock_label">Botón Bloquear dedicado</string>
     <string name="settings_sync_local_deletion_label">Sincronizar eliminación local</string>
     <string name="settings_sync_local_deletion_desc">Cuando eliminas una foto de Immich, también intenta eliminar el archivo local de tu dispositivo para evitar que se vuelva a subir.</string>
     <string name="swipe_rotate_asset">Rotar recurso 90°</string>
@@ -142,6 +144,9 @@
     <string name="add_to_album_success">Añadido a %1$s</string>
     <string name="add_to_album_error">Error al añadir al álbum: %1$s</string>
     <string name="add_to_album_items_count">%1$d elementos</string>
+    <string name="add_to_album_lock_folder">Carpeta bloqueada</string>
+    <string name="add_to_album_lock_subtitle">Mover a la carpeta bloqueada</string>
+    <string name="add_to_album_lock_success">Elemento bloqueado</string>
     <string name="swipe_locked">Bloquear</string>
     <string name="swipe_undo">Deshacer</string>
     <string name="swipe_summary_title">Resumen de ordenación</string>
@@ -152,7 +157,7 @@
     <string name="swipe_metadata_title">Detalles de la imagen</string>
     <string name="swipe_metadata_file">Archivo</string>
     <string name="swipe_metadata_date">Fecha</string>
-    <string name="swipe_metadata_format">Format</string>
+    <string name="swipe_metadata_format">Formato</string>
     <string name="swipe_metadata_size">Tamaño</string>
     <string name="swipe_metadata_resolution">Resolución</string>
     <string name="swipe_loading">Cargando…</string>
@@ -181,6 +186,15 @@
     <string name="swipe_reset_button">Reiniciar álbum</string>
     <string name="swipe_reset_confirm_title">¿Reiniciar ordenación?</string>
     <string name="swipe_reset_confirm_msg">Esto eliminará permanentemente todas las decisiones locales de este álbum. Las decisiones ya sincronizadas (KEEP/DELETE) en Immich NO se desharán en el servidor, pero se borrarán de tu progreso local en esta aplicación.</string>
+    <string name="duplicates_delete_button_title">Eliminar %1$d elementos marcados</string>
+    <string name="duplicates_delete_frees_space">Libera %1$s</string>
+    <string name="duplicates_delete_confirm_title">¿Eliminar fotos duplicadas?</string>
+    <plurals name="duplicates_delete_confirm_msg">
+        <item quantity="one">Esto eliminará permanentemente %1$d foto (%2$s) de tu servidor Immich. ¿Estás seguro?</item>
+        <item quantity="other">Esto eliminará permanentemente %1$d fotos (%2$s) de tu servidor Immich. ¿Estás seguro?</item>
+    </plurals>
+    <string name="duplicates_reset_confirm_title">¿Restablecer elecciones de duplicados?</string>
+    <string name="duplicates_reset_confirm_msg">Esto borrará todas las elecciones locales (CONSERVAR/ELIMINAR) para los grupos de duplicados.</string>
 
     <!-- Estadísticas -->
     <string name="stats_popup_title">Estadísticas de uso</string>
@@ -201,6 +215,7 @@
     <string name="settings_db_export_desc">Guardar sus datos en un archivo JSON.</string>
     <string name="settings_db_import_label">Importar base de datos</string>
     <string name="settings_db_import_desc">Restaurar datos desde un archivo JSON.</string>
+    <string name="settings_db_scope_label">Alcance de la operación:</string>
     <string name="settings_db_scope_user">Solo mi cuenta (%1$s)</string>
     <string name="settings_db_scope_all">Todas las cuentas (Total)</string>
     <string name="settings_db_confirm_delete_title">⚠️ ELIMINACIÓN PERMANENTE</string>
@@ -209,9 +224,15 @@
     <string name="settings_db_confirm_import_title">Importar datos</string>
     <string name="settings_db_confirm_import_msg">La importación agregará los datos del archivo a su base de datos actual. Las decisiones existentes se actualizarán.\n\n¿Desea continuar?</string>
     <string name="settings_db_delete_success">Datos eliminados con éxito</string>
-    <string name="settings_db_export_success">Exportación completada (%1$d decisiones)</string>
+    <plurals name="settings_db_export_success">
+        <item quantity="one">Exportación completada (%1$d decisión)</item>
+        <item quantity="other">Exportación completada (%1$d decisiones)</item>
+    </plurals>
     <string name="settings_db_export_error">Error al exportar: %1$s</string>
-    <string name="settings_db_import_success">Importación exitosa (%1$d decisiones)</string>
+    <plurals name="settings_db_import_success">
+        <item quantity="one">Importación exitosa (%1$d decisión)</item>
+        <item quantity="other">Importación exitosa (%1$d decisiones)</item>
+    </plurals>
     <string name="settings_db_import_error">Error al importar: %1$s</string>
 
     <!-- Depuración -->
@@ -228,7 +249,7 @@
     <string name="settings_clear_cache_desc">Eliminar archivos temporales, miniaturas e imágenes en caché</string>
     <string name="settings_clear_cache_success">Caché borrada con éxito</string>
     <string name="settings_clear_cache_confirm_title">¿Borrar caché?</string>
-    <string name="settings_clear_cache_confirm_msg">Esto eliminará tous les fichiers temporaires e imágenes en caché. Se volverán a descargar del servidor según sea necesario. ¿Desea continuar?</string>
+    <string name="settings_clear_cache_confirm_msg">Esto eliminará todos los archivos temporales e imágenes en caché. Se volverán a descargar del servidor según sea necesario. ¿Desea continuar?</string>
     <string name="settings_tap_to_swipe_label">Tocar para clasificar</string>
     <string name="settings_tap_to_swipe_desc">Toca el tercio izquierdo para eliminar y el tercio derecho para conservar. El tercio central permanece para los controles.</string>
 </resources>

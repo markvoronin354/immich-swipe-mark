@@ -28,10 +28,11 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,7 +46,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -86,13 +86,15 @@ fun ProfilePopup(
         onDismissRequest = onClose,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Card(
+        Surface(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .fillMaxHeight(0.85f)
                 .padding(16.dp),
-            shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 3.dp,
+            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
             val scrollState = rememberScrollState()
 
@@ -104,8 +106,8 @@ fun ProfilePopup(
                     .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(Modifier.height(24.dp))
-                // Header avec logo et bouton fermer
+                Spacer(Modifier.height(16.dp))
+                // Header with logo and close button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -120,7 +122,7 @@ fun ProfilePopup(
                     Image(
                         painter = painterResource(id = logoRes),
                         contentDescription = null,
-                        modifier = Modifier.height(24.dp),
+                        modifier = Modifier.height(22.dp),
                         contentScale = ContentScale.Fit
                     )
                     IconButton(onClick = onSettingsClick) {
@@ -130,10 +132,10 @@ fun ProfilePopup(
 
                 Spacer(Modifier.height(24.dp))
 
-                // Photo de profil grande
+                // Profile Avatar
                 val avatarColor = getAvatarColor(user?.avatarColor)
                 val profileModifier = Modifier
-                    .size(100.dp)
+                    .size(96.dp)
                     .border(3.dp, avatarColor, CircleShape)
                     .padding(4.dp)
                     .clip(CircleShape)
@@ -173,17 +175,17 @@ fun ProfilePopup(
                     color = MaterialTheme.colorScheme.outline
                 )
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(20.dp))
 
-                // Diagnostic de connexion
+                // Connection Diagnostic Card
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    color = connectionStatus.level.color.copy(alpha = 0.1f),
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, connectionStatus.level.color.copy(alpha = 0.3f))
+                    color = connectionStatus.level.color.copy(alpha = 0.1f),
+                    border = BorderStroke(1.dp, connectionStatus.level.color.copy(alpha = 0.4f))
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
@@ -191,37 +193,51 @@ fun ProfilePopup(
                                 .size(8.dp)
                                 .background(connectionStatus.level.color, CircleShape)
                         )
-                        Spacer(Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = when(connectionStatus.level) {
-                                    ConnectionLevel.ONLINE -> stringResource(R.string.diag_online)
-                                    ConnectionLevel.ISSUES -> stringResource(R.string.diag_issues)
-                                    ConnectionLevel.OFFLINE -> stringResource(R.string.diag_offline)
-                                },
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = connectionStatus.level.color
-                            )
-                        }
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text = when(connectionStatus.level) {
+                                ConnectionLevel.ONLINE -> stringResource(R.string.diag_online)
+                                ConnectionLevel.ISSUES -> stringResource(R.string.diag_issues)
+                                ConnectionLevel.OFFLINE -> stringResource(R.string.diag_offline)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = connectionStatus.level.color
+                        )
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
 
-                // Liste des comptes
-                Text(
-                    text = stringResource(R.string.profile_saved_accounts),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.align(Alignment.Start).padding(horizontal = 4.dp)
-                )
-                Spacer(Modifier.height(12.dp))
+                // Saved Accounts Section Header (SettingsSection style)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        Icons.Default.People,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.profile_saved_accounts),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
 
+                // Saved Accounts Card Container
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 2.dp,
+                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
                 ) {
                     Column {
                         savedAccounts.forEachIndexed { index, account ->
@@ -230,7 +246,7 @@ fun ProfilePopup(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable { if (!isCurrent) onSwitchAccount(account.userId) }
-                                    .padding(12.dp),
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 val acAvatarColor = getAvatarColor(account.avatarColor)
@@ -252,7 +268,7 @@ fun ProfilePopup(
                                     )
                                     if (isCurrent) {
                                         Surface(
-                                            modifier = Modifier.size(10.dp),
+                                            modifier = Modifier.size(12.dp),
                                             color = MaterialTheme.colorScheme.primary,
                                             shape = CircleShape,
                                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.surface)
@@ -266,80 +282,88 @@ fun ProfilePopup(
                                     Text(
                                         text = account.userName ?: "User",
                                         style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
+                                        fontWeight = FontWeight.Medium
                                     )
                                     Text(
                                         text = account.userEmail,
-                                        style = MaterialTheme.typography.labelSmall,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.outline,
                                         maxLines = 1
                                     )
                                 }
                                 
-                                IconButton(
-                                    onClick = { onRemoveAccount(account.userId) },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DeleteOutline,
-                                        contentDescription = "Remove",
-                                        tint = MaterialTheme.colorScheme.outline,
-                                        modifier = Modifier.size(18.dp)
-                                    )
+                                if (!isCurrent) {
+                                    IconButton(
+                                        onClick = { onRemoveAccount(account.userId) },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.DeleteOutline,
+                                            contentDescription = "Remove",
+                                            tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
                                 }
                             }
                             if (index < savedAccounts.size - 1) {
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                             }
                         }
                         
-                        HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                         
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onAddAccount() }
-                                .padding(12.dp),
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 Icons.Default.PersonAdd, 
                                 null, 
-                                modifier = Modifier.size(32.dp).padding(4.dp),
+                                modifier = Modifier.size(18.dp),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                             Spacer(Modifier.width(12.dp))
                             Text(
                                 text = stringResource(R.string.profile_add_account),
                                 style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(20.dp))
 
-                // Actions (Logout)
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                // Logout Action Button (Settings style)
+                Button(
+                    onClick = onLogout,
+                    modifier = Modifier.fillMaxWidth().height(44.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    PopupActionItem(
-                        icon = Icons.AutoMirrored.Filled.Logout,
-                        text = stringResource(R.string.profile_logout_button),
-                        onClick = onLogout,
-                        color = MaterialTheme.colorScheme.error
+                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        stringResource(R.string.profile_logout_button),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(12.dp))
 
-                // Lien Code Source
+                // Source Code Link
                 Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .clickable {
                             val intent = Intent(
                                 Intent.ACTION_VIEW,
@@ -347,7 +371,7 @@ fun ProfilePopup(
                             )
                             context.startActivity(intent)
                         }
-                        .padding(8.dp),
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -356,16 +380,16 @@ fun ProfilePopup(
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(6.dp))
                     Text(
                         text = stringResource(R.string.profile_source_code),
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                 }
 
-                // Version de l'application
+                // Application version
                 val packageInfo = remember {
                     try {
                         context.packageManager.getPackageInfo(context.packageName, 0)
@@ -379,30 +403,10 @@ fun ProfilePopup(
                     text = "v$versionName",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = 8.dp)
                 )
                 Spacer(Modifier.height(24.dp))
             }
         }
-    }
-}
-
-@Composable
-fun PopupActionItem(
-    icon: ImageVector,
-    text: String,
-    onClick: () -> Unit,
-    color: Color = MaterialTheme.colorScheme.onSurface
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(16.dp))
-        Text(text = text, style = MaterialTheme.typography.bodyLarge, color = color)
     }
 }

@@ -1,13 +1,11 @@
 package com.markvoronin.immichswipe.feature.swipe
 
 import android.content.res.Configuration
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -199,6 +197,7 @@ fun SharedVideoPlayer(
                     }
 
                     key(isFullscreen) { // Only re-create AndroidView when switching to/from fullscreen. DO NOT key by assetId.
+                        @SuppressLint("InflateParams")
                         AndroidView(
                             factory = { context ->
                                 AppLogger.d("VideoPlayer", "AndroidView Factory: isFullscreen=$isFullscreen, asset=$assetId")

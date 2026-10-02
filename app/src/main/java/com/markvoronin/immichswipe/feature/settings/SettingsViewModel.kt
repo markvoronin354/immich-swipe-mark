@@ -17,7 +17,6 @@ import com.markvoronin.immichswipe.data.repository.SessionRepository
 import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
 import com.markvoronin.immichswipe.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +24,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.InputStream
 import java.io.OutputStream
+import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -429,7 +429,7 @@ class SettingsViewModel @Inject constructor(
                 outputStream.use { it.write(json.toByteArray()) }
 
                 _uiState.value = _uiState.value.copy(
-                    databaseActionStatus = context.getString(R.string.settings_db_export_success, decisions.size)
+                    databaseActionStatus = context.resources.getQuantityString(R.plurals.settings_db_export_success, decisions.size, decisions.size)
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -450,7 +450,7 @@ class SettingsViewModel @Inject constructor(
                 swipeDecisionRepository.importData(export.swipeDecisions, export.syncHistory)
 
                 _uiState.value = _uiState.value.copy(
-                    databaseActionStatus = context.getString(R.string.settings_db_import_success, export.swipeDecisions.size)
+                    databaseActionStatus = context.resources.getQuantityString(R.plurals.settings_db_import_success, export.swipeDecisions.size, export.swipeDecisions.size)
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(

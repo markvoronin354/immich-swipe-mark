@@ -70,7 +70,7 @@
     <string name="settings_theme_system">System</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
-    <string name="settings_dynamic_color_label">System colors (Material You)</string>
+    <string name="settings_dynamic_color_label">System colors</string>
     <string name="settings_dynamic_color_desc">Use colors from your wallpaper and system theme. If disabled, the default app colors will be used.</string>
     <string name="settings_layout_label">Default homepage layout</string>
     <string name="settings_layout_list">List</string>
@@ -125,7 +125,7 @@
     <string name="settings_show_add_to_album_label">Add to album button</string>
     <string name="settings_show_swipe_buttons_label">Keep/Delete buttons</string>
     <string name="settings_show_archive_label">Archive button</string>
-    <string name="settings_show_lock_label">Lock button</string>
+    <string name="settings_show_lock_label">Dedicated lock button</string>
     <string name="settings_sync_local_deletion_label">Sync deletion with device</string>
     <string name="settings_sync_local_deletion_desc">When you delete a photo from Immich, also attempt to delete the local file from your device storage to prevent re-uploading.</string>
     <string name="swipe_rotate_asset">Rotate asset 90° clockwise</string>
@@ -146,6 +146,9 @@
     <string name="add_to_album_success">Added to %1$s</string>
     <string name="add_to_album_error">Error adding to album: %1$s</string>
     <string name="add_to_album_items_count" tools:ignore="PluralsCandidate">%1$d items</string>
+    <string name="add_to_album_lock_folder">Locked folder</string>
+    <string name="add_to_album_lock_subtitle">Move asset to locked folder</string>
+    <string name="add_to_album_lock_success">Asset locked</string>
     <string name="swipe_summary_title">Sorting summary</string>
     <string name="swipe_sync_success">Synced!</string>
     <string name="swipe_sync_success_desc">Your changes are on Immich</string>
@@ -186,7 +189,10 @@
     <string name="duplicates_delete_button_title">Delete %1$d marked items</string>
     <string name="duplicates_delete_frees_space">Frees up %1$s</string>
     <string name="duplicates_delete_confirm_title">Delete Duplicate Photos?</string>
-    <string name="duplicates_delete_confirm_msg">This will permanently delete %1$d photos (%2$s) from your Immich server. Are you sure?</string>
+    <plurals name="duplicates_delete_confirm_msg">
+        <item quantity="one">This will permanently delete %1$d photo (%2$s) from your Immich server. Are you sure?</item>
+        <item quantity="other">This will permanently delete %1$d photos (%2$s) from your Immich server. Are you sure?</item>
+    </plurals>
     <string name="duplicates_reset_confirm_title">Reset Duplicate Choices?</string>
     <string name="duplicates_reset_confirm_msg">This will clear all local KEEP/DELETE choices for duplicate clusters.</string>
 
@@ -209,6 +215,7 @@
     <string name="settings_db_export_desc">Save your data to a JSON file.</string>
     <string name="settings_db_import_label">Import database</string>
     <string name="settings_db_import_desc">Restore data from a JSON file.</string>
+    <string name="settings_db_scope_label">Operation scope:</string>
     <string name="settings_db_scope_user">Only my account (%1$s)</string>
     <string name="settings_db_scope_all">All accounts (Total)</string>
     <string name="settings_db_confirm_delete_title">⚠️ PERMANENT DELETION</string>
@@ -217,9 +224,15 @@
     <string name="settings_db_confirm_import_title">Import data</string>
     <string name="settings_db_confirm_import_msg">Importing will add the file data to your current database. Existing decisions will be updated.\n\nDo you want to continue?</string>
     <string name="settings_db_delete_success">Data deleted successfully</string>
-    <string name="settings_db_export_success">Export completed (%1$d decisions)</string>
+    <plurals name="settings_db_export_success">
+        <item quantity="one">Export completed (%1$d decision)</item>
+        <item quantity="other">Export completed (%1$d decisions)</item>
+    </plurals>
     <string name="settings_db_export_error">Export error: %1$s</string>
-    <string name="settings_db_import_success">Import successful (%1$d decisions)</string>
+    <plurals name="settings_db_import_success">
+        <item quantity="one">Import successful (%1$d decision)</item>
+        <item quantity="other">Import successful (%1$d decisions)</item>
+    </plurals>
     <string name="settings_db_import_error">Import error: %1$s</string>
 
     <!-- Debugging -->
@@ -238,5 +251,5 @@
     <string name="settings_clear_cache_confirm_title">Clear App Cache?</string>
     <string name="settings_clear_cache_confirm_msg">This will delete all temporary files and cached images. They will be re-downloaded from the server as needed. Do you want to proceed?</string>
     <string name="settings_tap_to_swipe_label">Tap to swipe</string>
-    <string name="settings_tap_to_swipe_desc">Tap the left 1/3 of the card to delete, and the right 1/3 to keep. Middle 1/3 remains for controls.</string>
+    <string name="settings_tap_to_swipe_desc">Tap the left ⅓ of the card to delete, and the right ⅓ to keep. Middle ⅓ remains for controls.</string>
 </resources>

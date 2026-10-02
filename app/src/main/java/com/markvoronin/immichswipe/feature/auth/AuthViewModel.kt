@@ -9,11 +9,11 @@ import com.markvoronin.immichswipe.data.repository.AccountRepository
 import com.markvoronin.immichswipe.data.repository.AuthRepository
 import com.markvoronin.immichswipe.data.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /**
  * ViewModel gérant la logique de l'écran de connexion.
@@ -34,6 +34,7 @@ class AuthViewModel @Inject constructor(
         // On observe la session : si elle devient null (déconnexion), 
         // on réinitialise l'état du formulaire de login.
         observeSessionReset()
+        observeSavedServerUrls()
     }
 
     private fun observeSessionReset() {
@@ -46,6 +47,14 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    private fun observeSavedServerUrls() {
+        viewModelScope.launch {
+            sessionRepository.savedServerUrls.collect { urls ->
+                _uiState.value = _uiState.value.copy(savedServerUrls = urls)
+            }
+        }
+    }
+
     fun onBaseUrlChange(value: String) {
         _uiState.value = _uiState.value.copy(baseUrl = value)
     }
@@ -54,18 +63,26 @@ class AuthViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(apiKey = value)
     }
 
+    fun removeSavedServerUrl(url: String) {
+        viewModelScope.launch {
+            sessionRepository.removeSavedServerUrl(url)
+        }
+    }
+
     /**
      * Remet l'état à zéro (utile après une déconnexion).
      */
     fun resetState() {
-        _uiState.value = AuthUiState()
+        val currentSavedUrls = _uiState.value.savedServerUrls
+        _uiState.value = AuthUiState(savedServerUrls = currentSavedUrls)
     }
 
     /**
      * Vide tous les champs de texte du formulaire.
      */
     fun clearAllFields() {
-        _uiState.value = AuthUiState()
+        val currentSavedUrls = _uiState.value.savedServerUrls
+        _uiState.value = AuthUiState(savedServerUrls = currentSavedUrls)
     }
 
     /**
@@ -74,7 +91,7 @@ class AuthViewModel @Inject constructor(
      */
     fun prepareForAddAccount(defaultBaseUrl: String? = null) {
         val initialUrl = defaultBaseUrl?.takeIf { it.isNotEmpty() } ?: _uiState.value.baseUrl
-        _uiState.value = AuthUiState(
+        _uiState.value = _uiState.value.copy(
             baseUrl = initialUrl,
             apiKey = "",
             isLoading = false,
@@ -110,9 +127,10 @@ class AuthViewModel @Inject constructor(
                 val config = SessionConfig(baseUrl = baseUrl, apiKey = apiKey, userId = user.id)
                 sessionManager.initialize(config)
 
-                // 3. On sauvegarde le compte dans la base locale et la session active
+                // 3. On sauvegarde le compte dans la base locale, la session active et l'historique des URLs
                 accountRepository.saveAccount(baseUrl, apiKey, user)
                 sessionRepository.saveSession(baseUrl = baseUrl, token = apiKey, userId = user.id)
+                sessionRepository.saveRecentServerUrl(baseUrl)
 
                 _uiState.value = _uiState.value.copy(isLoading = false, success = true)
 

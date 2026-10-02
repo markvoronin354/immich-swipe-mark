@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -17,6 +18,7 @@ class SessionDataStore(private val context: Context) {
         private val KEY_BASE_URL = stringPreferencesKey("base_url")
         private val KEY_API_KEY = stringPreferencesKey("api_key")
         private val KEY_USER_ID = stringPreferencesKey("user_id")
+        private val KEY_SAVED_SERVER_URLS = stringSetPreferencesKey("saved_server_urls")
         private val KEY_AUDIO_FOCUS = stringPreferencesKey("audio_focus")
         private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
         private val KEY_DYNAMIC_COLOR = androidx.datastore.preferences.core.booleanPreferencesKey("dynamic_color")
@@ -68,6 +70,26 @@ class SessionDataStore(private val context: Context) {
 
     fun getUserId(): Flow<String?> {
         return context.dataStore.data.map { it[KEY_USER_ID] }
+    }
+
+    fun getSavedServerUrls(): Flow<Set<String>> {
+        return context.dataStore.data.map { it[KEY_SAVED_SERVER_URLS] ?: emptySet() }
+    }
+
+    suspend fun saveRecentServerUrl(url: String) {
+        if (url.isBlank()) return
+        val cleanUrl = url.trim().removeSuffix("/")
+        context.dataStore.edit { prefs ->
+            val current = prefs[KEY_SAVED_SERVER_URLS] ?: emptySet()
+            prefs[KEY_SAVED_SERVER_URLS] = current + cleanUrl
+        }
+    }
+
+    suspend fun removeSavedServerUrl(url: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[KEY_SAVED_SERVER_URLS] ?: emptySet()
+            prefs[KEY_SAVED_SERVER_URLS] = current - url
+        }
     }
 
     fun getAudioFocusMode(): Flow<String?> {
@@ -185,7 +207,7 @@ class SessionDataStore(private val context: Context) {
     fun isShowArchiveButton(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_ARCHIVE] ?: true }
     suspend fun saveShowArchiveButton(show: Boolean) { context.dataStore.edit { it[KEY_SHOW_ARCHIVE] = show } }
 
-    fun isShowLockButton(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_LOCK] ?: true }
+    fun isShowLockButton(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_LOCK] ?: false }
     suspend fun saveShowLockButton(show: Boolean) { context.dataStore.edit { it[KEY_SHOW_LOCK] = show } }
 
     fun isShowAddToAlbumButton(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_ADD_TO_ALBUM] ?: true }
