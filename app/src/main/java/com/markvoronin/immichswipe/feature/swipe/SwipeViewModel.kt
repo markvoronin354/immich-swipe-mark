@@ -640,6 +640,8 @@ class SwipeViewModel @Inject constructor(
             try {
                 val currentDecisions = currentState.decisions
                 val toDelete = currentDecisions.filter { it.value == SwipeDecision.DELETE }.keys.toList()
+                val toArchive = currentDecisions.filter { it.value == SwipeDecision.ARCHIVE }.keys.toList()
+                val toLock = currentDecisions.filter { it.value == SwipeDecision.LOCK }.keys.toList()
                 val allSwipedIds = currentDecisions.keys.toList()
                 
                 // 1. Delete on server (and local cache via AssetRepository)
@@ -648,8 +650,16 @@ class SwipeViewModel @Inject constructor(
                     // Also delete these decisions from local DB as they are no longer relevant
                     swipeDecisionRepository.removeDecisions(toDelete, config.userId)
                 }
+
+                // 2. Sync Archive and Lock decisions to Immich server
+                if (toArchive.isNotEmpty()) {
+                    assetRepository.updateAssets(toArchive, visibility = "archive")
+                }
+                if (toLock.isNotEmpty()) {
+                    assetRepository.updateAssets(toLock, visibility = "locked")
+                }
                 
-                // 2. Mark remaining decisions as synced in DB (KEPT, ARCHIVE, LOCK)
+                // 3. Mark remaining decisions as synced in DB (KEPT, ARCHIVE, LOCK)
                 val toMarkSynced = allSwipedIds.filter { it !in toDelete }
                 if (toMarkSynced.isNotEmpty()) {
                     swipeDecisionRepository.markAsSynced(toMarkSynced, config.userId)
