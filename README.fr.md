@@ -5,21 +5,19 @@
 ![Kotlin](https://img.shields.io/badge/langage-Kotlin-purple)
 ![Android](https://img.shields.io/badge/plateforme-Android-green)
 
-[English version here](README.md)
+[English version available here](README.md)
 
 Immich Swipe est une application Android open-source conçue pour faciliter le tri de vos photos et vidéos hébergées sur votre serveur [Immich](https://immich.app/).
 
-Inspirée par l'application [Sponge](https://play.google.com/store/apps/details?id=com.prismtree.sponge&pcampaignid=web_share) (concept similaire pour les fichiers locaux), elle vous permet de trier rapidement vos médias par de simples gestes de balayage (swipe), avec une interface fluide et moderne.
+Ce projet est un fork basé sur le projet original [Minos2020/immich-swipe-android](https://github.com/Minos2020/immich-swipe-android).
 
-> **Note** : Ce projet est né d'un besoin personnel et a été développé avec l'aide de l'IA. Bien que je ne sois pas développeur de métier, j'accorde une grande importance à la stabilité et à l'expérience utilisateur.
->
 > **Avertissement** : Ce projet est indépendant et n'est affilié d'aucune façon avec le projet officiel Immich.
 
 ## 📸 Aperçu
 
 |                                         Écran d'accueil                                         |                                     La pile de tri                                      |                                        Mode Revue                                        |
 |:-----------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------:|
-| <img src="metadata/en-US/images/phoneScreenshots/01_Light_HomeScreen_GridView.png" width="200"> | <img src="metadata/en-US/images/phoneScreenshots/02_Light_SwipeScreen.png" width="200"> | <img src="metadata/en-US/images/phoneScreenshots/03_Light_ReviewScreen.png" width="200"> |
+| <img src="metadata/en-US/images/phoneScreenshots/10_Light_HomeScreen_Listview.jpg" width="200"> | <img src="metadata/en-US/images/phoneScreenshots/09_Dark_SwipeScreen.jpg" width="200"> | <img src="metadata/en-US/images/phoneScreenshots/11_Dark_ReviewScreen.jpg" width="200"> |
 |                                     *Parcourez vos albums*                                      |                                  *Swipez pour décider*                                  |                              *Vérifiez avant de supprimer*                               |
 
 <details>
@@ -27,43 +25,53 @@ Inspirée par l'application [Sponge](https://play.google.com/store/apps/details?
 
 |                                        Écran d'accueil                                         |                                     La pile de tri                                     |                                       Mode Revue                                        |                                       Paramètres                                       |
 |:----------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------:|
-| <img src="metadata/en-US/images/phoneScreenshots/05_Dark_HomeScreen_GridView.png" width="200"> | <img src="metadata/en-US/images/phoneScreenshots/07_Dark_SwipeScreen.png" width="200"> | <img src="metadata/en-US/images/phoneScreenshots/08_Dark_ReviewScreen.png" width="200"> | <img src="metadata/en-US/images/phoneScreenshots/Dark_SettingsScreen.png" width="200"> |
+| <img src="metadata/en-US/images/phoneScreenshots/05_Dark_HomeScreen_GridView.png" width="200"> | <img src="metadata/en-US/images/phoneScreenshots/07_Dark_SwipeScreen.png" width="200"> | <img src="metadata/en-US/images/phoneScreenshots/08_Dark_ReviewScreen.jpg" width="200"> | <img src="metadata/en-US/images/phoneScreenshots/Dark_SettingsScreen.png" width="200"> |
 
 </details>
 
 ## ✨ Fonctionnalités
 
-- **🚀 Pile de tri Rapide** : Swipez à droite pour garder, à gauche pour supprimer. Les médias triés disparaissent de la timeline en temps réel pour une expérience fluide.
-- **🕒 Snooze (SKIP)** : Un doute ? Passez-le (SKIP). Les médias réapparaissent automatiquement après un délai configurable (1 jour, 1 mois, ou jamais).
-- **📁 Collections (Albums Virtuels)** : Accédez à des groupes spéciaux comme la **Collection SKIPs** pour revoir tous vos médias passés au même endroit.
-- **📊 Statistiques Globales** : Visualisez votre progression avec des statistiques détaillées et une répartition de vos actions de tri.
-- **🛡️ Mode Revue Avancé** : Vérifiez toutes vos décisions (supprimer, garder, archiver, verrouiller) et estimez l'espace libéré avant la synchronisation avec Immich.
-- **🔄 Support Multi-Comptes** : Déconnectez-vous et changez d'utilisateur facilement ; vos décisions locales et votre progression sont conservées pour chaque compte.
-- **🗃️ Gestion de la Base de Données** : Exportez, importez ou videz votre base locale (globalement ou par utilisateur) pour sauvegarder vos données.
-- **🚦 Diagnostic de Connexion** : Indicateur en temps réel, support HTTP et IP directes, et accès aux journaux (logs) pour faciliter le dépannage.
+- **🚀 Pile de tri Rapide** : Swipez à droite pour garder, à gauche pour supprimer, ou vers le haut pour des actions personnalisées (Archiver, Favori, Verrouiller, Ajouter à un album). Les médias triés disparaissent de la timeline en temps réel.
+- **👯 Recherche et Gestion des Doublons** : Détectez et gérez vos doublons photo avec comparaison côte à côte, prévisualisation zoomée, lecture vidéo et analyse des détails de format.
+- **📁 Collections (Albums Virtuels)** : Accédez à des groupes spéciaux comme **TOUS**, **Orphelins** (photos hors album), et **Doublons**.
+- **📊 Statistiques d'Utilisation** : Visualisez votre progression et le détail de vos actions de tri.
+- **🛡️ Mode Revue Avancé** : Vérifiez vos décisions (Supprimer, Garder, Archiver, Favori, Verrouiller) et estimez l'espace libéré avant la synchronisation avec votre serveur Immich.
+- **⚙️ Actions et Gestes Personnalisables** : Personnalisez vos boutons d'action, les seuils de balayage, les retours vibratoires, l'avancement automatique et la lecture auto des vidéos.
+- **🔄 Support Multi-Comptes** : Changez d'utilisateur facilement ; vos décisions locales et votre progression sont sauvegardées séparément pour chaque compte.
+- **🗃️ Gestion de la Base de Données et Cache** : Exportez, importez ou videz votre base locale (format JSON) et gérez le cache d'images et de vidéos.
+- **🚦 Diagnostic de Connexion** : Indicateur de statut en temps réel, support HTTP et IP directes, et accès aux journaux (logs) intégrés.
 - **🎨 Interface Moderne** : Développée avec Jetpack Compose et Material Design 3, disponible en Français, Anglais et Espagnol.
 
-## ⚙️ Configuration
+## ⚙️ Configuration & Permissions de la Clé API
 
-1. Entrez l'URL de votre serveur Immich (ex: `https://immich.votre-domaine.fr`).
-2. Entrez votre clé API Immich (si vous n'en avez pas, [créez en une](https://my.immich.app/user-settings?isOpen=api-keys))
-   - **Permissions nécessaires** : Pour le bon fonctionnement de l'application, votre clé API doit avoir les permissions suivantes :
-     - `user.read`
-     - `album.read`
-     - `asset.read`
-     - `asset.view`
-     - `asset.statistics`
-     - `asset.delete`
-     - `asset.update` (Optionnel --> si vous souhaitez pouvoir archiver des assets, les ajouter aux favoris ou encore les envoyer dans le dossier verrouillé)
-     - `userProfileImage.read` (Optionnel --> permet d'afficher l'image du profil utilisateur)
-3. Sélectionnez un album et commencez à trier !
+1. Entrez l'URL ou l'adresse IP avec le port de votre serveur Immich (ex: `https://immich.votre-domaine.fr` ou `http://10.0.0.10:2283`).
+2. Entrez votre clé API Immich ([créez-en une sur Immich dans Paramètres utilisateur > Clés API](https://my.immich.app/user-settings?isOpen=api-keys)).
+
+### 🔐 Permissions de la Clé API
+
+Afin d'assurer le bon fonctionnement tout en respectant le **Principe de Moindre Privilège**, configurez votre clé API avec les permissions suivantes sur votre serveur Immich :
+
+#### **Permissions Requises**
+- `user.read` – Récupérer les informations du profil utilisateur (`/api/users/me`).
+- `album.read` – Récupérer la liste de vos albums (`/api/albums`).
+- `asset.read` / `asset.view` – Parcourir vos médias, miniatures et métadonnées (`/api/assets/{id}`).
+- `search.read` – Rechercher les médias dans vos albums/collections et calculer les statistiques (`/api/search/metadata`, `/api/search/statistics`).
+- `asset.delete` – Déplacer les médias supprimés vers la corbeille Immich lors de la synchronisation (`/api/assets`).
+- `asset.download` – Afficher les photos en haute résolution et lire les vidéos de manière fluide.
+
+#### **Permissions Optionnelles (Selon les fonctionnalités utilisées)**
+- `duplicate.read` – **Requis pour la fonctionnalité Doublons** : Permet de scanner et résoudre les clusters de photos dupliquées (`/api/duplicates`).
+- `asset.update` – **Requis pour les Actions** : Permet d'archiver, de mettre en favori, de verrouiller ou d'éditer/pivoter des médias (`/api/assets`, `/api/assets/{id}/edits`).
+- `album.asset.add` / `album.update` – **Requis pour "Ajouter à un album"** : Permet d'ajouter directement un média à un album existant (`/api/albums/{id}/assets`).
+- `userProfileImage.read` – Permet d'afficher la photo de profil dans le menu de changement de compte (`/api/users/me`).
+
+3. Sélectionnez un album ou une collection virtuelle et commencez à trier !
 
 ## 📦 Installation
 
-  |                                                                                                                       **Obtainium**                                                                                                                        |   **Téléchargement Direct**   |  **IzzyOnDroid / F-Droid**    |
-  |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------:|:----------------------------:|
-  | [<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png"  alt="Get it on Obtainium" height="50">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.markvoronin.immichswipe%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2FMinos2020%2Fimmich-swipe%22%2C%22author%22%3A%22Minos2020%22%2C%22name%22%3A%22Immich%20Swipe%22%2C%22preferredApkIndex%22%3A0%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Atrue%2C%5C%22fallbackToOlderReleases%5C%22%3Atrue%2C%5C%22filterReleaseTitlesByRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22filterReleaseNotesByRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22verifyLatestTag%5C%22%3Atrue%2C%5C%22sortMethodChoice%5C%22%3A%5C%22date%5C%22%2C%5C%22useLatestAssetDateAsReleaseDate%5C%22%3Afalse%2C%5C%22releaseTitleAsVersion%5C%22%3Afalse%2C%5C%22trackOnly%5C%22%3Afalse%2C%5C%22versionExtractionRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22matchGroupToUse%5C%22%3A%5C%22%5C%22%2C%5C%22versionDetection%5C%22%3Atrue%2C%5C%22releaseDateAsVersion%5C%22%3Afalse%2C%5C%22useVersionCodeAsOSVersion%5C%22%3Afalse%2C%5C%22apkFilterRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22invertAPKFilter%5C%22%3Afalse%2C%5C%22autoApkFilterByArch%5C%22%3Atrue%2C%5C%22appName%5C%22%3A%5C%22%5C%22%2C%5C%22appAuthor%5C%22%3A%5C%22%5C%22%2C%5C%22shizukuPretendToBeGooglePlay%5C%22%3Afalse%2C%5C%22allowInsecure%5C%22%3Afalse%2C%5C%22exemptFromBackgroundUpdates%5C%22%3Afalse%2C%5C%22skipUpdateNotifications%5C%22%3Afalse%2C%5C%22about%5C%22%3A%5C%22%5C%22%2C%5C%22refreshBeforeDownload%5C%22%3Afalse%2C%5C%22includeZips%5C%22%3Afalse%2C%5C%22zippedApkFilterRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22github-creds%5C%22%3A%5C%22%5C%22%2C%5C%22GHReqPrefix%5C%22%3A%5C%22%5C%22%7D%22%2C%22overrideSource%22%3A%22GitHub%22%7D) | Récupérez le dernier APK dans la section [Releases](https://github.com/markvoronin354/immich-swipe-android/releases)    |  Prochainement disponible
-
+|                                                                                                                       **Orion Store**                                                                                                                        |   **Téléchargement Direct**   |  **IzzyOnDroid / F-Droid**    |
+|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------:|:----------------------------:|
+| [<img src="https://github.com/RookieEnough/Orion-Store/blob/main/assets/graphics/orion-badge.png?raw=true"  alt="Get it on Orion Store" height="50">](https://rookieenough.github.io/Orion-Data/redirect.html?id=immich-swipe-android) | Récupérez le dernier APK dans la section [Releases](https://github.com/markvoronin354/immich-swipe-android/releases)   |  Prochainement disponible |
 
 ## 🛠️ Build
 
@@ -72,7 +80,7 @@ Si vous souhaitez compiler l'application vous-même :
 - **JDK 17** ou supérieur requis.
 - **Android Studio** (Version Ladybug ou plus récente recommandée).
 - Clonez le dépôt et importez le projet dans Android Studio.
-- Synchroniser Gradle
+- Synchronisez Gradle.
 - Utilisez `./gradlew assembleDebug` pour générer un APK de test.
 
 ## 📄 Licence
@@ -83,6 +91,6 @@ Ce projet est sous licence GNU GPL v3. Voir le fichier [LICENSE](LICENSE) pour p
 
 Bien que ce projet soit développé avec le plus grand soin et testé régulièrement, je ne peux garantir la sécurité absolue de vos données. En utilisant Immich Swipe, vous acceptez que l'auteur ne puisse être tenu responsable en cas de perte de données ou de suppression involontaire de médias.
 
-Il est important de noter que :
-- **Sécurité de la corbeille** : Immich Swipe ne vide jamais la corbeille de votre serveur Immich. En cas d'erreur de tri, vos photos restent récupérables via l'interface officielle d'Immich pendant la durée de conservation configurée de la corbeille.
-- **Principe de moindre privilège** : Afin de minimiser les risques, il est vivement conseillé de ne configurer votre clé API qu'avec les permissions strictement nécessaires listées dans la section [Configuration](#configuration).
+Il est important de notation que :
+- **Sécurité de la corbeille** : Immich Swipe ne vide jamais définitivement la corbeille de votre serveur Immich. Vos éléments supprimés sont envoyés vers la corbeille Immich et restent récupérables via l'interface officielle Immich pendant la durée de conservation configurée de la corbeille.
+- **Principe de moindre privilège** : Afin de minimiser les risques, il est vivement conseillé de ne configurer votre clé API qu'avec les permissions strictement nécessaires listées dans la section [Configuration & Permissions de la Clé API](#-configuration--permissions-de-la-clé-api).
