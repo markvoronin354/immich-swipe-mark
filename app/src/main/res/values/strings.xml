@@ -99,7 +99,7 @@
     <string name="settings_action_buttons_dialog_title">Action Buttons</string>
     <string name="settings_fullscreen_pos_label">Fullscreen</string>
     <string name="settings_immich_pos_label">Button position</string>
-    <string name="settings_card_immich">\"Open in Immich\"</string>
+    <string name="settings_card_immich">Open in Immich</string>
     <string name="settings_immich_open_mode_label">Open mode</string>
     <string name="settings_immich_open_mode_app">App</string>
     <string name="settings_immich_open_mode_web">Web</string>

@@ -100,7 +100,7 @@
     <string name="settings_action_buttons_dialog_title">Boutons d\'Action</string>
     <string name="settings_fullscreen_pos_label">Position du bouton Plein Écran</string>
     <string name="settings_immich_pos_label">Position du bouton Ouvrir dans Immich</string>
-    <string name="settings_card_immich">Bouton \"Ouvrir dans Immich\"</string>
+    <string name="settings_card_immich">Ouvrir dans Immich</string>
     <string name="settings_immich_open_mode_label">Mode d\'ouverture</string>
     <string name="settings_immich_open_mode_app">Application</string>
     <string name="settings_immich_open_mode_web">Web</string>

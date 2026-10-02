@@ -99,7 +99,7 @@
     <string name="settings_action_buttons_dialog_title">Botones de Acción</string>
     <string name="settings_fullscreen_pos_label">Posición del botón de pantalla completa</string>
     <string name="settings_immich_pos_label">Posición del botón Abrir en Immich</string>
-    <string name="settings_card_immich">Botón \"Abrir en Immich\"</string>
+    <string name="settings_card_immich">Abrir en Immich</string>
     <string name="settings_immich_open_mode_label">Modo de apertura</string>
     <string name="settings_immich_open_mode_app">Aplicación</string>
     <string name="settings_immich_open_mode_web">Web</string>
