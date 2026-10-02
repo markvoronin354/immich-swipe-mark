@@ -1,6 +1,10 @@
 package com.markvoronin.immichswipe.core
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import androidx.compose.ui.graphics.Color
 import coil.Coil
 import com.markvoronin.immichswipe.data.api.ImmichApi
@@ -68,6 +72,46 @@ class SessionManager @Inject constructor(
 
     val globalShuffleSeed: Long = System.currentTimeMillis()
 
+    private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            AppLogger.d("SessionManager", "Network restored")
+            if (isLoggedIn() && _connectionStatus.value.level == ConnectionLevel.OFFLINE) {
+                updateStatus(ConnectionLevel.ONLINE, DiagStatus.CONNECTED)
+            }
+        }
+
+        override fun onLost(network: Network) {
+            AppLogger.d("SessionManager", "Network connection lost")
+            if (isLoggedIn()) {
+                updateStatus(ConnectionLevel.OFFLINE, DiagStatus.NO_INTERNET)
+            }
+        }
+    }
+
+    init {
+        registerNetworkCallback()
+    }
+
+    private fun registerNetworkCallback() {
+        try {
+            val request = NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build()
+            connectivityManager?.registerNetworkCallback(request, networkCallback)
+        } catch (e: Exception) {
+            AppLogger.e("SessionManager", "Failed to register network callback: ${e.message}")
+        }
+    }
+
+    fun isNetworkAvailable(): Boolean {
+        val cm = connectivityManager ?: return false
+        val activeNetwork = cm.activeNetwork ?: return false
+        val capabilities = cm.getNetworkCapabilities(activeNetwork) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
     fun updateStatus(level: ConnectionLevel, type: DiagStatus, statusCode: Int? = null, rawMessage: String? = null) {
         _connectionStatus.value = ConnectionStatus(level, type, statusCode, rawMessage)
     }
@@ -85,8 +129,12 @@ class SessionManager @Inject constructor(
         clearImageCache()
         this.config = config
         this._sessionConfig.value = config
-        this._api = RetrofitFactory.create(config)
-        this._connectionStatus.value = ConnectionStatus(ConnectionLevel.ONLINE, DiagStatus.CONNECTED)
+        this._api = RetrofitFactory.create(config) { level, type, statusCode, rawMessage ->
+            updateStatus(level, type, statusCode, rawMessage)
+        }
+        val initialLevel = if (isNetworkAvailable()) ConnectionLevel.ONLINE else ConnectionLevel.OFFLINE
+        val initialType = if (isNetworkAvailable()) DiagStatus.CONNECTED else DiagStatus.NO_INTERNET
+        this._connectionStatus.value = ConnectionStatus(initialLevel, initialType)
         AppLogger.i("SessionManager", "Session initialized for user ${config.userId} at ${config.baseUrl}")
     }
 

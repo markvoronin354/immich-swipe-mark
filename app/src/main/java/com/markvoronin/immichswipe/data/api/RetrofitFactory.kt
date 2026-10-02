@@ -1,6 +1,8 @@
 package com.markvoronin.immichswipe.data.api
 
 import com.markvoronin.immichswipe.core.AppLogger
+import com.markvoronin.immichswipe.core.ConnectionLevel
+import com.markvoronin.immichswipe.core.DiagStatus
 import com.markvoronin.immichswipe.core.SessionConfig
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -12,7 +14,10 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
 object RetrofitFactory {
-    fun create(config: SessionConfig): ImmichApi {
+    fun create(
+        config: SessionConfig,
+        onStatusUpdate: ((level: ConnectionLevel, type: DiagStatus, statusCode: Int?, rawMessage: String?) -> Unit)? = null
+    ): ImmichApi {
         // Intercepteur pour logger les requêtes et réponses HTTP
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BASIC
@@ -26,7 +31,7 @@ object RetrofitFactory {
             chain.proceed(request)
         }
 
-        // Intercepteur de Diagnostic pour logger les requêtes réseau
+        // Intercepteur de Diagnostic pour logger les requêtes réseau et mettre à jour le statut
         val connectivityInterceptor = Interceptor { chain ->
             val request = chain.request()
             val urlPath = request.url.encodedPath
@@ -35,20 +40,23 @@ object RetrofitFactory {
                 
                 when (response.code) {
                     in 200..299 -> {
-                        // Success response
+                        onStatusUpdate?.invoke(ConnectionLevel.ONLINE, DiagStatus.CONNECTED, response.code, null)
                     }
                     401, 403 -> {
                         AppLogger.e("Retrofit", "Authentication error (${response.code}) on $urlPath")
+                        onStatusUpdate?.invoke(ConnectionLevel.ISSUES, DiagStatus.AUTH_ERROR, response.code, "Authentication error")
                     }
                     404 -> {
                         AppLogger.d("Retrofit", "Resource not found (404) on $urlPath")
                     }
                     502, 503, 504 -> {
                         AppLogger.e("Retrofit", "Server unavailable (${response.code}) on $urlPath")
+                        onStatusUpdate?.invoke(ConnectionLevel.ISSUES, DiagStatus.UNAVAILABLE, response.code, "Server unavailable")
                     }
                     else -> {
                         if (response.code >= 500) {
                             AppLogger.w("Retrofit", "Server error (${response.code}) on $urlPath")
+                            onStatusUpdate?.invoke(ConnectionLevel.ISSUES, DiagStatus.UNEXPECTED, response.code, "Server error")
                         }
                     }
                 }
@@ -59,13 +67,14 @@ object RetrofitFactory {
                         e.message?.contains("stream was reset", ignoreCase = true) == true
 
                 if (!isCanceled) {
-                    val statusStr = when (e) {
-                        is UnknownHostException -> "DNS_ERROR"
-                        is SocketTimeoutException -> "TIMEOUT"
-                        is IOException -> "NO_INTERNET"
-                        else -> "CONNECTION_ERROR"
+                    val (level, statusType) = when (e) {
+                        is UnknownHostException -> ConnectionLevel.OFFLINE to DiagStatus.DNS_ERROR
+                        is SocketTimeoutException -> ConnectionLevel.ISSUES to DiagStatus.TIMEOUT
+                        is IOException -> ConnectionLevel.OFFLINE to DiagStatus.NO_INTERNET
+                        else -> ConnectionLevel.OFFLINE to DiagStatus.CONNECTION_ERROR
                     }
-                    AppLogger.e("Retrofit", "Network error ($statusStr) on $urlPath: ${e.message}", e)
+                    onStatusUpdate?.invoke(level, statusType, null, e.message)
+                    AppLogger.e("Retrofit", "Network error ($statusType) on $urlPath: ${e.message}", e)
                 }
                 throw e
             }
