@@ -167,6 +167,7 @@
     <string name="swipe_sync_changes">Synchroniser les changements</string>
     <string name="swipe_congratulations">Félicitations ! Album trié.</string>
     <string name="swipe_check_before_delete">Vérifiez avant suppression</string>
+    <string name="swipe_revert_delete">Restaurer l\'élément</string>
 
     <!-- Unités de taille -->
     <string name="size_unit_gb">%1$.2f Go</string>

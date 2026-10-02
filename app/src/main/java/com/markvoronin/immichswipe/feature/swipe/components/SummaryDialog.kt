@@ -1,8 +1,12 @@
 package com.markvoronin.immichswipe.feature.swipe
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,14 +17,18 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -40,25 +48,39 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Precision
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.domain.model.Asset
+import com.markvoronin.immichswipe.feature.duplicates.components.DuplicateVideoPlayer
 
 
 @Composable
@@ -68,6 +90,8 @@ fun SummaryDialog(
     onApply: () -> Unit,
     onUndoDecision: (String) -> Unit
 ) {
+    var previewAsset by remember { mutableStateOf<Asset?>(null) }
+
     AlertDialog(
         onDismissRequest = if (uiState.isSyncing) ({}) else onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -172,7 +196,7 @@ fun SummaryDialog(
                                 DeletedAssetThumbnail(
                                     asset = asset,
                                     uiState = uiState,
-                                    onUndo = { onUndoDecision(asset.id) },
+                                    onClick = { previewAsset = asset },
                                     modifier = Modifier.animateItem()
                                 )
                             }
@@ -254,6 +278,17 @@ fun SummaryDialog(
         },
         shape = RoundedCornerShape(28.dp)
     )
+
+    if (previewAsset != null) {
+        SummaryFullscreenPreviewDialog(
+            asset = previewAsset!!,
+            uiState = uiState,
+            onDismiss = { previewAsset = null },
+            onRevert = { assetToRevert ->
+                onUndoDecision(assetToRevert.id)
+            }
+        )
+    }
 }
 
 @Composable
@@ -309,7 +344,7 @@ fun StatSummaryBox(
 fun DeletedAssetThumbnail(
     asset: Asset,
     uiState: SwipeUiState,
-    onUndo: () -> Unit,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -333,7 +368,7 @@ fun DeletedAssetThumbnail(
         modifier = modifier
             .aspectRatio(1f)
             .clip(RoundedCornerShape(12.dp))
-            .clickable { onUndo() }
+            .clickable { onClick() }
     ) {
         AsyncImage(
             model = imageRequest,
@@ -351,19 +386,6 @@ fun DeletedAssetThumbnail(
             if (hasHeart) TimelineMiniBadge(Icons.Default.Favorite, Color.Red)
             if (hasArchive) TimelineMiniBadge(Icons.Default.Archive, Color.Black)
             if (hasLock) TimelineMiniBadge(Icons.Default.Lock, Color.Black)
-        }
-
-        Surface(
-            modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
-            color = Color.Black.copy(alpha = 0.6f),
-            shape = CircleShape
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = stringResource(R.string.common_close),
-                tint = Color.White,
-                modifier = Modifier.size(16.dp).padding(2.dp)
-            )
         }
 
         if (asset.type == "VIDEO") {
@@ -395,6 +417,194 @@ fun DeletedAssetThumbnail(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.align(Alignment.Center)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun SummaryFullscreenPreviewDialog(
+    asset: Asset,
+    uiState: SwipeUiState,
+    onDismiss: () -> Unit,
+    onRevert: (Asset) -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
+    ) {
+        val dialogView = LocalView.current
+
+        SideEffect {
+            val window = (dialogView.parent as? DialogWindowProvider)?.window
+            if (window != null) {
+                val insetsController = WindowCompat.getInsetsController(window, dialogView)
+                insetsController.hide(WindowInsetsCompat.Type.systemBars())
+                insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        }
+
+        val context = LocalContext.current
+        val baseUrlClean = uiState.baseUrl.removeSuffix("/")
+        val apiKey = uiState.apiKey
+
+        var isZoomedIn by remember(asset.id) { mutableStateOf(false) }
+        var dismissOffsetY by remember(asset.id) { mutableFloatStateOf(0f) }
+
+        val animOffsetY by animateFloatAsState(
+            targetValue = dismissOffsetY,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioLowBouncy,
+                stiffness = Spring.StiffnessMedium
+            ),
+            label = "DismissOffsetY"
+        )
+
+        val bgAlpha = (1f - (animOffsetY / 600f)).coerceIn(0f, 1f)
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = bgAlpha))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        translationY = animOffsetY
+                    }
+                    .pointerInput(asset.id, isZoomedIn) {
+                        if (isZoomedIn) return@pointerInput
+                        detectVerticalDragGestures(
+                            onDragEnd = {
+                                if (dismissOffsetY > 150f) {
+                                    onDismiss()
+                                } else {
+                                    dismissOffsetY = 0f
+                                }
+                            },
+                            onDragCancel = {
+                                dismissOffsetY = 0f
+                            },
+                            onVerticalDrag = { change, dragAmount ->
+                                if (dragAmount > 0f || dismissOffsetY > 0f) {
+                                    dismissOffsetY = (dismissOffsetY + dragAmount).coerceAtLeast(0f)
+                                    change.consume()
+                                }
+                            }
+                        )
+                    }
+            ) {
+                ZoomableBox(
+                    modifier = Modifier.fillMaxSize(),
+                    resetOnRelease = false,
+                    onIsZoomedChanged = { isZoomedIn = it }
+                ) {
+                    if (asset.type == "VIDEO") {
+                        DuplicateVideoPlayer(
+                            asset = asset,
+                            baseUrl = baseUrlClean,
+                            apiKey = apiKey,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        val photoRequest = remember(asset.id, baseUrlClean, apiKey) {
+                            ImageRequest.Builder(context)
+                                .data("$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                                .addHeader("x-api-key", apiKey)
+                                .crossfade(true)
+                                .build()
+                        }
+
+                        AsyncImage(
+                            model = photoRequest,
+                            contentDescription = null,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+            }
+
+            // Top Bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val fileSize = asset.exifInfo?.fileSizeInBytes ?: 0L
+                if (fileSize > 0) {
+                    Surface(
+                        color = Color.Black.copy(alpha = 0.6f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = formatSize(fileSize),
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
+                } else {
+                    Spacer(Modifier.width(1.dp))
+                }
+
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                        .size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.common_close),
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            // Bottom Action Bar
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = if (asset.type == "VIDEO") 88.dp else 24.dp)
+            ) {
+                Button(
+                    onClick = {
+                        onRevert(asset)
+                        onDismiss()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    shape = RoundedCornerShape(24.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
+                    modifier = Modifier
+                        .height(48.dp)
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Undo,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.swipe_revert_delete),
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
             }
         }
     }
