@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -143,6 +144,6 @@ fun InteractionsScreen(
             }
         }
 
-        Spacer(Modifier.height(88.dp))
+        Spacer(Modifier.navigationBarsPadding().height(24.dp))
     }
 }

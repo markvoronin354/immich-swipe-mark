@@ -14,9 +14,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
+
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markvoronin.immichswipe.core.AppLogger
@@ -42,10 +40,7 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
-        // Mode immersif : On cache les barres système (status et navigation) au lancement.
-        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-        windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+        // enableEdgeToEdge est conservé pour permettre le dessin derrière les barres système.
         
         // On verrouille l'application en mode Portrait par défaut.
         @SuppressLint("SourceLockedOrientationActivity")
