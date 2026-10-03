@@ -55,6 +55,13 @@
     <!-- Popup Profil & Diagnostic -->
     <string name="profile_connected_label">Connecté au serveur Immich</string>
     <string name="profile_logout_button">Se déconnecter</string>
+    <string name="profile_logout_confirm_title">Déconnexion</string>
+    <string name="profile_logout_confirm_msg">Voulez-vous vraiment vous déconnecter de ce compte ?</string>
+    <string name="profile_remove_account_confirm_title">Supprimer le compte</string>
+    <string name="profile_remove_account_confirm_msg">Voulez-vous vraiment supprimer le compte « %1$s » ?</string>
+    <string name="profile_remove_all_accounts_button">Supprimer tous les comptes</string>
+    <string name="profile_remove_all_accounts_confirm_title">Supprimer tous les comptes</string>
+    <string name="profile_remove_all_accounts_confirm_msg">Voulez-vous vraiment supprimer tous les comptes enregistrés ? Vous serez déconnecté.</string>
     <string name="profile_source_code">Code source</string>
     <string name="profile_saved_accounts">Comptes enregistrés</string>
     <string name="profile_add_account">Ajouter un compte</string>

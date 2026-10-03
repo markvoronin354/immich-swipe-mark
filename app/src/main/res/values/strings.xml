@@ -54,6 +54,13 @@
     <!-- Profile Popup & Diag -->
     <string name="profile_connected_label">Connected to Immich server</string>
     <string name="profile_logout_button">Logout</string>
+    <string name="profile_logout_confirm_title">Logout</string>
+    <string name="profile_logout_confirm_msg">Are you sure you want to log out of this account?</string>
+    <string name="profile_remove_account_confirm_title">Remove account</string>
+    <string name="profile_remove_account_confirm_msg">Are you sure you want to remove the account for \"%1$s\"?</string>
+    <string name="profile_remove_all_accounts_button">Remove all accounts</string>
+    <string name="profile_remove_all_accounts_confirm_title">Remove all accounts</string>
+    <string name="profile_remove_all_accounts_confirm_msg">Are you sure you want to remove all saved accounts? You will be logged out.</string>
     <string name="profile_source_code">Source code</string>
     <string name="profile_saved_accounts">Saved accounts</string>
     <string name="profile_add_account">Add another account</string>

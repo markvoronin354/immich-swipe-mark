@@ -53,6 +53,7 @@ import androidx.compose.material.icons.filled.SettingsSuggest
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.VolunteerActivism
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -60,11 +61,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
@@ -455,6 +460,9 @@ fun SettingsScreen(
         Spacer(Modifier.height(16.dp))
 
         SettingsSection(title = stringResource(R.string.settings_section_account), icon = Icons.Default.Person) {
+            var showLogoutConfirmation by remember { mutableStateOf(false) }
+            var showRemoveAllConfirmation by remember { mutableStateOf(false) }
+
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     UserAvatar(
@@ -471,20 +479,113 @@ fun SettingsScreen(
                         Text(text = stringResource(R.string.profile_connected_label), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
                     }
                 }
-                Spacer(Modifier.height(24.dp))
-                Button(
-                    onClick = { viewModel.logout() },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.profile_logout_button), fontWeight = FontWeight.Bold)
+                if (uiState.savedAccountsCount <= 1) {
+                    Spacer(Modifier.height(24.dp))
+                    Button(
+                        onClick = { showLogoutConfirmation = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.profile_logout_button), fontWeight = FontWeight.Bold)
+                    }
+                } else {
+                    Spacer(Modifier.height(24.dp))
+                    Button(
+                        onClick = { showRemoveAllConfirmation = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.DeleteSweep, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.profile_remove_all_accounts_button), fontWeight = FontWeight.Bold)
+                    }
                 }
+            }
+
+            if (showLogoutConfirmation) {
+                AlertDialog(
+                    onDismissRequest = { showLogoutConfirmation = false },
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Logout,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(stringResource(R.string.profile_logout_confirm_title))
+                        }
+                    },
+                    text = {
+                        Text(stringResource(R.string.profile_logout_confirm_msg))
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                showLogoutConfirmation = false
+                                viewModel.logout()
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text(stringResource(R.string.profile_logout_button))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showLogoutConfirmation = false }) {
+                            Text(stringResource(R.string.common_cancel))
+                        }
+                    }
+                )
+            }
+
+            if (showRemoveAllConfirmation) {
+                AlertDialog(
+                    onDismissRequest = { showRemoveAllConfirmation = false },
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteSweep,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(stringResource(R.string.profile_remove_all_accounts_confirm_title))
+                        }
+                    },
+                    text = {
+                        Text(stringResource(R.string.profile_remove_all_accounts_confirm_msg))
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                showRemoveAllConfirmation = false
+                                viewModel.removeAllAccounts()
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text(stringResource(R.string.profile_remove_all_accounts_button))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showRemoveAllConfirmation = false }) {
+                            Text(stringResource(R.string.common_cancel))
+                        }
+                    }
+                )
             }
         }
 

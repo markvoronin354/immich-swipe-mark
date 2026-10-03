@@ -22,6 +22,7 @@ data class SettingsUiState(
     val isLoading: Boolean = false,
     val userName: String = "",
     val userQuotaBytes: Long? = null,
+    val savedAccountsCount: Int = 1,
     val playbackBehavior: PlaybackBehavior = PlaybackBehavior.PAUSE_OTHERS,
     val themeMode: AppTheme = AppTheme.DARK,
     val dynamicColor: Boolean = true,

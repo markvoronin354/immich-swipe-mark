@@ -13,6 +13,7 @@ import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.core.cache.CacheManager
 import com.markvoronin.immichswipe.data.local.model.DatabaseExport
+import com.markvoronin.immichswipe.data.repository.AccountRepository
 import com.markvoronin.immichswipe.data.repository.SessionRepository
 import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
 import com.markvoronin.immichswipe.data.repository.UserRepository
@@ -31,7 +32,8 @@ class SettingsViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val swipeDecisionRepository: SwipeDecisionRepository,
     private val userRepository: UserRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val accountRepository: AccountRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -57,6 +59,11 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun observeSettings() {
+        viewModelScope.launch {
+            accountRepository.allAccounts.collect { accounts ->
+                _uiState.update { it.copy(savedAccountsCount = accounts.size) }
+            }
+        }
         viewModelScope.launch {
             sessionRepository.playbackBehavior.collect { behavior ->
                 _uiState.value = _uiState.value.copy(playbackBehavior = behavior)
@@ -368,6 +375,13 @@ class SettingsViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch {
+            sessionRepository.clearSession()
+        }
+    }
+
+    fun removeAllAccounts() {
+        viewModelScope.launch {
+            accountRepository.deleteAllAccounts()
             sessionRepository.clearSession()
         }
     }

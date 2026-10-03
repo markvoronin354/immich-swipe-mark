@@ -1,6 +1,7 @@
 # --- DOSSIERS DE BUILD ---
 # Fichiers générés par Gradle et le processus de compilation (temporaires et caches)
 .gradle
+.kotlin/
 /build
 /captures
 /app/release

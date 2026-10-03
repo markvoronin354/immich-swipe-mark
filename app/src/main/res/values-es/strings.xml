@@ -54,6 +54,13 @@
     <!-- Ventana de perfil y diagnóstico -->
     <string name="profile_connected_label">Conectado al servidor Immich</string>
     <string name="profile_logout_button">Cerrar sesión</string>
+    <string name="profile_logout_confirm_title">Cerrar sesión</string>
+    <string name="profile_logout_confirm_msg">¿Seguro que quieres cerrar sesión en esta cuenta?</string>
+    <string name="profile_remove_account_confirm_title">Eliminar cuenta</string>
+    <string name="profile_remove_account_confirm_msg">¿Seguro que quieres eliminar la cuenta de \"%1$s\"?</string>
+    <string name="profile_remove_all_accounts_button">Eliminar todas las cuentas</string>
+    <string name="profile_remove_all_accounts_confirm_title">Eliminar todas las cuentas</string>
+    <string name="profile_remove_all_accounts_confirm_msg">¿Seguro que quieres eliminar todas las cuentas guardadas? Se cerrará tu sesión.</string>
     <string name="profile_source_code">Código fuente</string>
     <string name="profile_saved_accounts">Cuentas guardadas</string>
     <string name="profile_add_account">Añadir otra cuenta</string>

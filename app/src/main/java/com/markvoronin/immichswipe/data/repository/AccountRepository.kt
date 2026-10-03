@@ -36,6 +36,10 @@ class AccountRepository @Inject constructor(private val userAccountDao: UserAcco
         }
     }
 
+    suspend fun deleteAllAccounts() {
+        userAccountDao.deleteAllAccounts()
+    }
+
     suspend fun updateLastActive(userId: String) {
         userAccountDao.updateLastActive(userId)
     }

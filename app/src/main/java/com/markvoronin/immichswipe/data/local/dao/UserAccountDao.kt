@@ -22,6 +22,9 @@ interface UserAccountDao {
     @Delete
     suspend fun deleteAccount(account: UserAccountEntity)
 
+    @Query("DELETE FROM user_accounts")
+    suspend fun deleteAllAccounts()
+
     @Query("UPDATE user_accounts SET lastActive = :timestamp WHERE userId = :userId")
     suspend fun updateLastActive(userId: String, timestamp: Long = System.currentTimeMillis())
 }
