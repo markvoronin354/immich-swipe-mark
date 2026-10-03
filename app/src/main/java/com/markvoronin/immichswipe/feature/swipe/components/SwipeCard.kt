@@ -307,19 +307,21 @@ fun SwipeCard(
         }
     }
 
-    val swipeProgress = (abs(topCardSwipeOffset) / 500f).coerceIn(0f, 1f)
+    val swipeProgress = (abs(topCardSwipeOffset) / 800f).coerceIn(0f, 1f)
     val targetScale = if (isNext) 0.85f + (0.15f * swipeProgress) else 1f
     val targetAlpha = if (isNext) 0.6f + (0.4f * swipeProgress) else 1f
 
+    val isTracking = topCardSwipeOffset != 0f
+
     val animatedScale by animateFloatAsState(
         targetValue = targetScale,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        animationSpec = if (isTracking) tween(0) else spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
         label = "ScaleAnimation"
     )
 
     val animatedAlpha by animateFloatAsState(
         targetValue = targetAlpha,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        animationSpec = if (isTracking) tween(0) else spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
         label = "AlphaAnimation"
     )
 
