@@ -131,13 +131,21 @@ interface SwipeDecisionDao {
      * Utilise désormais la table album_assets pour inclure les décisions prises dans d'autres albums.
      */
     @Query("""
-        SELECT aa.albumId, 
-               COUNT(DISTINCT sd.assetId) as totalCount, 
-               SUM(CASE WHEN sd.isSynced = 0 THEN 1 ELSE 0 END) as unsyncedCount
-        FROM album_assets aa
-        JOIN swipe_decisions sd ON aa.assetId = sd.assetId AND aa.userId = sd.userId
-        WHERE sd.userId = :userId
-        GROUP BY aa.albumId
+        WITH all_album_decisions AS (
+            SELECT aa.albumId AS albumId, sd.assetId AS assetId, sd.isSynced AS isSynced
+            FROM album_assets aa
+            JOIN swipe_decisions sd ON aa.assetId = sd.assetId AND aa.userId = sd.userId
+            WHERE sd.userId = :userId
+            UNION
+            SELECT sd.albumId AS albumId, sd.assetId AS assetId, sd.isSynced AS isSynced
+            FROM swipe_decisions sd
+            WHERE sd.userId = :userId
+        )
+        SELECT albumId,
+               COUNT(DISTINCT assetId) AS totalCount,
+               SUM(CASE WHEN isSynced = 0 THEN 1 ELSE 0 END) AS unsyncedCount
+        FROM all_album_decisions
+        GROUP BY albumId
     """)
     fun getAllAlbumDecisionCounts(userId: String): Flow<List<AlbumDecisionCount>>
 
