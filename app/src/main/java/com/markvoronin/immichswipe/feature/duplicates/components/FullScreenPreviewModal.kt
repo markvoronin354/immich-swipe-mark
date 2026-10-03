@@ -6,10 +6,10 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -58,6 +58,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -343,7 +344,6 @@ fun FullScreenPreviewModal(
                     ) {
                         val containerWidthPx = with(density) { maxWidth.toPx() }
                         val containerHeightPx = with(density) { maxHeight.toPx() }
-                        var totalHorizontalSwipe by remember { mutableFloatStateOf(0f) }
 
                         Box(
                             modifier = Modifier
@@ -367,67 +367,99 @@ fun FullScreenPreviewModal(
                                     )
                                 }
                                 .pointerInput(currentAsset.id) {
-                                    detectTransformGestures { _, pan, zoom, _ ->
-                                        val newScale = (scale * zoom).coerceIn(1f, 5f)
-                                        scale = newScale
-                                        if (newScale > 1.05f) {
-                                            val maxPanX = (containerWidthPx * (newScale - 1f)) / 2f
-                                            val maxPanY = (containerHeightPx * (newScale - 1f)) / 2f
-                                            panX = (panX + pan.x).coerceIn(-maxPanX, maxPanX)
-                                            panY = (panY + pan.y).coerceIn(-maxPanY, maxPanY)
-                                        } else {
+                                    awaitEachGesture {
+                                        var isZooming = false
+                                        var isDraggingHorizontal = false
+                                        var isDraggingVertical = false
+                                        var totalDragX = 0f
+                                        var totalDragY = 0f
+                                        val touchSlop = viewConfiguration.touchSlop
+
+                                        do {
+                                            val event = awaitPointerEvent()
+                                            val pointerCount = event.changes.size
+
+                                            if (pointerCount >= 2) {
+                                                // Multi-finger gesture: Pinch-to-zoom mode takes precedence
+                                                isZooming = true
+                                                isDraggingHorizontal = false
+                                                isDraggingVertical = false
+
+                                                val zoomChange = event.calculateZoom()
+                                                val panChange = event.calculatePan()
+
+                                                val newScale = (scale * zoomChange).coerceIn(1f, 5f)
+                                                scale = newScale
+                                                if (newScale > 1.05f) {
+                                                    val maxPanX = (containerWidthPx * (newScale - 1f)) / 2f
+                                                    val maxPanY = (containerHeightPx * (newScale - 1f)) / 2f
+                                                    panX = (panX + panChange.x).coerceIn(-maxPanX, maxPanX)
+                                                    panY = (panY + panChange.y).coerceIn(-maxPanY, maxPanY)
+                                                } else {
+                                                    panX = 0f
+                                                    panY = 0f
+                                                }
+                                                event.changes.forEach { it.consume() }
+                                            } else if (pointerCount == 1) {
+                                                val change = event.changes[0]
+                                                if (scale > 1.05f) {
+                                                    // Single-finger panning when zoomed in (only consume when actually moving)
+                                                    val panChange = event.calculatePan()
+                                                    if (panChange != Offset.Zero) {
+                                                        val maxPanX = (containerWidthPx * (scale - 1f)) / 2f
+                                                        val maxPanY = (containerHeightPx * (scale - 1f)) / 2f
+                                                        panX = (panX + panChange.x).coerceIn(-maxPanX, maxPanX)
+                                                        panY = (panY + panChange.y).coerceIn(-maxPanY, maxPanY)
+                                                        change.consume()
+                                                    }
+                                                } else if (!isZooming) {
+                                                    // Unzoomed 1-finger drag
+                                                    val panChange = event.calculatePan()
+                                                    totalDragX += panChange.x
+                                                    totalDragY += panChange.y
+
+                                                    val absX = abs(totalDragX)
+                                                    val absY = abs(totalDragY)
+
+                                                    if (!isDraggingHorizontal && !isDraggingVertical) {
+                                                        if (absX > touchSlop && absX > absY) {
+                                                            isDraggingHorizontal = true
+                                                        } else if (absY > touchSlop && absY > absX && totalDragY > 0f) {
+                                                            isDraggingVertical = true
+                                                            isDraggingDismiss = true
+                                                        }
+                                                    }
+
+                                                    if (isDraggingHorizontal) {
+                                                        change.consume()
+                                                    } else if (isDraggingVertical) {
+                                                        dismissOffsetY = (totalDragY - touchSlop).coerceAtLeast(0f)
+                                                        change.consume()
+                                                    }
+                                                }
+                                            }
+                                        } while (event.changes.any { it.pressed })
+
+                                        if (isDraggingVertical) {
+                                            isDraggingDismiss = false
+                                            if (dismissOffsetY > 200f) {
+                                                onDismiss()
+                                            } else {
+                                                dismissOffsetY = 0f
+                                            }
+                                        } else if (isDraggingHorizontal) {
+                                            if (totalDragX < -100f && selectedIndex < assets.size - 1) {
+                                                selectedIndex++
+                                            } else if (totalDragX > 100f && selectedIndex > 0) {
+                                                selectedIndex--
+                                            }
+                                        }
+
+                                        if (scale < 1.01f) {
+                                            scale = 1f
                                             panX = 0f
                                             panY = 0f
                                         }
-                                    }
-                                }
-                                .pointerInput(currentAsset.id, scale) {
-                                    if (scale <= 1.05f) {
-                                        detectHorizontalDragGestures(
-                                            onDragEnd = { totalHorizontalSwipe = 0f },
-                                            onDragCancel = { totalHorizontalSwipe = 0f },
-                                            onHorizontalDrag = { change, dragAmount ->
-                                                totalHorizontalSwipe += dragAmount
-                                                if (totalHorizontalSwipe < -100f) {
-                                                    if (selectedIndex < assets.size - 1) {
-                                                        selectedIndex++
-                                                        totalHorizontalSwipe = 0f
-                                                    }
-                                                } else if (totalHorizontalSwipe > 100f) {
-                                                    if (selectedIndex > 0) {
-                                                        selectedIndex--
-                                                        totalHorizontalSwipe = 0f
-                                                    }
-                                                }
-                                                change.consume()
-                                            }
-                                        )
-                                    }
-                                }
-                                .pointerInput(currentAsset.id, scale) {
-                                    if (scale <= 1.05f) {
-                                        detectVerticalDragGestures(
-                                            onDragStart = { isDraggingDismiss = true },
-                                            onDragEnd = {
-                                                isDraggingDismiss = false
-                                                if (dismissOffsetY > 200f) {
-                                                    onDismiss()
-                                                } else {
-                                                    dismissOffsetY = 0f
-                                                }
-                                            },
-                                            onDragCancel = {
-                                                isDraggingDismiss = false
-                                                dismissOffsetY = 0f
-                                            },
-                                            onVerticalDrag = { change, dragAmount ->
-                                                if (dragAmount > 0 || dismissOffsetY > 0) {
-                                                    isDraggingDismiss = true
-                                                    dismissOffsetY = (dismissOffsetY + dragAmount).coerceAtLeast(0f)
-                                                    change.consume()
-                                                }
-                                            }
-                                        )
                                     }
                                 }
                         ) {
