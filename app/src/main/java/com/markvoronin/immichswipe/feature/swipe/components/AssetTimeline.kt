@@ -119,8 +119,8 @@ fun AssetTimeline(
         state = listState,
         modifier = Modifier
             .fillMaxWidth()
-            .height(60.dp)
-            .padding(vertical = 2.dp),
+            .height(75.dp)
+            .padding(vertical = 5.dp),
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
@@ -169,7 +169,7 @@ private fun AssetTimelineItem(
 
     Box(
         modifier = Modifier
-            .size(48.dp)
+            .size(60.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .border(

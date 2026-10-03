@@ -523,7 +523,7 @@ fun SwipeScreen(
                 onSortMenuToggle = { showSortMenu = it }
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(30.dp))
         }
     }
 

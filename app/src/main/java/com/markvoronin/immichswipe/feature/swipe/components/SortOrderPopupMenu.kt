@@ -2,6 +2,7 @@ package com.markvoronin.immichswipe.feature.swipe.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,7 +25,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
@@ -39,22 +42,29 @@ import com.markvoronin.immichswipe.feature.swipe.SwipeViewModel
 fun SortOrderPopupMenu(
     uiState: SwipeUiState,
     viewModel: SwipeViewModel,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    offsetY: Dp = 41.dp
 ) {
+    val density = LocalDensity.current
+    val yOffsetPx = with(density) { -offsetY.roundToPx() }
+
     Popup(
         alignment = Alignment.BottomCenter,
-        offset = IntOffset(0, -110),
+        offset = IntOffset(0, yOffsetPx),
         onDismissRequest = onDismiss,
         properties = PopupProperties(focusable = true)
     ) {
-        Surface(
-            modifier = Modifier.width(300.dp),
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 8.dp,
-            shadowElevation = 12.dp,
-            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+        Box(
+            modifier = Modifier.padding(16.dp)
         ) {
+            Surface(
+                modifier = Modifier.width(300.dp),
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp,
+                shadowElevation = 8.dp,
+                border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+            ) {
             Column(modifier = Modifier.padding(vertical = 16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
@@ -166,4 +176,5 @@ fun SortOrderPopupMenu(
             }
         }
     }
+}
 }

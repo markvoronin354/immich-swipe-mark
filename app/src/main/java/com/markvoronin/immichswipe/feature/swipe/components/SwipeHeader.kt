@@ -1,9 +1,7 @@
 package com.markvoronin.immichswipe.feature.swipe
 
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -35,19 +35,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.markvoronin.immichswipe.R
 
 
 @Composable
 fun SwipeHeader(
     uiState: SwipeUiState,
-    onSummaryClick: () -> Unit
+    onSummaryClick: () -> Unit,
+    titleFontSize: TextUnit = 13.sp,
+    infoFontSize: TextUnit = 13.sp,
+    iconSize: Dp = 20.dp
 ) {
     val animatedProgress by animateFloatAsState(
         targetValue = uiState.progress,
@@ -64,50 +68,35 @@ fun SwipeHeader(
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(28.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .height(37.dp)
+                .clip(RoundedCornerShape(19.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable { onSummaryClick() },
-            contentAlignment = Alignment.CenterStart
+                .clickable { onSummaryClick() }
         ) {
-            val totalWidth = constraints.maxWidth.toFloat()
-            val progressWidth = totalWidth * animatedProgress
-            val density = LocalDensity.current
-            val paddingPx = with(density) { 16.dp.toPx() }
-            val spacingPx = paddingPx
+            val fullWidth = maxWidth
 
-            val infoWidthPx = with(density) { 72.dp.toPx() }
-            val infoIsInside = progressWidth > infoWidthPx + paddingPx
-            val infoTranslationX by animateFloatAsState(
-                targetValue = if (infoIsInside)
-                    (progressWidth - infoWidthPx - paddingPx).coerceAtLeast(paddingPx)
-                else
-                    totalWidth - infoWidthPx - paddingPx,
-                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                label = "InfoTranslation"
-            )
-
-            val titleThreshold = with(density) { 250.dp.toPx() }
-            val titleIsPushed = progressWidth > paddingPx && progressWidth < titleThreshold
-            val titleTranslationX by animateFloatAsState(
-                targetValue = if (titleIsPushed) progressWidth + spacingPx else paddingPx,
-                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                label = "TitleTranslation"
-            )
-
+            // Layer 1: Dark Text (Background)
             Box(modifier = Modifier.fillMaxSize()) {
                 HeaderTitle(
                     text = uiState.albumName,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.graphicsLayer { translationX = titleTranslationX }.align(Alignment.CenterStart)
+                    fontSize = titleFontSize,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 16.dp)
                 )
                 HeaderInfo(
                     progressText = "${(uiState.progress * 100).toInt()}%",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.graphicsLayer { translationX = infoTranslationX }.align(Alignment.CenterStart)
+                    fontSize = infoFontSize,
+                    iconSize = iconSize,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 16.dp)
                 )
             }
 
+            // Layer 2: Blue Bar Overlay with White Text
             Box(
                 modifier = Modifier
                     .fillMaxWidth(animatedProgress)
@@ -123,16 +112,30 @@ fun SwipeHeader(
                     )
                     .background(Color.Black.copy(alpha = 0.1f))
             ) {
-                Box(modifier = Modifier.width(with(density) { totalWidth.toDp() }).fillMaxHeight()) {
+                // Unbounded width aligned to Start ensures the inner box doesn't center itself
+                // when it overflows the parent's current progress width constraint.
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .wrapContentWidth(unbounded = true, align = Alignment.Start)
+                        .requiredWidth(fullWidth)
+                ) {
                     HeaderTitle(
                         text = uiState.albumName,
                         color = Color.White,
-                        modifier = Modifier.graphicsLayer { translationX = titleTranslationX }.align(Alignment.CenterStart)
+                        fontSize = titleFontSize,
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .padding(start = 16.dp)
                     )
                     HeaderInfo(
                         progressText = "${(uiState.progress * 100).toInt()}%",
                         color = Color.White,
-                        modifier = Modifier.graphicsLayer { translationX = infoTranslationX }.align(Alignment.CenterStart)
+                        fontSize = infoFontSize,
+                        iconSize = iconSize,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 16.dp)
                     )
                 }
             }
@@ -153,10 +156,16 @@ fun SwipeHeader(
 }
 
 @Composable
-fun HeaderTitle(text: String, color: Color, modifier: Modifier = Modifier) {
+fun HeaderTitle(
+    text: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    fontSize: TextUnit = TextUnit.Unspecified
+) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelMedium,
+        fontSize = fontSize,
         fontWeight = FontWeight.Bold,
         color = color,
         maxLines = 1,
@@ -166,7 +175,13 @@ fun HeaderTitle(text: String, color: Color, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun HeaderInfo(progressText: String, color: Color, modifier: Modifier = Modifier) {
+fun HeaderInfo(
+    progressText: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    fontSize: TextUnit = TextUnit.Unspecified,
+    iconSize: Dp = 14.dp
+) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
@@ -174,6 +189,7 @@ fun HeaderInfo(progressText: String, color: Color, modifier: Modifier = Modifier
         Text(
             text = progressText,
             style = MaterialTheme.typography.labelSmall,
+            fontSize = fontSize,
             fontWeight = FontWeight.Black,
             color = color
         )
@@ -181,7 +197,7 @@ fun HeaderInfo(progressText: String, color: Color, modifier: Modifier = Modifier
         Icon(
             imageVector = Icons.AutoMirrored.Filled.List,
             contentDescription = null,
-            modifier = Modifier.size(14.dp),
+            modifier = Modifier.size(iconSize),
             tint = color
         )
     }
