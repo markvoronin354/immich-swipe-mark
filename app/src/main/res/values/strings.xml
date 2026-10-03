@@ -262,4 +262,7 @@
     <string name="settings_tap_to_swipe_desc">Tap the left ⅓ of the card to delete, and the right ⅓ to keep. Middle ⅓ remains for controls.</string>
     <string name="settings_privacy_policy_label">Privacy Policy</string>
     <string name="settings_privacy_policy_desc">Read our privacy policy regarding data and permissions</string>
+    <string name="settings_section_about">About &amp; Legal</string>
+    <string name="settings_source_code_label">Source Code</string>
+    <string name="settings_source_code_desc">View the open source repository on GitHub</string>
 </resources>

@@ -36,6 +36,7 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AdsClick
 import com.markvoronin.immichswipe.feature.home.components.UserAvatar
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteForever
@@ -44,6 +45,7 @@ import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
@@ -414,12 +416,25 @@ fun SettingsScreen(
                     isDestructive = true,
                     onClick = { viewModel.setShowClearCacheConfirmation(true) }
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        SettingsSection(title = stringResource(R.string.settings_section_about), icon = Icons.Default.Info) {
+            Column {
                 SettingsClickableItem(
                     title = stringResource(R.string.settings_privacy_policy_label),
                     subtitle = stringResource(R.string.settings_privacy_policy_desc),
                     icon = Icons.Default.PrivacyTip,
                     onClick = { uriHandler.openUri("https://github.com/markvoronin354/immich-swipe-android/blob/main/PRIVACY_POLICY.md") }
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
+                SettingsClickableItem(
+                    title = stringResource(R.string.settings_source_code_label),
+                    subtitle = stringResource(R.string.settings_source_code_desc),
+                    icon = Icons.Default.Code,
+                    onClick = { uriHandler.openUri("https://github.com/markvoronin354/immich-swipe-android") }
                 )
             }
         }

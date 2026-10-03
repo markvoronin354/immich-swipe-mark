@@ -262,4 +262,7 @@
     <string name="settings_tap_to_swipe_desc">Toca el tercio izquierdo para eliminar y el tercio derecho para conservar. El tercio central permanece para los controles.</string>
     <string name="settings_privacy_policy_label">Política de privacidad</string>
     <string name="settings_privacy_policy_desc">Lea nuestra política de privacidad sobre datos y permisos</string>
+    <string name="settings_section_about">Acerca de y Legal</string>
+    <string name="settings_source_code_label">Código fuente</string>
+    <string name="settings_source_code_desc">Ver el repositorio de código abierto en GitHub</string>
 </resources>
