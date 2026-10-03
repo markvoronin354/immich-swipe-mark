@@ -4,7 +4,6 @@ import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
@@ -56,8 +54,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.ConnectionLevel
 import com.markvoronin.immichswipe.core.ConnectionStatus
@@ -133,34 +129,16 @@ fun ProfilePopup(
                 Spacer(Modifier.height(24.dp))
 
                 // Profile Avatar
-                val avatarColor = getAvatarColor(user?.avatarColor)
-                val profileModifier = Modifier
-                    .size(96.dp)
-                    .border(3.dp, avatarColor, CircleShape)
-                    .padding(4.dp)
-                    .clip(CircleShape)
-
-                if ((user != null) && baseUrlClean.isNotEmpty()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data("$baseUrlClean/api/users/${user.id}/profile-image")
-                            .addHeader("x-api-key", apiKey)
-                            .crossfade(enable = true)
-                            .build(),
-                        contentDescription = stringResource(R.string.settings_section_account),
-                        placeholder = rememberVectorPainter(Icons.Default.AccountCircle),
-                        error = rememberVectorPainter(Icons.Default.AccountCircle),
-                        modifier = profileModifier,
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = stringResource(R.string.settings_section_account),
-                        modifier = profileModifier,
-                        tint = MaterialTheme.colorScheme.outline
-                    )
-                }
+                UserAvatar(
+                    userId = user?.id,
+                    baseUrl = baseUrlClean,
+                    apiKey = apiKey,
+                    name = user?.name ?: user?.email,
+                    avatarColorName = user?.avatarColor,
+                    modifier = Modifier.size(96.dp),
+                    borderWidth = 3.dp,
+                    contentDescription = stringResource(R.string.settings_section_account)
+                )
 
                 Spacer(Modifier.height(16.dp))
 
@@ -249,22 +227,16 @@ fun ProfilePopup(
                                     .padding(horizontal = 14.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                val acAvatarColor = getAvatarColor(account.avatarColor)
                                 Box(contentAlignment = Alignment.BottomEnd) {
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(LocalContext.current)
-                                            .data("${account.baseUrl.removeSuffix("/")}/api/users/${account.userId}/profile-image")
-                                            .addHeader("x-api-key", account.apiKey)
-                                            .crossfade(true)
-                                            .build(),
-                                        contentDescription = null,
-                                        placeholder = rememberVectorPainter(Icons.Default.AccountCircle),
-                                        modifier = Modifier
-                                            .size(32.dp)
-                                            .border(1.dp, acAvatarColor, CircleShape)
-                                            .padding(1.dp)
-                                            .clip(CircleShape),
-                                        contentScale = ContentScale.Crop
+                                    UserAvatar(
+                                        userId = account.userId,
+                                        baseUrl = account.baseUrl,
+                                        apiKey = account.apiKey,
+                                        name = account.userName ?: account.userEmail,
+                                        avatarColorName = account.avatarColor,
+                                        modifier = Modifier.size(32.dp),
+                                        borderWidth = 1.dp,
+                                        contentDescription = account.userName
                                     )
                                     if (isCurrent) {
                                         Surface(

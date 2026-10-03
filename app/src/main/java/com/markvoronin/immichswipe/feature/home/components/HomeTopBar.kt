@@ -2,7 +2,6 @@ package com.markvoronin.immichswipe.feature.home.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,7 +16,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AdsClick
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Clear
@@ -40,16 +38,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.ConnectionStatus
 import com.markvoronin.immichswipe.domain.model.User
@@ -164,51 +158,31 @@ fun HomeTopBar(
                 }
 
                 if (!isSettingsTab || activeSubMenu == SettingsSubMenu.NONE) {
-                    val userId = user?.id
-                    val avatarColor = getAvatarColor(user?.avatarColor)
-                    
-                    val profileModifier = Modifier
-                        .padding(end = 16.dp)
-                        .size(32.dp)
-                        .border(1.dp, avatarColor, CircleShape)
-                        .padding(2.dp)
-                        .clip(CircleShape)
-                        .clickable { onOpenProfile() }
-
-                    Box(contentAlignment = Alignment.BottomEnd) {
-                        if ((userId != null) && baseUrl.isNotEmpty()) {
-                            val cleanBaseUrl = baseUrl.removeSuffix("/")
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data("$cleanBaseUrl/api/users/$userId/profile-image")
-                                    .addHeader("x-api-key", apiKey)
-                                    .crossfade(enable = true)
-                                    .build(),
-                                contentDescription = stringResource(R.string.settings_section_account),
-                                placeholder = rememberVectorPainter(Icons.Default.AccountCircle),
-                                error = rememberVectorPainter(Icons.Default.AccountCircle),
-                            modifier = profileModifier,
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
+                    Box(
+                        modifier = Modifier.padding(end = 16.dp),
+                        contentAlignment = Alignment.BottomEnd
+                    ) {
+                        UserAvatar(
+                            userId = user?.id,
+                            baseUrl = baseUrl,
+                            apiKey = apiKey,
+                            name = user?.name ?: user?.email,
+                            avatarColorName = user?.avatarColor,
+                            modifier = Modifier.size(32.dp),
+                            borderWidth = 1.dp,
                             contentDescription = stringResource(R.string.settings_section_account),
-                            modifier = profileModifier,
-                            tint = MaterialTheme.colorScheme.outline
+                            onClick = onOpenProfile
                         )
-                    }
 
-                    Surface(
-                        modifier = Modifier
-                            .padding(end = 16.dp, bottom = 1.dp)
-                            .size(8.dp)
-                            .border(1.dp, MaterialTheme.colorScheme.surface, CircleShape),
-                        color = connectionStatus.level.color,
-                        shape = CircleShape,
-                    ) {}
+                        Surface(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .border(1.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                            color = connectionStatus.level.color,
+                            shape = CircleShape,
+                        ) {}
+                    }
                 }
-            }
         },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = MaterialTheme.colorScheme.surface,

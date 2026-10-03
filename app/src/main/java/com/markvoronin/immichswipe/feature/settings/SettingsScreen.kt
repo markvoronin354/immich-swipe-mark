@@ -33,8 +33,8 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AdsClick
+import com.markvoronin.immichswipe.feature.home.components.UserAvatar
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.DarkMode
@@ -457,10 +457,12 @@ fun SettingsScreen(
         SettingsSection(title = stringResource(R.string.settings_section_account), icon = Icons.Default.Person) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.AccountCircle,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.outline,
+                    UserAvatar(
+                        userId = null,
+                        baseUrl = "",
+                        apiKey = "",
+                        name = uiState.userName,
+                        avatarColorName = null,
                         modifier = Modifier.size(40.dp)
                     )
                     Spacer(Modifier.width(16.dp))
