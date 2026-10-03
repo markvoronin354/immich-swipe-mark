@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.feature.duplicates.DuplicateClusterUiModel
 import com.markvoronin.immichswipe.feature.duplicates.DuplicateDecision
-import com.markvoronin.immichswipe.feature.settings.components.horizontalFadingEdges
 
 @Composable
 fun DuplicateClusterCard(
@@ -123,9 +122,7 @@ fun DuplicateClusterCard(
                 LazyRow(
                     state = rowState,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalFadingEdges(rowState, length = 24.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     items(cluster.assets, key = { it.id }) { asset ->
                         val decision = decisions[asset.id] ?: DuplicateDecision.NONE
