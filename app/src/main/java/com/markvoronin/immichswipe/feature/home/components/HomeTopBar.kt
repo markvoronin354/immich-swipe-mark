@@ -72,7 +72,7 @@ fun HomeTopBar(
     Column(modifier = modifier) {
         TopAppBar(
             navigationIcon = {
-                if (isSettingsTab) {
+                if (isSettingsTab || isSwipeTab) {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,

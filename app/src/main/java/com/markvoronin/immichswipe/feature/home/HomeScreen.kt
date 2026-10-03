@@ -192,6 +192,9 @@ fun HomeScreen(
                         settingsViewModel.setShowActionButtonsDialog(false)
                     } else if (backStack.size > 1) {
                         backStack.removeAt(backStack.lastIndex)
+                    } else {
+                        backStack.clear()
+                        backStack.add(NavKey.Home)
                     }
                 }
             )
@@ -319,13 +322,15 @@ fun HomeScreen(
                     }
                 )
 
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .padding(horizontal = 64.dp, vertical = 24.dp)
-                        .navigationBarsPadding()
-                ) {
+                // Temporarily hidden floating navigation bar
+                if (false) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .padding(horizontal = 64.dp, vertical = 24.dp)
+                            .navigationBarsPadding()
+                    ) {
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
                         shape = CircleShape,
@@ -380,6 +385,7 @@ fun HomeScreen(
                         }
                     }
                 }
+            }
             }
         }
     }
