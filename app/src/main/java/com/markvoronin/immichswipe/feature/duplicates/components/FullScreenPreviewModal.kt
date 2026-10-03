@@ -319,12 +319,9 @@ fun FullScreenPreviewModal(
                     label = "PagePanY"
                 )
 
-                val imageRequest = remember(currentAsset.id, baseUrlClean, apiKey, currentAsset.isGif) {
+                val imageRequest = remember(currentAsset.id, baseUrlClean, apiKey) {
                     ImageRequest.Builder(context)
-                        .data(
-                            if (currentAsset.isGif) "$baseUrlClean/api/assets/${currentAsset.id}/original"
-                            else "$baseUrlClean/api/assets/${currentAsset.id}/thumbnail?format=WEBP&size=preview"
-                        )
+                        .data("$baseUrlClean/api/assets/${currentAsset.id}/original")
                         .addHeader("x-api-key", apiKey)
                         .crossfade(false)
                         .build()
