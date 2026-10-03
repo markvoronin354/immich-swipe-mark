@@ -404,13 +404,15 @@ class AssetRepository @Inject constructor(
         if (assetIds.isNotEmpty()) {
             AppLogger.i("AssetRepo", "Updating ${assetIds.size} assets on Immich server (isFavorite=$isFavorite, visibility=$visibility)...")
             try {
-                api.updateAssets(
-                    UpdateAssetsRequest(
-                        ids = assetIds,
-                        isFavorite = isFavorite,
-                        visibility = visibility
+                assetIds.chunked(500).forEach { chunk ->
+                    api.updateAssets(
+                        UpdateAssetsRequest(
+                            ids = chunk,
+                            isFavorite = isFavorite,
+                            visibility = visibility
+                        )
                     )
-                )
+                }
                 AppLogger.i("AssetRepo", "Successfully updated ${assetIds.size} assets on Immich server")
             } catch (e: Exception) {
                 AppLogger.e("AssetRepo", "Failed to update ${assetIds.size} assets on Immich server: ${e.message}", e)
