@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -100,20 +101,12 @@ fun ProfilePopup(
             tonalElevation = 3.dp,
             border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
-            val scrollState = rememberScrollState()
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalFadingEdges(scrollState, length = 32.dp)
-                    .padding(horizontal = 24.dp)
-                    .verticalScroll(scrollState),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(Modifier.height(16.dp))
-                // Header with logo and close button
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Header with logo and close button (static)
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -134,7 +127,18 @@ fun ProfilePopup(
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                val scrollState = rememberScrollState()
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalFadingEdges(scrollState, length = 32.dp)
+                        .padding(horizontal = 24.dp)
+                        .verticalScroll(scrollState),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(Modifier.height(12.dp))
 
                 // Profile Avatar
                 UserAvatar(
@@ -390,6 +394,7 @@ fun ProfilePopup(
                 Spacer(Modifier.height(24.dp))
             }
         }
+    }
     }
 
 
