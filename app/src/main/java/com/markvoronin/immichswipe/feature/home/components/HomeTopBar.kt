@@ -157,7 +157,7 @@ fun HomeTopBar(
                     }
                 }
 
-                if (!isSettingsTab || activeSubMenu == SettingsSubMenu.NONE) {
+                if (!isSettingsTab) {
                     Box(
                         modifier = Modifier.padding(end = 16.dp),
                         contentAlignment = Alignment.BottomEnd
