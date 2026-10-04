@@ -65,10 +65,9 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideAssetRepository(
-        @ApplicationContext context: Context,
         sessionManager: SessionManager,
         albumAssetDao: AlbumAssetDao
     ): AssetRepository {
-        return AssetRepository(context = context, sessionManager = sessionManager, albumAssetDao = albumAssetDao)
+        return AssetRepository(sessionManager = sessionManager, albumAssetDao = albumAssetDao)
     }
 }
