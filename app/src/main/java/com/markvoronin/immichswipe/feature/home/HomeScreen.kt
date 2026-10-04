@@ -1,7 +1,6 @@
 package com.markvoronin.immichswipe.feature.home
 
 import android.content.Intent
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -54,7 +53,6 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -183,27 +181,20 @@ fun HomeScreen(
                 modifier = modifier,
                 containerColor = Color.Transparent,
                 topBar = {
-                    val context = LocalContext.current
-                val replayToastText = stringResource(R.string.tutorial_replay_toast)
-
-                HomeTopBar(
-                    isHome = isHome,
-                    isSwipeTab = currentTopKey is NavKey.Swipe || currentTopKey is NavKey.Duplicates,
-                    isSettingsTab = currentTopKey is NavKey.Settings,
-                    activeSubMenu = activeSubMenu,
-                    user = uiState.user,
-                    connectionStatus = uiState.connectionStatus,
-                    baseUrl = uiState.baseUrl,
-                    apiKey = uiState.apiKey,
-                    onOpenStats = { viewModel.toggleStatsPopup(visible = true) },
-                    onGlobalReset = { viewModel.toggleGlobalResetConfirmation(true) },
-                    onSwipeReset = { viewModel.requestReset() },
-                    onReplayTutorials = {
-                        settingsViewModel.resetTutorials()
-                        Toast.makeText(context, replayToastText, Toast.LENGTH_SHORT).show()
-                    },
-                    onOpenProfile = { viewModel.toggleProfilePopup(visible = true) },
-                    onBack = {
+                    HomeTopBar(
+                        isHome = isHome,
+                        isSwipeTab = currentTopKey is NavKey.Swipe || currentTopKey is NavKey.Duplicates,
+                        isSettingsTab = currentTopKey is NavKey.Settings,
+                        activeSubMenu = activeSubMenu,
+                        user = uiState.user,
+                        connectionStatus = uiState.connectionStatus,
+                        baseUrl = uiState.baseUrl,
+                        apiKey = uiState.apiKey,
+                        onOpenStats = { viewModel.toggleStatsPopup(visible = true) },
+                        onGlobalReset = { viewModel.toggleGlobalResetConfirmation(true) },
+                        onSwipeReset = { viewModel.requestReset() },
+                        onOpenProfile = { viewModel.toggleProfilePopup(visible = true) },
+                        onBack = {
                         if (activeSubMenu != SettingsSubMenu.NONE) {
                             settingsViewModel.setShowInteractionsDialog(false)
                             settingsViewModel.setShowActionButtonsDialog(false)

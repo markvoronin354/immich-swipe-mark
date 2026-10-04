@@ -88,8 +88,9 @@ fun LogsDialog(
                 }
                 Text(
                     text = stringResource(R.string.settings_logs_dialog_title),
-                    modifier = Modifier.padding(horizontal = 48.dp),
-                    textAlign = TextAlign.Center
+                    modifier = Modifier.padding(horizontal = 36.dp),
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
                 )
             }
         },

@@ -19,7 +19,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AdsClick
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -67,7 +66,6 @@ fun HomeTopBar(
     baseUrl: String = "",
     apiKey: String = "",
     onBack: () -> Unit = {},
-    onReplayTutorials: () -> Unit = {},
 ) {
     Column(modifier = modifier) {
         TopAppBar(
@@ -153,14 +151,6 @@ fun HomeTopBar(
                             imageVector = Icons.Default.RestartAlt,
                             contentDescription = stringResource(R.string.swipe_reset_button),
                             tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                        )
-                    }
-                } else if (isSettingsTab) {
-                    IconButton(onClick = onReplayTutorials) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = stringResource(R.string.tutorial_replay_title),
-                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
