@@ -9,6 +9,7 @@ import androidx.media3.datasource.cache.CacheDataSink
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
+import com.markvoronin.immichswipe.core.AppLogger
 import java.io.File
 
 /**
@@ -19,18 +20,35 @@ object VideoCache {
     private var cache: SimpleCache? = null
     private const val CACHE_SIZE = 1024 * 1024 * 1024L // 1 GB for videos
 
+    @Synchronized
     fun getCache(context: Context): SimpleCache {
-        return cache ?: synchronized(this) {
-            if (cache == null) {
-                val cacheDir = File(context.cacheDir, "video_cache")
-                if (!cacheDir.exists()) cacheDir.mkdirs()
-                cache = SimpleCache(
-                    cacheDir,
-                    LeastRecentlyUsedCacheEvictor(CACHE_SIZE),
-                    StandaloneDatabaseProvider(context)
-                )
+        if (cache == null) {
+            val cacheDir = File(context.cacheDir, "video_cache")
+            if (!cacheDir.exists()) cacheDir.mkdirs()
+            cache = SimpleCache(
+                cacheDir,
+                LeastRecentlyUsedCacheEvictor(CACHE_SIZE),
+                StandaloneDatabaseProvider(context)
+            )
+        }
+        return cache!!
+    }
+
+    /**
+     * Safely closes and releases the SimpleCache instance before clearing cache files from disk.
+     */
+    @Synchronized
+    fun releaseAndClear(context: Context) {
+        try {
+            cache?.release()
+            cache = null
+            val cacheDir = File(context.cacheDir, "video_cache")
+            if (cacheDir.exists()) {
+                cacheDir.deleteRecursively()
             }
-            cache!!
+            AppLogger.i("VideoCache", "Video cache safely released and cleared")
+        } catch (e: Exception) {
+            AppLogger.e("VideoCache", "Error releasing and clearing video cache", e)
         }
     }
 
