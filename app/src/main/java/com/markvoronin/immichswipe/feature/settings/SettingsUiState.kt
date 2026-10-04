@@ -24,7 +24,7 @@ data class SettingsUiState(
     val userQuotaBytes: Long? = null,
     val savedAccountsCount: Int = 1,
     val playbackBehavior: PlaybackBehavior = PlaybackBehavior.PAUSE_OTHERS,
-    val themeMode: AppTheme = AppTheme.DARK,
+    val themeMode: AppTheme = AppTheme.SYSTEM,
     val dynamicColor: Boolean = true,
     val fullscreenButtonPosition: IconPosition = IconPosition.TOP_RIGHT,
     val immichButtonPosition: IconPosition = IconPosition.TOP_LEFT,

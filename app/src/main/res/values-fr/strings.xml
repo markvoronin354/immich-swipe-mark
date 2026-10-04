@@ -270,13 +270,13 @@
     <string name="settings_source_code_label">Code source</string>
     <string name="settings_source_code_desc">Consulter le dépôt open source sur GitHub</string>
 
-    <!-- Tutoriel interactif -->
+    <!-- Tutoriel de l'application -->
     <string name="tutorial_skip">Passer</string>
     <string name="tutorial_next">Suivant</string>
     <string name="tutorial_previous">Retour</string>
     <string name="tutorial_finish">J\'ai compris !</string>
     <string name="tutorial_step_counter">Étape %1$d sur %2$d</string>
-    <string name="tutorial_replay_title">Tutoriels interactifs</string>
+    <string name="tutorial_replay_title">Tutoriels de l\'application</string>
     <string name="tutorial_replay_desc">Relancer les visites guidées pour le Tri et les Doublons</string>
     <string name="tutorial_replay_toast">Tutoriels réinitialisés ! Ouvrez le Tri ou les Doublons pour les afficher.</string>
 

@@ -78,7 +78,7 @@ class SessionRepository @Inject constructor(
      * Expose le thème actuel.
      */
     val themeMode: Flow<AppTheme> = dataStore.getThemeMode().map {
-        it?.let { try { AppTheme.valueOf(it) } catch(e: Exception) { AppTheme.DARK } } ?: AppTheme.DARK
+        it?.let { try { AppTheme.valueOf(it) } catch(e: Exception) { AppTheme.SYSTEM } } ?: AppTheme.SYSTEM
     }
 
     /**

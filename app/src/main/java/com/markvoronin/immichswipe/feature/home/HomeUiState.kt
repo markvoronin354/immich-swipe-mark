@@ -28,7 +28,7 @@ data class HomeUiState(
     val error: String? = null,
     val playbackBehavior: PlaybackBehavior = PlaybackBehavior.PAUSE_OTHERS,
     val showProfilePopup: Boolean = false, // État de visibilité de la fenêtre profil
-    val themeMode: AppTheme = AppTheme.DARK,
+    val themeMode: AppTheme = AppTheme.SYSTEM,
     val previousTab: HomeTab = HomeTab.HOME,
     // Map pour stocker le nombre de photos triées par albumId
     val albumTreatedCounts: Map<String, Int> = emptyMap(),

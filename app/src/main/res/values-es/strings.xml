@@ -269,13 +269,13 @@
     <string name="settings_source_code_label">Código fuente</string>
     <string name="settings_source_code_desc">Ver el repositorio de código abierto en GitHub</string>
 
-    <!-- Tutorial guiado -->
+    <!-- Tutorial de la aplicación -->
     <string name="tutorial_skip">Omitir</string>
     <string name="tutorial_next">Siguiente</string>
     <string name="tutorial_previous">Anterior</string>
     <string name="tutorial_finish">¡Entendido!</string>
     <string name="tutorial_step_counter">Paso %1$d de %2$d</string>
-    <string name="tutorial_replay_title">Tutoriales interactivos</string>
+    <string name="tutorial_replay_title">Tutoriales de la aplicación</string>
     <string name="tutorial_replay_desc">Reiniciar los recorridos interactivos para Deslizar y Duplicados</string>
     <string name="tutorial_replay_toast">¡Tutoriales reiniciados! Abre Deslizar o Duplicados para verlos.</string>
 
