@@ -75,7 +75,8 @@ fun DuplicateVideoPlayer(
     apiKey: String = "",
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit,
-    onTap: (() -> Unit)? = null
+    onTap: (() -> Unit)? = null,
+    videoSurfaceWrapper: @Composable (surfaceContent: @Composable () -> Unit) -> Unit = { surface -> surface() }
 ) {
     val context = LocalContext.current
     val sessionDataStore = remember(context) { SessionDataStore(context.applicationContext) }
@@ -188,47 +189,51 @@ fun DuplicateVideoPlayer(
     Box(
         modifier = outerBoxModifier
     ) {
-        if (effectiveBaseUrl.isNotEmpty() && effectiveApiKey.isNotEmpty()) {
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data("$effectiveBaseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
-                    .addHeader("x-api-key", effectiveApiKey)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = null,
-                contentScale = contentScale,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
+        videoSurfaceWrapper {
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (effectiveBaseUrl.isNotEmpty() && effectiveApiKey.isNotEmpty()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data("$effectiveBaseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                            .addHeader("x-api-key", effectiveApiKey)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        contentScale = contentScale,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
 
-        @SuppressLint("InflateParams")
-        AndroidView(
-            factory = { ctx ->
-                val view = LayoutInflater.from(ctx).inflate(R.layout.view_player_texture, null) as PlayerView
-                view.useController = false
-                view.resizeMode = if (contentScale == ContentScale.Crop) {
-                    AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                } else {
-                    AspectRatioFrameLayout.RESIZE_MODE_FIT
-                }
-                view.player = exoPlayer
-                view
-            },
-            update = { view ->
-                if (view.player != exoPlayer) {
-                    view.player = exoPlayer
-                }
-                exoPlayer?.volume = if (isMuted) 0f else 1f
-            },
-            onRelease = { view ->
-                view.player = null
-            },
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    alpha = if (isVideoReady) 1f else 0f
-                }
-        )
+                @SuppressLint("InflateParams")
+                AndroidView(
+                    factory = { ctx ->
+                        val view = LayoutInflater.from(ctx).inflate(R.layout.view_player_texture, null) as PlayerView
+                        view.useController = false
+                        view.resizeMode = if (contentScale == ContentScale.Crop) {
+                            AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                        } else {
+                            AspectRatioFrameLayout.RESIZE_MODE_FIT
+                        }
+                        view.player = exoPlayer
+                        view
+                    },
+                    update = { view ->
+                        if (view.player != exoPlayer) {
+                            view.player = exoPlayer
+                        }
+                        exoPlayer?.volume = if (isMuted) 0f else 1f
+                    },
+                    onRelease = { view ->
+                        view.player = null
+                    },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            alpha = if (isVideoReady) 1f else 0f
+                        }
+                )
+            }
+        }
 
         Column(
             modifier = Modifier

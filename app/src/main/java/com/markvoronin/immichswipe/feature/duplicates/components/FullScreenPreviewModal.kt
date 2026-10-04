@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -62,6 +63,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -84,6 +86,7 @@ import com.markvoronin.immichswipe.core.ImmichLauncher
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.feature.duplicates.DuplicateDecision
 import com.markvoronin.immichswipe.feature.settings.components.horizontalFadingEdges
+import com.markvoronin.immichswipe.feature.swipe.ZoomableBox
 import kotlin.math.abs
 
 @Composable
@@ -207,8 +210,8 @@ fun FullScreenPreviewModal(
             val window = (dialogView.parent as? DialogWindowProvider)?.window
             if (window != null) {
                 val insetsController = WindowCompat.getInsetsController(window, dialogView)
-                insetsController.hide(WindowInsetsCompat.Type.systemBars())
-                insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                insetsController.show(WindowInsetsCompat.Type.statusBars())
+                insetsController.isAppearanceLightStatusBars = false
             }
         }
 
@@ -316,181 +319,130 @@ fun FullScreenPreviewModal(
                     }
                 }
 
-                var scale by remember { mutableFloatStateOf(1f) }
-                var panX by remember { mutableFloatStateOf(0f) }
-                var panY by remember { mutableFloatStateOf(0f) }
+                var isZoomedIn by remember(currentAsset.id) { mutableStateOf(false) }
 
-                val animScale by animateFloatAsState(
-                    targetValue = scale,
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
-                    label = "PageScale"
-                )
-                val animPanX by animateFloatAsState(
-                    targetValue = panX,
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
-                    label = "PagePanX"
-                )
-                val animPanY by animateFloatAsState(
-                    targetValue = panY,
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
-                    label = "PagePanY"
-                )
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) {
+                    val containerHeightPx = with(density) { maxHeight.toPx() }
 
-                val imageRequest = remember(currentAsset.id, baseUrlClean, apiKey) {
-                    ImageRequest.Builder(context)
-                        .data("$baseUrlClean/api/assets/${currentAsset.id}/original")
-                        .addHeader("x-api-key", apiKey)
-                        .crossfade(false)
-                        .build()
-                }
+                    val swipeModifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(currentAsset.id, isZoomedIn) {
+                            if (isZoomedIn) return@pointerInput
+                            awaitEachGesture {
+                                val down = awaitFirstDown(pass = PointerEventPass.Initial, requireUnconsumed = false)
+                                val startY = down.position.y
+                                val controlsHeightPx = with(density) { 70.dp.toPx() }
+                                val isTouchInControls = currentAsset.type == "VIDEO" && startY > (containerHeightPx - controlsHeightPx)
 
-                if (currentAsset.type == "VIDEO") {
-                    DuplicateVideoPlayer(
-                        asset = currentAsset,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        contentScale = ContentScale.Fit
-                    )
-                } else {
-                    BoxWithConstraints(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                    ) {
-                        val containerWidthPx = with(density) { maxWidth.toPx() }
-                        val containerHeightPx = with(density) { maxHeight.toPx() }
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .pointerInput(currentAsset.id) {
-                                    detectTapGestures(
-                                        onTap = {
-                                            currentOnDecisionToggle(currentAsset.id)
-                                        },
-                                        onDoubleTap = {
-                                            if (scale > 1.05f) {
-                                                scale = 1f
-                                                panX = 0f
-                                                panY = 0f
-                                            } else {
-                                                scale = 2.5f
-                                                panX = 0f
-                                                panY = 0f
-                                            }
-                                        }
-                                    )
+                                if (isTouchInControls) {
+                                    // Touch started in video controls bar (Play/Pause, Seekbar, Mute). Let child controls handle it.
+                                    return@awaitEachGesture
                                 }
-                                .pointerInput(currentAsset.id) {
-                                    awaitEachGesture {
-                                        var isZooming = false
-                                        var isDraggingHorizontal = false
-                                        var isDraggingVertical = false
-                                        var totalDragX = 0f
-                                        var totalDragY = 0f
-                                        val touchSlop = viewConfiguration.touchSlop
 
-                                        do {
-                                            val event = awaitPointerEvent()
-                                            val pointerCount = event.changes.size
+                                var isDraggingHorizontal = false
+                                var isDraggingVertical = false
+                                var totalDragX = 0f
+                                var totalDragY = 0f
+                                val touchSlop = viewConfiguration.touchSlop
 
-                                            if (pointerCount >= 2) {
-                                                // Multi-finger gesture: Pinch-to-zoom mode takes precedence
-                                                isZooming = true
-                                                isDraggingHorizontal = false
-                                                isDraggingVertical = false
+                                do {
+                                    val event = awaitPointerEvent(pass = PointerEventPass.Initial)
+                                    if (event.changes.size == 1) {
+                                        val change = event.changes[0]
+                                        val panChange = event.calculatePan()
+                                        totalDragX += panChange.x
+                                        totalDragY += panChange.y
 
-                                                val zoomChange = event.calculateZoom()
-                                                val panChange = event.calculatePan()
+                                        val absX = abs(totalDragX)
+                                        val absY = abs(totalDragY)
 
-                                                val newScale = (scale * zoomChange).coerceIn(1f, 5f)
-                                                scale = newScale
-                                                if (newScale > 1.05f) {
-                                                    val maxPanX = (containerWidthPx * (newScale - 1f)) / 2f
-                                                    val maxPanY = (containerHeightPx * (newScale - 1f)) / 2f
-                                                    panX = (panX + panChange.x).coerceIn(-maxPanX, maxPanX)
-                                                    panY = (panY + panChange.y).coerceIn(-maxPanY, maxPanY)
-                                                } else {
-                                                    panX = 0f
-                                                    panY = 0f
-                                                }
-                                                event.changes.forEach { it.consume() }
-                                            } else if (pointerCount == 1) {
-                                                val change = event.changes[0]
-                                                if (scale > 1.05f) {
-                                                    // Single-finger panning when zoomed in (only consume when actually moving)
-                                                    val panChange = event.calculatePan()
-                                                    if (panChange != Offset.Zero) {
-                                                        val maxPanX = (containerWidthPx * (scale - 1f)) / 2f
-                                                        val maxPanY = (containerHeightPx * (scale - 1f)) / 2f
-                                                        panX = (panX + panChange.x).coerceIn(-maxPanX, maxPanX)
-                                                        panY = (panY + panChange.y).coerceIn(-maxPanY, maxPanY)
-                                                        change.consume()
-                                                    }
-                                                } else if (!isZooming) {
-                                                    // Unzoomed 1-finger drag
-                                                    val panChange = event.calculatePan()
-                                                    totalDragX += panChange.x
-                                                    totalDragY += panChange.y
-
-                                                    val absX = abs(totalDragX)
-                                                    val absY = abs(totalDragY)
-
-                                                    if (!isDraggingHorizontal && !isDraggingVertical) {
-                                                        if (absX > touchSlop && absX > absY) {
-                                                            isDraggingHorizontal = true
-                                                        } else if (absY > touchSlop && absY > absX && totalDragY > 0f) {
-                                                            isDraggingVertical = true
-                                                            isDraggingDismiss = true
-                                                        }
-                                                    }
-
-                                                    if (isDraggingHorizontal) {
-                                                        change.consume()
-                                                    } else if (isDraggingVertical) {
-                                                        dismissOffsetY = (totalDragY - touchSlop).coerceAtLeast(0f)
-                                                        change.consume()
-                                                    }
-                                                }
-                                            }
-                                        } while (event.changes.any { it.pressed })
-
-                                        if (isDraggingVertical) {
-                                            isDraggingDismiss = false
-                                            if (dismissOffsetY > 200f) {
-                                                onDismiss()
-                                            } else {
-                                                dismissOffsetY = 0f
-                                            }
-                                        } else if (isDraggingHorizontal) {
-                                            if (totalDragX < -100f && selectedIndex < assets.size - 1) {
-                                                selectedIndex++
-                                            } else if (totalDragX > 100f && selectedIndex > 0) {
-                                                selectedIndex--
+                                        if (!isDraggingHorizontal && !isDraggingVertical) {
+                                            if (absX > touchSlop && absX > absY) {
+                                                isDraggingHorizontal = true
+                                            } else if (absY > touchSlop && absY > absX && totalDragY > 0f) {
+                                                isDraggingVertical = true
+                                                isDraggingDismiss = true
                                             }
                                         }
 
-                                        if (scale < 1.01f) {
-                                            scale = 1f
-                                            panX = 0f
-                                            panY = 0f
+                                        if (isDraggingHorizontal) {
+                                            change.consume()
+                                        } else if (isDraggingVertical) {
+                                            dismissOffsetY = (totalDragY - touchSlop).coerceAtLeast(0f)
+                                            change.consume()
                                         }
                                     }
+                                } while (event.changes.any { it.pressed })
+
+                                if (isDraggingVertical) {
+                                    isDraggingDismiss = false
+                                    if (dismissOffsetY > 200f) {
+                                        onDismiss()
+                                    } else {
+                                        dismissOffsetY = 0f
+                                    }
+                                } else if (isDraggingHorizontal) {
+                                    if (totalDragX < -100f && selectedIndex < assets.size - 1) {
+                                        selectedIndex++
+                                    } else if (totalDragX > 100f && selectedIndex > 0) {
+                                        selectedIndex--
+                                    }
                                 }
+                            }
+                        }
+
+                    if (currentAsset.type == "VIDEO") {
+                        DuplicateVideoPlayer(
+                            asset = currentAsset,
+                            baseUrl = baseUrlClean,
+                            apiKey = apiKey,
+                            modifier = swipeModifier,
+                            contentScale = ContentScale.Fit,
+                            onTap = {
+                                currentOnDecisionToggle(currentAsset.id)
+                            },
+                            videoSurfaceWrapper = { videoSurface ->
+                                ZoomableBox(
+                                    modifier = Modifier.fillMaxSize(),
+                                    resetOnRelease = false,
+                                    onIsZoomedChanged = { zoomed ->
+                                        isZoomedIn = zoomed
+                                    },
+                                    onTap = { _, _ ->
+                                        currentOnDecisionToggle(currentAsset.id)
+                                    }
+                                ) {
+                                    videoSurface()
+                                }
+                            }
+                        )
+                    } else {
+                        ZoomableBox(
+                            modifier = swipeModifier,
+                            resetOnRelease = false,
+                            onIsZoomedChanged = { zoomed ->
+                                isZoomedIn = zoomed
+                            },
+                            onTap = { _, _ ->
+                                currentOnDecisionToggle(currentAsset.id)
+                            }
                         ) {
+                            val imageRequest = remember(currentAsset.id, baseUrlClean, apiKey) {
+                                ImageRequest.Builder(context)
+                                    .data("$baseUrlClean/api/assets/${currentAsset.id}/original")
+                                    .addHeader("x-api-key", apiKey)
+                                    .crossfade(false)
+                                    .build()
+                            }
                             AsyncImage(
                                 model = imageRequest,
                                 contentDescription = null,
                                 contentScale = ContentScale.Fit,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .graphicsLayer {
-                                        scaleX = animScale
-                                        scaleY = animScale
-                                        translationX = animPanX
-                                        translationY = animPanY
-                                    }
+                                modifier = Modifier.fillMaxSize()
                             )
                         }
                     }
