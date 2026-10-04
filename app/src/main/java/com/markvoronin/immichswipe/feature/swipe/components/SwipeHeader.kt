@@ -1,4 +1,4 @@
-package com.markvoronin.immichswipe.feature.swipe
+package com.markvoronin.immichswipe.feature.swipe.components
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -17,9 +17,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,6 +44,9 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.markvoronin.immichswipe.R
+import com.markvoronin.immichswipe.feature.swipe.MaterialGreen
+import com.markvoronin.immichswipe.feature.swipe.MaterialRed
+import com.markvoronin.immichswipe.feature.swipe.SwipeUiState
 
 
 @Composable
@@ -99,8 +103,19 @@ fun SwipeHeader(
             // Layer 2: Blue Bar Overlay with White Text
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(animatedProgress)
                     .fillMaxHeight()
+                    .layout { measurable, constraints ->
+                        val targetWidth = (constraints.maxWidth * animatedProgress).toInt().coerceIn(0, constraints.maxWidth)
+                        val placeable = measurable.measure(
+                            constraints.copy(
+                                minWidth = targetWidth,
+                                maxWidth = targetWidth
+                            )
+                        )
+                        layout(targetWidth, placeable.height) {
+                            placeable.placeRelative(0, 0)
+                        }
+                    }
                     .clipToBounds()
                     .background(
                         Brush.horizontalGradient(
