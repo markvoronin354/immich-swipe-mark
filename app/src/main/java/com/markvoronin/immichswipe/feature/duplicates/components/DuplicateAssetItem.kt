@@ -141,6 +141,12 @@ fun DuplicateAssetItem(
                                         it.consume()
                                     }
                                 }
+                            } else if (activeZooming) {
+                                event.changes.forEach {
+                                    if (it.positionChange() != Offset.Zero) {
+                                        it.consume()
+                                    }
+                                }
                             }
                         } while (event.changes.any { it.pressed })
 

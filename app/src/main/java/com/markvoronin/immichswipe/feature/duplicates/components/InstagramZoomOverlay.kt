@@ -35,6 +35,7 @@ import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.markvoronin.immichswipe.feature.duplicates.DuplicateDecision
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
@@ -56,40 +57,42 @@ fun InstagramZoomOverlay(
     val offsetXAnim = remember { Animatable(zoomData.offset.x) }
     val offsetYAnim = remember { Animatable(zoomData.offset.y) }
 
-    LaunchedEffect(zoomData.scale, zoomData.offset, zoomData.isGestureActive) {
+    LaunchedEffect(zoomData.asset.id, zoomData.scale, zoomData.offset, zoomData.isGestureActive) {
         if (zoomData.isGestureActive) {
             scaleAnim.snapTo(zoomData.scale)
             offsetXAnim.snapTo(zoomData.offset.x)
             offsetYAnim.snapTo(zoomData.offset.y)
         } else {
-            launch {
-                scaleAnim.animateTo(
-                    targetValue = 1f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessMedium
+            coroutineScope {
+                launch {
+                    scaleAnim.animateTo(
+                        targetValue = 1f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
                     )
-                )
-            }
-            launch {
-                offsetXAnim.animateTo(
-                    targetValue = 0f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessMedium
+                }
+                launch {
+                    offsetXAnim.animateTo(
+                        targetValue = 0f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
                     )
-                )
-            }
-            launch {
-                offsetYAnim.animateTo(
-                    targetValue = 0f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessMedium
+                }
+                launch {
+                    offsetYAnim.animateTo(
+                        targetValue = 0f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
                     )
-                )
-                onDismiss()
+                }
             }
+            onDismiss()
         }
     }
 
@@ -132,11 +135,14 @@ fun InstagramZoomOverlay(
                 .clip(RoundedCornerShape(8.dp))
                 .border(3.dp, borderColor, RoundedCornerShape(8.dp))
         ) {
-            val imageRequest = remember(zoomData.asset.id, baseUrlClean, apiKey) {
+            val imageRequest = remember(zoomData.asset.id, baseUrlClean, apiKey, zoomData.asset.isGif) {
                 ImageRequest.Builder(context)
-                    .data("$baseUrlClean/api/assets/${zoomData.asset.id}/original")
+                    .data(
+                        if (zoomData.asset.isGif) "$baseUrlClean/api/assets/${zoomData.asset.id}/original"
+                        else "$baseUrlClean/api/assets/${zoomData.asset.id}/thumbnail?format=WEBP&size=preview"
+                    )
                     .addHeader("x-api-key", apiKey)
-                    .crossfade(true)
+                    .crossfade(false)
                     .build()
             }
 

@@ -1,5 +1,7 @@
 package com.markvoronin.immichswipe.feature.duplicates
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -176,24 +178,36 @@ fun DuplicatesScreen(
                             )
                         }
 
+                        val containerColor by animateColorAsState(
+                            targetValue = if (deleteCount > 0) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            animationSpec = tween(durationMillis = 200),
+                            label = "DeleteButtonContainerColor"
+                        )
+                        val contentColor by animateColorAsState(
+                            targetValue = if (deleteCount > 0) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.outline,
+                            animationSpec = tween(durationMillis = 200),
+                            label = "DeleteButtonContentColor"
+                        )
+
                         Box(
                             modifier = Modifier.tutorialTarget("dup_delete", tutorialController),
                             contentAlignment = Alignment.CenterEnd
                         ) {
-                            if (deleteCount > 0) {
-                                Button(
-                                    onClick = { viewModel.toggleDeleteConfirmation(true) },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                                    ),
-                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                                    shape = RoundedCornerShape(16.dp)
+                            Surface(
+                                onClick = { if (deleteCount > 0) viewModel.toggleDeleteConfirmation(true) },
+                                enabled = deleteCount > 0,
+                                color = containerColor,
+                                contentColor = contentColor,
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.DeleteForever,
                                         contentDescription = null,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(Modifier.width(6.dp))
                                     Text(
@@ -205,29 +219,6 @@ fun DuplicatesScreen(
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.labelLarge
                                     )
-                                }
-                            } else {
-                                Surface(
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                    shape = RoundedCornerShape(16.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.DeleteForever,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.outline,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(Modifier.width(6.dp))
-                                        Text(
-                                            text = stringResource(R.string.swipe_delete),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.outline
-                                        )
-                                    }
                                 }
                             }
                         }
