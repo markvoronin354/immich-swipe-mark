@@ -18,10 +18,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.VolumeOff
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -74,17 +74,22 @@ fun DuplicateVideoPlayer(
     baseUrl: String = "",
     apiKey: String = "",
     modifier: Modifier = Modifier,
-    contentScale: ContentScale = ContentScale.Fit
+    contentScale: ContentScale = ContentScale.Fit,
+    onTap: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val sessionDataStore = remember(context) { SessionDataStore(context.applicationContext) }
+    val storedBaseUrl by sessionDataStore.getBaseUrl().collectAsState(initial = null)
+    val storedApiKey by sessionDataStore.getApiKey().collectAsState(initial = null)
+
+    val effectiveBaseUrl = (baseUrl.ifBlank { storedBaseUrl ?: "" }).removeSuffix("/")
+    val effectiveApiKey = apiKey.ifBlank { storedApiKey ?: "" }
+
     val playbackBehaviorStr by sessionDataStore.getAudioFocusMode().collectAsState(initial = null)
     val playbackBehavior = remember(playbackBehaviorStr) {
         playbackBehaviorStr?.let { try { PlaybackBehavior.valueOf(it) } catch(_: Exception) { PlaybackBehavior.PAUSE_OTHERS } } ?: PlaybackBehavior.PAUSE_OTHERS
     }
     val handleAudioFocus = (playbackBehavior != PlaybackBehavior.IGNORE)
-
-    val baseUrlClean = baseUrl.removeSuffix("/")
 
     var isVideoReady by remember(asset.id) { mutableStateOf(false) }
     var isMuted by remember(asset.id) { mutableStateOf(false) }
@@ -95,7 +100,13 @@ fun DuplicateVideoPlayer(
     var isScrubbing by remember(asset.id) { mutableStateOf(false) }
     var scrubValue by remember(asset.id) { mutableLongStateOf(0L) }
 
-    val exoPlayer = remember(asset.id, handleAudioFocus) {
+    var exoPlayer by remember(asset.id, handleAudioFocus, effectiveBaseUrl, effectiveApiKey) { mutableStateOf<ExoPlayer?>(null) }
+
+    DisposableEffect(asset.id, handleAudioFocus, effectiveBaseUrl, effectiveApiKey) {
+        if (effectiveBaseUrl.isEmpty() || effectiveApiKey.isEmpty()) {
+            return@DisposableEffect onDispose {}
+        }
+
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(15_000, 50_000, 500, 1_000)
             .setPrioritizeTimeOverSizeThresholds(true)
@@ -106,13 +117,13 @@ fun DuplicateVideoPlayer(
             .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
             .build()
 
-        ExoPlayer.Builder(context)
+        val player = ExoPlayer.Builder(context)
             .setLoadControl(loadControl)
             .setAudioAttributes(audioAttributes, handleAudioFocus)
             .build().apply {
                 repeatMode = Player.REPEAT_MODE_ONE
-                val videoUrl = "$baseUrlClean/api/assets/${asset.id}/video/playback"
-                val dataSourceFactory = VideoCache.getCacheDataSourceFactory(context, apiKey)
+                val videoUrl = "$effectiveBaseUrl/api/assets/${asset.id}/video/playback"
+                val dataSourceFactory = VideoCache.getCacheDataSourceFactory(context, effectiveApiKey)
                 val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
                     .createMediaSource(
                         MediaItem.Builder()
@@ -125,19 +136,7 @@ fun DuplicateVideoPlayer(
                 prepare()
                 playWhenReady = true
             }
-    }
 
-    LaunchedEffect(exoPlayer, asset.id) {
-        while (true) {
-            if (!isScrubbing) {
-                currentTime = exoPlayer.currentPosition
-                duration = exoPlayer.duration.coerceAtLeast(0L)
-            }
-            delay(200.milliseconds)
-        }
-    }
-
-    DisposableEffect(exoPlayer, asset.id) {
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_READY) {
@@ -151,33 +150,56 @@ fun DuplicateVideoPlayer(
                 }
             }
         }
-        exoPlayer.addListener(listener)
+        player.addListener(listener)
+        exoPlayer = player
+
         onDispose {
-            exoPlayer.removeListener(listener)
-            exoPlayer.stop()
-            exoPlayer.release()
+            player.removeListener(listener)
+            player.stop()
+            player.release()
+            exoPlayer = null
+        }
+    }
+
+    LaunchedEffect(exoPlayer, asset.id) {
+        val player = exoPlayer ?: return@LaunchedEffect
+        while (true) {
+            if (!isScrubbing) {
+                currentTime = player.currentPosition
+                duration = player.duration.coerceAtLeast(0L)
+            }
+            delay(200.milliseconds)
+        }
+    }
+
+    val outerBoxModifier = if (onTap != null) {
+        modifier
+    } else {
+        modifier.clickable {
+            val player = exoPlayer ?: return@clickable
+            if (player.isPlaying) {
+                player.pause()
+            } else {
+                player.play()
+            }
         }
     }
 
     Box(
-        modifier = modifier.clickable {
-            if (exoPlayer.isPlaying) {
-                exoPlayer.pause()
-            } else {
-                exoPlayer.play()
-            }
-        }
+        modifier = outerBoxModifier
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(context)
-                .data("$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
-                .addHeader("x-api-key", apiKey)
-                .crossfade(true)
-                .build(),
-            contentDescription = null,
-            contentScale = contentScale,
-            modifier = Modifier.fillMaxSize()
-        )
+        if (effectiveBaseUrl.isNotEmpty() && effectiveApiKey.isNotEmpty()) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data("$effectiveBaseUrl/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview")
+                    .addHeader("x-api-key", effectiveApiKey)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale = contentScale,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         @SuppressLint("InflateParams")
         AndroidView(
@@ -196,7 +218,7 @@ fun DuplicateVideoPlayer(
                 if (view.player != exoPlayer) {
                     view.player = exoPlayer
                 }
-                exoPlayer.volume = if (isMuted) 0f else 1f
+                exoPlayer?.volume = if (isMuted) 0f else 1f
             },
             onRelease = { view ->
                 view.player = null
@@ -238,10 +260,11 @@ fun DuplicateVideoPlayer(
             ) {
                 IconButton(
                     onClick = {
-                        if (exoPlayer.isPlaying) {
-                            exoPlayer.pause()
+                        val player = exoPlayer ?: return@IconButton
+                        if (player.isPlaying) {
+                            player.pause()
                         } else {
-                            exoPlayer.play()
+                            player.play()
                         }
                     },
                     modifier = Modifier
@@ -263,11 +286,11 @@ fun DuplicateVideoPlayer(
                     onValueChange = {
                         isScrubbing = true
                         scrubValue = it.toLong()
-                        exoPlayer.seekTo(scrubValue)
+                        exoPlayer?.seekTo(scrubValue)
                     },
                     onValueChangeFinished = {
                         isScrubbing = false
-                        exoPlayer.seekTo(scrubValue)
+                        exoPlayer?.seekTo(scrubValue)
                     },
                     valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
                     colors = SliderDefaults.colors(
@@ -285,14 +308,14 @@ fun DuplicateVideoPlayer(
                 IconButton(
                     onClick = {
                         isMuted = !isMuted
-                        exoPlayer.volume = if (isMuted) 0f else 1f
+                        exoPlayer?.volume = if (isMuted) 0f else 1f
                     },
                     modifier = Modifier
                         .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                         .size(36.dp)
                 ) {
                     Icon(
-                        imageVector = if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                        imageVector = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
                         contentDescription = if (isMuted) "Unmute" else "Mute",
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
