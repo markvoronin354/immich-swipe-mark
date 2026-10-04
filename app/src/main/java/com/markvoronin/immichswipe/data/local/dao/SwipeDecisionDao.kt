@@ -24,15 +24,15 @@ interface SwipeDecisionDao {
 
     /**
      * Récupère toutes les décisions pour un album spécifique d'un utilisateur donné.
-     * Utilise désormais la table de jointure album_assets.
+     * Utilise UNION pour maximiser l'utilisation des index SQLite au lieu d'un OR lent.
      */
     @Query("""
-        SELECT DISTINCT sd.* FROM swipe_decisions sd
-        LEFT JOIN album_assets aa ON sd.assetId = aa.assetId AND aa.userId = :userId
-        WHERE sd.userId = :userId AND (
-            sd.albumId = :albumId 
-            OR aa.albumId = :albumId
-        )
+        SELECT * FROM swipe_decisions
+        WHERE userId = :userId AND albumId = :albumId
+        UNION
+        SELECT sd.* FROM swipe_decisions sd
+        JOIN album_assets aa ON sd.assetId = aa.assetId AND aa.userId = :userId
+        WHERE sd.userId = :userId AND aa.albumId = :albumId
     """)
     fun getDecisionsForAlbum(albumId: String, userId: String): Flow<List<SwipeDecisionEntity>>
 
@@ -62,12 +62,15 @@ interface SwipeDecisionDao {
 
     /**
      * Supprime toutes les décisions d'un album pour un utilisateur.
+     * Utilise des sous-requêtes indexées au lieu d'un OR.
      */
     @Query("""
         DELETE FROM swipe_decisions 
-        WHERE userId = :userId AND (
-            albumId = :albumId 
-            OR assetId IN (SELECT assetId FROM album_assets WHERE albumId = :albumId AND userId = :userId)
+        WHERE userId = :userId 
+        AND assetId IN (
+            SELECT assetId FROM swipe_decisions WHERE userId = :userId AND albumId = :albumId
+            UNION
+            SELECT assetId FROM album_assets WHERE userId = :userId AND albumId = :albumId
         )
     """)
     suspend fun deleteDecisionsForAlbum(albumId: String, userId: String)
@@ -117,18 +120,12 @@ interface SwipeDecisionDao {
     """)
     fun getUnsyncedDecisionCounts(userId: String): Flow<UnsyncedDecisionCounts>
 
-    /**
-     * Récupère le nombre d'assets orphelins triés globalement.
-     * Pour cela, on a besoin de savoir si l'asset est un orphelin (c'est complexe en SQL pur
-     * sans la liste des orphelins, donc on va peut-être gérer ça au niveau ViewModel/Repo).
-     */
-
     @Query("SELECT * FROM swipe_decisions WHERE userId = :userId")
     fun getAllDecisionsForUser(userId: String): Flow<List<SwipeDecisionEntity>>
 
     /**
      * Récupère les statistiques de décisions pour tous les albums d'un utilisateur sous forme de Flow.
-     * Utilise désormais la table album_assets pour inclure les décisions prises dans d'autres albums.
+     * Utilise la table album_assets pour inclure les décisions prises dans d'autres albums.
      */
     @Query("""
         WITH all_album_decisions AS (
