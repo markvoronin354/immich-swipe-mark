@@ -74,6 +74,7 @@ import com.markvoronin.immichswipe.feature.home.components.AlbumList
 import com.markvoronin.immichswipe.feature.home.components.ErrorView
 import com.markvoronin.immichswipe.feature.home.components.HomeTopBar
 import com.markvoronin.immichswipe.feature.home.components.ProfilePopup
+import com.markvoronin.immichswipe.feature.home.components.SearchBarField
 import com.markvoronin.immichswipe.feature.home.components.StatsPopup
 import com.markvoronin.immichswipe.feature.settings.SettingsScreen
 import com.markvoronin.immichswipe.feature.settings.SettingsSubMenu
@@ -194,8 +195,6 @@ fun HomeScreen(
                     connectionStatus = uiState.connectionStatus,
                     baseUrl = uiState.baseUrl,
                     apiKey = uiState.apiKey,
-                    searchQuery = uiState.searchQuery,
-                    onSearchQueryChange = { viewModel.onSearchQueryChanged(it) },
                     onOpenStats = { viewModel.toggleStatsPopup(visible = true) },
                     onGlobalReset = { viewModel.toggleGlobalResetConfirmation(true) },
                     onSwipeReset = { viewModel.requestReset() },
@@ -236,66 +235,75 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxSize(),
                     entryProvider = entryProvider {
                         entry<NavKey.Home> {
-                            if (uiState.isLoading && uiState.albums.isEmpty()) {
-                                Box(Modifier.fillMaxSize()) {
-                                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                                }
-                            } else if (uiState.error != null) {
-                                ErrorView(error = uiState.error!!) { viewModel.loadUser() }
-                            } else if (uiState.filteredAlbums.isEmpty() && uiState.searchQuery.isNotEmpty()) {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Icon(Icons.Default.SearchOff, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.outline)
-                                        Spacer(Modifier.height(8.dp))
-                                        Text(stringResource(R.string.home_no_results), color = MaterialTheme.colorScheme.outline)
-                                    }
-                                }
-                            } else {
-                                Crossfade(
-                                    targetState = uiState.isGridView,
-                                    animationSpec = tween(durationMillis = 500),
-                                    label = "LayoutSwitch"
-                                ) { isGrid ->
-                                    if (isGrid) {
-                                        AlbumGrid(
-                                            groupedAlbums = uiState.groupedAlbums,
-                                            treatedCounts = uiState.albumTreatedCounts,
-                                            unsyncedChanges = uiState.albumUnsyncedChanges,
-                                            collapsedCategories = uiState.collapsedCategories,
-                                            isRefreshing = uiState.isRefreshing,
-                                            baseUrl = uiState.baseUrl,
-                                            apiKey = uiState.apiKey,
-                                            onRefresh = { viewModel.refreshAlbums() },
-                                            onAlbumClick = { album ->
-                                                viewModel.onAlbumSelected(album)
-                                                if (album.id == Album.VIRTUAL_DUPLICATES_ID) {
-                                                    backStack.add(NavKey.Duplicates)
-                                                } else {
-                                                    backStack.add(NavKey.Swipe(album.id))
-                                                }
-                                            },
-                                            onToggleCategory = viewModel::toggleCategory
-                                        )
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                SearchBarField(
+                                    searchQuery = uiState.searchQuery,
+                                    onSearchQueryChange = { viewModel.onSearchQueryChanged(it) }
+                                )
+
+                                Box(modifier = Modifier.weight(1f)) {
+                                    if (uiState.isLoading && uiState.albums.isEmpty()) {
+                                        Box(Modifier.fillMaxSize()) {
+                                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                                        }
+                                    } else if (uiState.error != null) {
+                                        ErrorView(error = uiState.error!!) { viewModel.loadUser() }
+                                    } else if (uiState.filteredAlbums.isEmpty() && uiState.searchQuery.isNotEmpty()) {
+                                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Icon(Icons.Default.SearchOff, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.outline)
+                                                Spacer(Modifier.height(8.dp))
+                                                Text(stringResource(R.string.home_no_results), color = MaterialTheme.colorScheme.outline)
+                                            }
+                                        }
                                     } else {
-                                        AlbumList(
-                                            groupedAlbums = uiState.groupedAlbums,
-                                            treatedCounts = uiState.albumTreatedCounts,
-                                            unsyncedChanges = uiState.albumUnsyncedChanges,
-                                            collapsedCategories = uiState.collapsedCategories,
-                                            isRefreshing = uiState.isRefreshing,
-                                            baseUrl = uiState.baseUrl,
-                                            apiKey = uiState.apiKey,
-                                            onRefresh = { viewModel.refreshAlbums() },
-                                            onAlbumClick = { album ->
-                                                viewModel.onAlbumSelected(album)
-                                                if (album.id == Album.VIRTUAL_DUPLICATES_ID) {
-                                                    backStack.add(NavKey.Duplicates)
-                                                } else {
-                                                    backStack.add(NavKey.Swipe(album.id))
-                                                }
-                                            },
-                                            onToggleCategory = viewModel::toggleCategory
-                                        )
+                                        Crossfade(
+                                            targetState = uiState.isGridView,
+                                            animationSpec = tween(durationMillis = 500),
+                                            label = "LayoutSwitch"
+                                        ) { isGrid ->
+                                            if (isGrid) {
+                                                AlbumGrid(
+                                                    groupedAlbums = uiState.groupedAlbums,
+                                                    treatedCounts = uiState.albumTreatedCounts,
+                                                    unsyncedChanges = uiState.albumUnsyncedChanges,
+                                                    collapsedCategories = uiState.collapsedCategories,
+                                                    isRefreshing = uiState.isRefreshing,
+                                                    baseUrl = uiState.baseUrl,
+                                                    apiKey = uiState.apiKey,
+                                                    onRefresh = { viewModel.refreshAlbums() },
+                                                    onAlbumClick = { album ->
+                                                        viewModel.onAlbumSelected(album)
+                                                        if (album.id == Album.VIRTUAL_DUPLICATES_ID) {
+                                                            backStack.add(NavKey.Duplicates)
+                                                        } else {
+                                                            backStack.add(NavKey.Swipe(album.id))
+                                                        }
+                                                    },
+                                                    onToggleCategory = viewModel::toggleCategory
+                                                )
+                                            } else {
+                                                AlbumList(
+                                                    groupedAlbums = uiState.groupedAlbums,
+                                                    treatedCounts = uiState.albumTreatedCounts,
+                                                    unsyncedChanges = uiState.albumUnsyncedChanges,
+                                                    collapsedCategories = uiState.collapsedCategories,
+                                                    isRefreshing = uiState.isRefreshing,
+                                                    baseUrl = uiState.baseUrl,
+                                                    apiKey = uiState.apiKey,
+                                                    onRefresh = { viewModel.refreshAlbums() },
+                                                    onAlbumClick = { album ->
+                                                        viewModel.onAlbumSelected(album)
+                                                        if (album.id == Album.VIRTUAL_DUPLICATES_ID) {
+                                                            backStack.add(NavKey.Duplicates)
+                                                        } else {
+                                                            backStack.add(NavKey.Swipe(album.id))
+                                                        }
+                                                    },
+                                                    onToggleCategory = viewModel::toggleCategory
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }

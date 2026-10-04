@@ -57,8 +57,6 @@ fun HomeTopBar(
     isSwipeTab: Boolean,
     user: User?,
     connectionStatus: ConnectionStatus,
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
     onOpenStats: () -> Unit,
     onGlobalReset: () -> Unit,
     onSwipeReset: () -> Unit,
@@ -198,36 +196,41 @@ fun HomeTopBar(
                 containerColor = MaterialTheme.colorScheme.surface,
             )
         )
-
-        if (isHome) {
-            val searchShape = RoundedCornerShape(16.dp)
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChange,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
-                    .clip(searchShape)
-                    .height(52.dp),
-                placeholder = { Text(stringResource(R.string.home_search_placeholder), fontSize = 13.sp) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { onSearchQueryChange("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.common_cancel), modifier = Modifier.size(18.dp))
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = searchShape,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                ),
-                textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
-            )
-        }
     }
+}
+
+@Composable
+fun SearchBarField(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val searchShape = RoundedCornerShape(16.dp)
+    OutlinedTextField(
+        value = searchQuery,
+        onValueChange = onSearchQueryChange,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clip(searchShape)
+            .height(52.dp),
+        placeholder = { Text(stringResource(R.string.home_search_placeholder), fontSize = 13.sp) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
+        trailingIcon = {
+            if (searchQuery.isNotEmpty()) {
+                IconButton(onClick = { onSearchQueryChange("") }) {
+                    Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.common_cancel), modifier = Modifier.size(18.dp))
+                }
+            }
+        },
+        singleLine = true,
+        shape = searchShape,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+            focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        ),
+        textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+    )
 }
