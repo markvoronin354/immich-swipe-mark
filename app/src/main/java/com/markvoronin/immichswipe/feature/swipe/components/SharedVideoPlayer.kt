@@ -1,7 +1,7 @@
 package com.markvoronin.immichswipe.feature.swipe
 
-import android.content.res.Configuration
 import android.annotation.SuppressLint
+import android.content.res.Configuration
 import android.view.LayoutInflater
 import android.view.View
 import androidx.annotation.OptIn

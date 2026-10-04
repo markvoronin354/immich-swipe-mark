@@ -373,6 +373,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun resetTutorials() {
+        viewModelScope.launch {
+            sessionRepository.resetTutorials()
+        }
+    }
+
     fun logout() {
         viewModelScope.launch {
             sessionRepository.clearSession()

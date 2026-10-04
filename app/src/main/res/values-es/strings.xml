@@ -265,4 +265,28 @@
     <string name="settings_section_about">Acerca de y Legal</string>
     <string name="settings_source_code_label">Código fuente</string>
     <string name="settings_source_code_desc">Ver el repositorio de código abierto en GitHub</string>
+
+    <!-- Tutorial guiado -->
+    <string name="tutorial_skip">Omitir</string>
+    <string name="tutorial_next">Siguiente</string>
+    <string name="tutorial_previous">Anterior</string>
+    <string name="tutorial_finish">¡Entendido!</string>
+    <string name="tutorial_step_counter">Paso %1$d de %2$d</string>
+    <string name="tutorial_replay_title">Tutoriales interactivos</string>
+    <string name="tutorial_replay_desc">Reiniciar los recorridos interactivos para Deslizar y Duplicados</string>
+    <string name="tutorial_replay_toast">¡Tutoriales reiniciados! Abre Deslizar o Duplicados para verlos.</string>
+
+    <string name="tutorial_swipe_gestures_title">Gestos y Detalles</string>
+    <string name="tutorial_swipe_gestures_desc">¡Desliza a la DERECHA para CONSERVAR, a la IZQUIERDA para ELIMINAR, o arrastra hacia ARRIBA para ver los detalles EXIF!</string>
+    <string name="tutorial_swipe_header_title">Seguimiento del progreso</string>
+    <string name="tutorial_swipe_header_desc">Revisa tu progreso. Toca la barra de progreso en cualquier momento para ver el resumen y sincronizar con Immich.</string>
+    <string name="tutorial_swipe_actions_title">Barra de acciones rápidas</string>
+    <string name="tutorial_swipe_actions_desc">Usa los botones inferiores para Deshacer, Archivar, Marcar favorito, Añadir a álbum o cambiar el Orden de clasificación.</string>
+
+    <string name="tutorial_duplicates_clusters_title">Grupos de duplicados</string>
+    <string name="tutorial_duplicates_clusters_desc">Las fotos similares se agrupan en grupos. Compara resolución, tamaño y detalles para elegir cuáles limpiar.</string>
+    <string name="tutorial_duplicates_selection_title">Conservar o Eliminar</string>
+    <string name="tutorial_duplicates_selection_desc">Toca cualquier foto para alternar entre Conservar y Eliminar. ¡Mantén presionado para una vista de comparación en pantalla completa!</string>
+    <string name="tutorial_duplicates_action_title">Liberar espacio</string>
+    <string name="tutorial_duplicates_action_desc">Una vez marcadas las fotos para eliminar, ¡toca el botón \"Eliminar\" arriba a la derecha para borrarlas del servidor!</string>
 </resources>

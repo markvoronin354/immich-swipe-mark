@@ -36,6 +36,7 @@ fun DuplicateClusterCard(
     activeZoomAssetId: String?,
     baseUrl: String = "",
     apiKey: String = "",
+    photosModifier: Modifier = Modifier,
     onDecisionToggle: (String) -> Unit,
     onAssetLongPress: (Asset) -> Unit,
     onZoomStateUpdate: (ZoomData?) -> Unit
@@ -98,7 +99,7 @@ fun DuplicateClusterCard(
 
             if (cluster.assets.size <= 2) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = photosModifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     cluster.assets.forEach { asset ->
@@ -122,7 +123,7 @@ fun DuplicateClusterCard(
                 LazyRow(
                     state = rowState,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = photosModifier.fillMaxWidth()
                 ) {
                     items(cluster.assets, key = { it.id }) { asset ->
                         val decision = decisions[asset.id] ?: DuplicateDecision.NONE

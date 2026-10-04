@@ -11,7 +11,8 @@ data class DuplicatesUiState(
     val showDeleteConfirmation: Boolean = false,
     val baseUrl: String = "",
     val apiKey: String = "",
-    val error: String? = null
+    val error: String? = null,
+    val hasCompletedDuplicatesTutorial: Boolean = true
 ) {
     fun isFavorite(asset: Asset): Boolean {
         return favorites[asset.id] ?: asset.isFavorite

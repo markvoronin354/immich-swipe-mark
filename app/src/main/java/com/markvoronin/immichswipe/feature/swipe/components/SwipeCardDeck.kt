@@ -1,7 +1,5 @@
 package com.markvoronin.immichswipe.feature.swipe.components
 
-import com.markvoronin.immichswipe.feature.home.components.ErrorView
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -21,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Celebration
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -47,6 +44,7 @@ import androidx.compose.ui.zIndex
 import androidx.media3.exoplayer.ExoPlayer
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.SortOrder
+import com.markvoronin.immichswipe.feature.home.components.ErrorView
 import com.markvoronin.immichswipe.feature.swipe.SwipeCard
 import com.markvoronin.immichswipe.feature.swipe.SwipeCardActions
 import com.markvoronin.immichswipe.feature.swipe.SwipeCardConfig

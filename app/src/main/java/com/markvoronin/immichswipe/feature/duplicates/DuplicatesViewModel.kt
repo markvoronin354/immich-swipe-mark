@@ -8,6 +8,7 @@ import com.markvoronin.immichswipe.data.api.DeleteAssetsRequest
 import com.markvoronin.immichswipe.data.api.ImmichApi
 import com.markvoronin.immichswipe.data.api.UpdateAssetsRequest
 import com.markvoronin.immichswipe.data.local.entity.SwipeDecisionEntity
+import com.markvoronin.immichswipe.data.repository.SessionRepository
 import com.markvoronin.immichswipe.data.repository.SwipeDecisionRepository
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.domain.model.Asset
@@ -28,6 +29,7 @@ import javax.inject.Inject
 @HiltViewModel
 class DuplicatesViewModel @Inject constructor(
     private val swipeDecisionRepository: SwipeDecisionRepository,
+    private val sessionRepository: SessionRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
@@ -51,6 +53,17 @@ class DuplicatesViewModel @Inject constructor(
                     apiKey = config?.apiKey ?: ""
                 ) }
             }
+        }
+        viewModelScope.launch {
+            sessionRepository.hasCompletedDuplicatesTutorial.collect { completed ->
+                _uiState.update { it.copy(hasCompletedDuplicatesTutorial = completed) }
+            }
+        }
+    }
+
+    fun completeDuplicatesTutorial() {
+        viewModelScope.launch {
+            sessionRepository.setHasCompletedDuplicatesTutorial(true)
         }
     }
 

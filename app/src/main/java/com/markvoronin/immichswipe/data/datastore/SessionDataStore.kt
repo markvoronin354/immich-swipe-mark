@@ -21,7 +21,7 @@ class SessionDataStore(private val context: Context) {
         private val KEY_SAVED_SERVER_URLS = stringSetPreferencesKey("saved_server_urls")
         private val KEY_AUDIO_FOCUS = stringPreferencesKey("audio_focus")
         private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
-        private val KEY_DYNAMIC_COLOR = androidx.datastore.preferences.core.booleanPreferencesKey("dynamic_color")
+        private val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         private val KEY_FULLSCREEN_ICON_POS = stringPreferencesKey("fullscreen_icon_pos")
         private val KEY_IMMICH_ICON_POS = stringPreferencesKey("immich_icon_pos")
         private val KEY_IMMICH_OPEN_MODE = stringPreferencesKey("immich_open_mode")
@@ -50,6 +50,8 @@ class SessionDataStore(private val context: Context) {
         private val KEY_SYNC_LOCAL_DELETION = androidx.datastore.preferences.core.booleanPreferencesKey("sync_local_deletion")
         private val KEY_TRASH_LOCAL_DELETION = androidx.datastore.preferences.core.booleanPreferencesKey("trash_local_deletion")
         private val KEY_TAP_TO_SWIPE = androidx.datastore.preferences.core.booleanPreferencesKey("tap_to_swipe")
+        private val KEY_HAS_COMPLETED_SWIPE_TUTORIAL = booleanPreferencesKey("has_completed_swipe_tutorial")
+        private val KEY_HAS_COMPLETED_DUPLICATES_TUTORIAL = booleanPreferencesKey("has_completed_duplicates_tutorial")
     }
 
     suspend fun saveSession(baseUrl: String, apiKey: String, userId: String) {
@@ -223,6 +225,19 @@ class SessionDataStore(private val context: Context) {
 
     fun isTapToSwipeEnabled(): Flow<Boolean> = context.dataStore.data.map { it[KEY_TAP_TO_SWIPE] ?: false }
     suspend fun saveTapToSwipeEnabled(enabled: Boolean) { context.dataStore.edit { it[KEY_TAP_TO_SWIPE] = enabled } }
+
+    fun hasCompletedSwipeTutorial(): Flow<Boolean> = context.dataStore.data.map { it[KEY_HAS_COMPLETED_SWIPE_TUTORIAL] ?: false }
+    suspend fun setHasCompletedSwipeTutorial(completed: Boolean) { context.dataStore.edit { it[KEY_HAS_COMPLETED_SWIPE_TUTORIAL] = completed } }
+
+    fun hasCompletedDuplicatesTutorial(): Flow<Boolean> = context.dataStore.data.map { it[KEY_HAS_COMPLETED_DUPLICATES_TUTORIAL] ?: false }
+    suspend fun setHasCompletedDuplicatesTutorial(completed: Boolean) { context.dataStore.edit { it[KEY_HAS_COMPLETED_DUPLICATES_TUTORIAL] = completed } }
+
+    suspend fun resetTutorials() {
+        context.dataStore.edit {
+            it[KEY_HAS_COMPLETED_SWIPE_TUTORIAL] = false
+            it[KEY_HAS_COMPLETED_DUPLICATES_TUTORIAL] = false
+        }
+    }
 
     suspend fun clearSession() {
         context.dataStore.edit { it.clear() }

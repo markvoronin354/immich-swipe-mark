@@ -139,6 +139,17 @@ class SwipeViewModel @Inject constructor(
                 _uiState.update { it.copy(showAddToAlbumButton = show) }
             }
         }
+        viewModelScope.launch {
+            sessionRepository.hasCompletedSwipeTutorial.collect { completed ->
+                _uiState.update { it.copy(hasCompletedSwipeTutorial = completed) }
+            }
+        }
+    }
+
+    fun completeSwipeTutorial() {
+        viewModelScope.launch {
+            sessionRepository.setHasCompletedSwipeTutorial(true)
+        }
     }
 
     private fun updateSettingsState(values: Array<*>) {

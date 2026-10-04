@@ -265,4 +265,28 @@
     <string name="settings_section_about">About &amp; Legal</string>
     <string name="settings_source_code_label">Source Code</string>
     <string name="settings_source_code_desc">View the open source repository on GitHub</string>
+
+    <!-- Walkthrough Tutorial -->
+    <string name="tutorial_skip">Skip</string>
+    <string name="tutorial_next">Next</string>
+    <string name="tutorial_previous">Back</string>
+    <string name="tutorial_finish">Got it!</string>
+    <string name="tutorial_step_counter">Step %1$d of %2$d</string>
+    <string name="tutorial_replay_title">Interactive Walkthroughs</string>
+    <string name="tutorial_replay_desc">Re-launch interactive guides for Swipe &amp; Duplicates</string>
+    <string name="tutorial_replay_toast">Tutorials reset! Open Swipe or Duplicates to view.</string>
+
+    <string name="tutorial_swipe_gestures_title">Swipe Gestures &amp; Details</string>
+    <string name="tutorial_swipe_gestures_desc">Swipe RIGHT to KEEP, Swipe LEFT to DELETE, or drag UP to view full photo EXIF details!</string>
+    <string name="tutorial_swipe_header_title">Progress Tracking</string>
+    <string name="tutorial_swipe_header_desc">Monitor your sorting progress and counts at a glance. Tap the progress bar anytime to open the summary and sync changes to Immich!</string>
+    <string name="tutorial_swipe_actions_title">Quick Action Bar</string>
+    <string name="tutorial_swipe_actions_desc">Use bottom buttons to Undo, Archive, Favorite, Add to Album, or change Sort Order.</string>
+
+    <string name="tutorial_duplicates_clusters_title">Duplicate Groups</string>
+    <string name="tutorial_duplicates_clusters_desc">Similar photos and videos are grouped into clusters. Compare resolution, file size, and details to decide which ones to clean up.</string>
+    <string name="tutorial_duplicates_selection_title">Mark Keep or Delete</string>
+    <string name="tutorial_duplicates_selection_desc">Tap any photo card to toggle between Keep and Delete choices. Long-press any photo for a full-screen comparison view!</string>
+    <string name="tutorial_duplicates_action_title">Free Up Server Space</string>
+    <string name="tutorial_duplicates_action_desc">Once duplicate photos are marked for deletion, tap the top-right \"Delete\" button to remove them from your Immich server!</string>
 </resources>

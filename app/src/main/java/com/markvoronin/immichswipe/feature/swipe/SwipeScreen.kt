@@ -12,14 +12,14 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -38,7 +38,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.markvoronin.immichswipe.feature.swipe.components.SwipeHeader
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -69,6 +68,14 @@ import com.markvoronin.immichswipe.feature.swipe.components.ResetConfirmationDia
 import com.markvoronin.immichswipe.feature.swipe.components.SwipeActionBar
 import com.markvoronin.immichswipe.feature.swipe.components.SwipeBulkOverlay
 import com.markvoronin.immichswipe.feature.swipe.components.SwipeCardDeck
+import com.markvoronin.immichswipe.feature.swipe.components.SwipeHeader
+import com.markvoronin.immichswipe.feature.tutorial.GestureAnimationType
+import com.markvoronin.immichswipe.feature.tutorial.LocalTutorialController
+import com.markvoronin.immichswipe.feature.tutorial.ProvideTutorialController
+import com.markvoronin.immichswipe.feature.tutorial.TutorialPhase
+import com.markvoronin.immichswipe.feature.tutorial.TutorialStep
+import com.markvoronin.immichswipe.feature.tutorial.rememberTutorialController
+import com.markvoronin.immichswipe.feature.tutorial.tutorialTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -95,6 +102,43 @@ fun SwipeScreen(
         viewModel.initAlbum(album, userQuotaBytes)
     }
 
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val tutorialController = LocalTutorialController.current ?: rememberTutorialController()
+
+    val swipeTutorialSteps = remember {
+        listOf(
+            TutorialStep(
+                id = "gestures",
+                titleRes = R.string.tutorial_swipe_gestures_title,
+                descriptionRes = R.string.tutorial_swipe_gestures_desc,
+                targetKey = "swipe_deck",
+                gestureAnimation = GestureAnimationType.SWIPE_HORIZONTAL
+            ),
+            TutorialStep(
+                id = "header",
+                titleRes = R.string.tutorial_swipe_header_title,
+                descriptionRes = R.string.tutorial_swipe_header_desc,
+                targetKey = "swipe_header"
+            ),
+            TutorialStep(
+                id = "actions",
+                titleRes = R.string.tutorial_swipe_actions_title,
+                descriptionRes = R.string.tutorial_swipe_actions_desc,
+                targetKey = "swipe_actions"
+            )
+        )
+    }
+
+    LaunchedEffect(uiState.hasCompletedSwipeTutorial, uiState.assets.isNotEmpty()) {
+        if (!uiState.hasCompletedSwipeTutorial && uiState.assets.isNotEmpty()) {
+            tutorialController.startTutorial(
+                phase = TutorialPhase.SWIPE,
+                steps = swipeTutorialSteps,
+                onComplete = { viewModel.completeSwipeTutorial() }
+            )
+        }
+    }
+
     BackHandler(enabled = true) {
         val state = viewModel.uiState.value
         when {
@@ -111,8 +155,6 @@ fun SwipeScreen(
             viewModel.toggleResetConfirmation(visible = true)
         }
     }
-
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val localCtx = LocalContext.current
     
     // Background Preloader Trigger
@@ -473,58 +515,71 @@ fun SwipeScreen(
         }
     }
 
-    Column(
-        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        SwipeHeader(
-            uiState = uiState,
-            onSummaryClick = { viewModel.toggleSummary(visible = true) }
-        )
+    ProvideTutorialController(tutorialController) {
+        Box(modifier = modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(modifier = Modifier.tutorialTarget("swipe_header", tutorialController)) {
+                    SwipeHeader(
+                        uiState = uiState,
+                        onSummaryClick = { viewModel.toggleSummary(visible = true) }
+                    )
+                }
 
-        AssetTimeline(
-            assets = uiState.assets,
-            decisions = uiState.decisions,
-            currentIndex = uiState.currentIndex,
-            isFavorite = { uiState.isFavorite(it) },
-            isArchived = { uiState.isArchived(it) },
-            isLocked = { uiState.isLocked(it) },
-            onAssetClick = { viewModel.onMoveToAsset(it) },
-            baseUrl = uiState.baseUrl,
-            apiKey = uiState.apiKey,
-            isBulkMode = uiState.isBulkDeleteMode || uiState.isBulkKeepMode,
-            bulkSelection = uiState.bulkSelection,
-            isBulkDelete = uiState.isBulkDeleteMode,
-            getRotation = { uiState.getRotation(it) }
-        )
+                AssetTimeline(
+                    assets = uiState.assets,
+                    decisions = uiState.decisions,
+                    currentIndex = uiState.currentIndex,
+                    isFavorite = { uiState.isFavorite(it) },
+                    isArchived = { uiState.isArchived(it) },
+                    isLocked = { uiState.isLocked(it) },
+                    onAssetClick = { viewModel.onMoveToAsset(it) },
+                    baseUrl = uiState.baseUrl,
+                    apiKey = uiState.apiKey,
+                    isBulkMode = uiState.isBulkDeleteMode || uiState.isBulkKeepMode,
+                    bulkSelection = uiState.bulkSelection,
+                    isBulkDelete = uiState.isBulkDeleteMode,
+                    getRotation = { uiState.getRotation(it) }
+                )
 
-        SwipeCardDeck(
-            uiState = uiState,
-            viewModel = viewModel,
-            sharedPlayer = sharedPlayer,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-        )
+                SwipeCardDeck(
+                    uiState = uiState,
+                    viewModel = viewModel,
+                    sharedPlayer = sharedPlayer,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .tutorialTarget("swipe_deck", tutorialController)
+                )
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-                .navigationBarsPadding(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(Modifier.height(16.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .navigationBarsPadding(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(Modifier.height(16.dp))
 
-            SwipeActionBar(
-                uiState = uiState,
-                viewModel = viewModel,
-                showSortMenu = showSortMenu,
-                onSortMenuToggle = { showSortMenu = it }
-            )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .tutorialTarget("swipe_actions", tutorialController)
+                    ) {
+                        SwipeActionBar(
+                            uiState = uiState,
+                            viewModel = viewModel,
+                            showSortMenu = showSortMenu,
+                            onSortMenuToggle = { showSortMenu = it }
+                        )
+                    }
 
-            Spacer(Modifier.height(30.dp))
+                    Spacer(Modifier.height(30.dp))
+                }
+            }
         }
     }
 

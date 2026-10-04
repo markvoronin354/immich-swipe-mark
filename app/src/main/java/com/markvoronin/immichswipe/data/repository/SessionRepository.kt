@@ -310,4 +310,18 @@ class SessionRepository @Inject constructor(
     suspend fun removeSavedServerUrl(url: String) {
         dataStore.removeSavedServerUrl(url)
     }
+
+    val hasCompletedSwipeTutorial: Flow<Boolean> = dataStore.hasCompletedSwipeTutorial()
+    suspend fun setHasCompletedSwipeTutorial(completed: Boolean) {
+        dataStore.setHasCompletedSwipeTutorial(completed)
+    }
+
+    val hasCompletedDuplicatesTutorial: Flow<Boolean> = dataStore.hasCompletedDuplicatesTutorial()
+    suspend fun setHasCompletedDuplicatesTutorial(completed: Boolean) {
+        dataStore.setHasCompletedDuplicatesTutorial(completed)
+    }
+
+    suspend fun resetTutorials() {
+        dataStore.resetTutorials()
+    }
 }

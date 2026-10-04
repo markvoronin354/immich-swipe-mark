@@ -1,6 +1,7 @@
 package com.markvoronin.immichswipe.feature.home
 
 import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -53,6 +54,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -77,6 +79,10 @@ import com.markvoronin.immichswipe.feature.settings.SettingsScreen
 import com.markvoronin.immichswipe.feature.settings.SettingsSubMenu
 import com.markvoronin.immichswipe.feature.settings.SettingsViewModel
 import com.markvoronin.immichswipe.feature.swipe.SwipeScreen
+import com.markvoronin.immichswipe.feature.tutorial.LocalTutorialController
+import com.markvoronin.immichswipe.feature.tutorial.ProvideTutorialController
+import com.markvoronin.immichswipe.feature.tutorial.TutorialOverlay
+import com.markvoronin.immichswipe.feature.tutorial.rememberTutorialController
 import com.markvoronin.immichswipe.navigation.DeepLinkHandler
 import com.markvoronin.immichswipe.navigation.NavKey
 
@@ -167,37 +173,49 @@ fun HomeScreen(
         else -> SettingsSubMenu.NONE
     }
 
-    Scaffold(
-        modifier = modifier,
-        containerColor = Color.Transparent,
-        topBar = {
-            HomeTopBar(
-                isHome = isHome,
-                isSwipeTab = currentTopKey is NavKey.Swipe || currentTopKey is NavKey.Duplicates,
-                isSettingsTab = currentTopKey is NavKey.Settings,
-                activeSubMenu = activeSubMenu,
-                user = uiState.user,
-                connectionStatus = uiState.connectionStatus,
-                baseUrl = uiState.baseUrl,
-                apiKey = uiState.apiKey,
-                searchQuery = uiState.searchQuery,
-                onSearchQueryChange = { viewModel.onSearchQueryChanged(it) },
-                onOpenStats = { viewModel.toggleStatsPopup(visible = true) },
-                onGlobalReset = { viewModel.toggleGlobalResetConfirmation(true) },
-                onSwipeReset = { viewModel.requestReset() },
-                onOpenProfile = { viewModel.toggleProfilePopup(visible = true) },
-                onBack = {
-                    if (activeSubMenu != SettingsSubMenu.NONE) {
-                        settingsViewModel.setShowInteractionsDialog(false)
-                        settingsViewModel.setShowActionButtonsDialog(false)
-                    } else if (backStack.size > 1) {
-                        backStack.removeAt(backStack.lastIndex)
-                    } else {
-                        backStack.clear()
-                        backStack.add(NavKey.Home)
+    val tutorialController = LocalTutorialController.current
+        ?: rememberTutorialController()
+
+    ProvideTutorialController(tutorialController) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                modifier = modifier,
+                containerColor = Color.Transparent,
+                topBar = {
+                    val context = LocalContext.current
+                val replayToastText = stringResource(R.string.tutorial_replay_toast)
+
+                HomeTopBar(
+                    isHome = isHome,
+                    isSwipeTab = currentTopKey is NavKey.Swipe || currentTopKey is NavKey.Duplicates,
+                    isSettingsTab = currentTopKey is NavKey.Settings,
+                    activeSubMenu = activeSubMenu,
+                    user = uiState.user,
+                    connectionStatus = uiState.connectionStatus,
+                    baseUrl = uiState.baseUrl,
+                    apiKey = uiState.apiKey,
+                    searchQuery = uiState.searchQuery,
+                    onSearchQueryChange = { viewModel.onSearchQueryChanged(it) },
+                    onOpenStats = { viewModel.toggleStatsPopup(visible = true) },
+                    onGlobalReset = { viewModel.toggleGlobalResetConfirmation(true) },
+                    onSwipeReset = { viewModel.requestReset() },
+                    onReplayTutorials = {
+                        settingsViewModel.resetTutorials()
+                        Toast.makeText(context, replayToastText, Toast.LENGTH_SHORT).show()
+                    },
+                    onOpenProfile = { viewModel.toggleProfilePopup(visible = true) },
+                    onBack = {
+                        if (activeSubMenu != SettingsSubMenu.NONE) {
+                            settingsViewModel.setShowInteractionsDialog(false)
+                            settingsViewModel.setShowActionButtonsDialog(false)
+                        } else if (backStack.size > 1) {
+                            backStack.removeAt(backStack.lastIndex)
+                        } else {
+                            backStack.clear()
+                            backStack.add(NavKey.Home)
+                        }
                     }
-                }
-            )
+                )
         },
         bottomBar = {}
     ) { innerPadding ->
@@ -518,5 +536,9 @@ fun HomeScreen(
             },
             shape = RoundedCornerShape(24.dp)
         )
+    }
+
+            TutorialOverlay(controller = tutorialController)
+        }
     }
 }

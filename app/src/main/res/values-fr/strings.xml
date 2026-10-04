@@ -266,4 +266,28 @@
     <string name="settings_section_about">À propos et Légal</string>
     <string name="settings_source_code_label">Code source</string>
     <string name="settings_source_code_desc">Consulter le dépôt open source sur GitHub</string>
+
+    <!-- Tutoriel interactif -->
+    <string name="tutorial_skip">Passer</string>
+    <string name="tutorial_next">Suivant</string>
+    <string name="tutorial_previous">Retour</string>
+    <string name="tutorial_finish">J\'ai compris !</string>
+    <string name="tutorial_step_counter">Étape %1$d sur %2$d</string>
+    <string name="tutorial_replay_title">Tutoriels interactifs</string>
+    <string name="tutorial_replay_desc">Relancer les visites guidées pour le Tri et les Doublons</string>
+    <string name="tutorial_replay_toast">Tutoriels réinitialisés ! Ouvrez le Tri ou les Doublons pour les afficher.</string>
+
+    <string name="tutorial_swipe_gestures_title">Gestes &amp; Détails</string>
+    <string name="tutorial_swipe_gestures_desc">Glissez à DROITE pour GARDER, à GAUCHE pour SUPPRIMER, ou vers le HAUT pour afficher les détails EXIF de la photo !</string>
+    <string name="tutorial_swipe_header_title">Suivi de progression</string>
+    <string name="tutorial_swipe_header_desc">Suivez votre avancement en direct. Appuyez sur la barre de progression pour ouvrir le résumé et synchroniser vos choix avec Immich !</string>
+    <string name="tutorial_swipe_actions_title">Barre d\'actions rapides</string>
+    <string name="tutorial_swipe_actions_desc">Utilisez les boutons du bas pour Annuler, Archiver, Mettre en favori, Ajouter à un album ou changer l\'Ordre de tri.</string>
+
+    <string name="tutorial_duplicates_clusters_title">Groupes de doublons</string>
+    <string name="tutorial_duplicates_clusters_desc">Les médias similaires sont regroupés par clusters. Comparez la résolution, la taille et les détails pour choisir quoi nettoyer.</string>
+    <string name="tutorial_duplicates_selection_title">Garder ou Supprimer</string>
+    <string name="tutorial_duplicates_selection_desc">Appuyez sur une photo pour alterner entre Garder et Supprimer. Maintien long pour une comparaison en plein écran !</string>
+    <string name="tutorial_duplicates_action_title">Libérer de l\'espace</string>
+    <string name="tutorial_duplicates_action_desc">Une fois les doublons marqués pour suppression, appuyez sur le bouton \"Supprimer\" en haut à droite pour les effacer du serveur !</string>
 </resources>

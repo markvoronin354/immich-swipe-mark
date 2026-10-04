@@ -22,8 +22,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -35,7 +35,6 @@ import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AdsClick
-import com.markvoronin.immichswipe.feature.home.components.UserAvatar
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ColorLens
@@ -84,6 +83,7 @@ import androidx.compose.ui.unit.dp
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.AppTheme
 import com.markvoronin.immichswipe.core.PlaybackBehavior
+import com.markvoronin.immichswipe.feature.home.components.UserAvatar
 import com.markvoronin.immichswipe.feature.settings.components.ActionButtonsScreen
 import com.markvoronin.immichswipe.feature.settings.components.ClearCacheDialog
 import com.markvoronin.immichswipe.feature.settings.components.DatabaseActionDialog
@@ -422,8 +422,20 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(16.dp))
 
+        val replayToastText = stringResource(R.string.tutorial_replay_toast)
+
         SettingsSection(title = stringResource(R.string.settings_section_about), icon = Icons.Default.Info) {
             Column {
+                SettingsClickableItem(
+                    title = stringResource(R.string.tutorial_replay_title),
+                    subtitle = stringResource(R.string.tutorial_replay_desc),
+                    icon = Icons.Default.TouchApp,
+                    onClick = {
+                        viewModel.resetTutorials()
+                        Toast.makeText(context, replayToastText, Toast.LENGTH_SHORT).show()
+                    }
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
                 SettingsClickableItem(
                     title = stringResource(R.string.settings_privacy_policy_label),
                     subtitle = stringResource(R.string.settings_privacy_policy_desc),

@@ -81,7 +81,8 @@ data class SwipeUiState(
     val isBulkDeleteMode: Boolean = false,
     val isBulkKeepMode: Boolean = false,
     val bulkSelection: Set<String> = emptySet(),
-    val bulkLastIndex: Int? = null
+    val bulkLastIndex: Int? = null,
+    val hasCompletedSwipeTutorial: Boolean = true
 ) {
     val currentAsset: Asset? get() = assets.getOrNull(bulkLastIndex ?: currentIndex)
     val cardDisplayButtonPosition: IconPosition get() = rotationButtonPosition
