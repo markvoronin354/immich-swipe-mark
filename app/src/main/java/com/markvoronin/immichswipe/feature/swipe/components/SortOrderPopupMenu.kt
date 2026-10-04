@@ -8,7 +8,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -183,29 +182,15 @@ fun SortOrderPopupMenu(
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 0.5.dp)
                 Spacer(Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    CategoryButton(
-                        text = stringResource(R.string.sort_category_time),
-                        selected = uiState.sortCategory == SortCategory.TIME,
-                        onClick = { viewModel.setSortCategory(SortCategory.TIME) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    CategoryButton(
-                        text = stringResource(R.string.sort_category_size),
-                        selected = uiState.sortCategory == SortCategory.SIZE,
-                        onClick = { viewModel.setSortCategory(SortCategory.SIZE) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    CategoryButton(
-                        text = stringResource(R.string.sort_category_type),
-                        selected = uiState.sortCategory == SortCategory.TYPE,
-                        onClick = { viewModel.setSortCategory(SortCategory.TYPE) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                CategorySegmentedRow(
+                    selectedCategory = uiState.sortCategory,
+                    onCategorySelected = { category ->
+                        viewModel.setSortCategory(category)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                )
             }
         }
         }
