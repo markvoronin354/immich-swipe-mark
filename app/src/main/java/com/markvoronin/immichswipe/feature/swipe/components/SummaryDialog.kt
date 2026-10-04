@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -35,7 +37,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Pending
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -53,6 +54,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,7 +69,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -75,13 +76,13 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Precision
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.feature.duplicates.components.DuplicateVideoPlayer
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -94,110 +95,139 @@ fun SummaryDialog(
     var previewAsset by remember { mutableStateOf<Asset?>(null) }
 
     AlertDialog(
-        onDismissRequest = if (uiState.isSyncing) ({}) else onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-        modifier = Modifier.fillMaxWidth(0.95f),
+        onDismissRequest = onDismiss,
         title = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onDismiss, enabled = !uiState.isSyncing) {
-                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.common_close))
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        stringResource(R.string.swipe_summary_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.common_close)
+                        )
+                    }
                 }
-                Text(
-                    text = stringResource(R.string.swipe_summary_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(modifier = Modifier.size(48.dp))
             }
         },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = uiState.albumName,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(Modifier.height(20.dp))
-
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    val stats = listOf(
-                        Triple(stringResource(R.string.swipe_keep), Triple(uiState.keptCount, uiState.keptSize, MaterialGreen), Icons.Default.Check),
-                        Triple(stringResource(R.string.swipe_delete), Triple(uiState.deletedCount, uiState.deletedSize, MaterialRed), Icons.Default.Delete),
-                        Triple(stringResource(R.string.swipe_archive), Triple(uiState.archiveCount, uiState.archiveSize, MaterialTheme.colorScheme.primary), Icons.Default.Archive),
-                        Triple(stringResource(R.string.swipe_locked), Triple(uiState.lockedCount, uiState.lockedSize, MaterialTheme.colorScheme.outline), Icons.Default.Lock),
-                        Triple(stringResource(R.string.swipe_remaining), Triple(uiState.remainingCount, uiState.remainingSize, MaterialTheme.colorScheme.outlineVariant), Icons.Default.Pending)
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    StatSummaryBox(
+                        label = stringResource(R.string.swipe_keep),
+                        count = uiState.keptCount,
+                        size = uiState.keptSize,
+                        color = MaterialGreen,
+                        icon = Icons.Default.Check,
+                        modifier = Modifier.weight(1f),
+                        isEstimated = uiState.isRemainingEstimated
                     )
+                    StatSummaryBox(
+                        label = stringResource(R.string.swipe_delete),
+                        count = uiState.deletedCount,
+                        size = uiState.deletedSize,
+                        color = MaterialRed,
+                        icon = Icons.Default.Delete,
+                        modifier = Modifier.weight(1f),
+                        isEstimated = uiState.isRemainingEstimated
+                    )
+                }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        for (i in 0 until 2) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                val left = stats[i * 2]
-                                val right = stats[i * 2 + 1]
-                                StatSummaryBox(
-                                    label = left.first,
-                                    count = left.second.first,
-                                    size = left.second.second,
-                                    color = left.second.third,
-                                    icon = left.third,
-                                    isEstimated = left.first == stringResource(R.string.swipe_remaining) && uiState.isRemainingEstimated,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                StatSummaryBox(
-                                    label = right.first,
-                                    count = right.second.first,
-                                    size = right.second.second,
-                                    color = right.second.third,
-                                    icon = right.third,
-                                    isEstimated = right.first == stringResource(R.string.swipe_remaining) && uiState.isRemainingEstimated,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
+                if (uiState.showArchiveButton || uiState.showLockButton) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (uiState.showArchiveButton) {
+                            StatSummaryBox(
+                                label = stringResource(R.string.swipe_archive),
+                                count = uiState.archiveCount,
+                                size = uiState.archiveSize,
+                                color = Color(0xFF1565C0),
+                                icon = Icons.Default.Archive,
+                                modifier = Modifier.weight(1f),
+                                isEstimated = uiState.isRemainingEstimated
+                            )
                         }
-                        val last = stats.last()
-                        StatSummaryBox(
-                            label = last.first,
-                            count = last.second.first,
-                            size = last.second.second,
-                            color = last.second.third,
-                            icon = last.third,
-                            isEstimated = last.first == stringResource(R.string.swipe_remaining) && uiState.isRemainingEstimated,
-                            modifier = Modifier.fillMaxWidth()
+                        if (uiState.showLockButton) {
+                            StatSummaryBox(
+                                label = stringResource(R.string.swipe_locked),
+                                count = uiState.lockedCount,
+                                size = uiState.lockedSize,
+                                color = Color(0xFF7B1FA2),
+                                icon = Icons.Default.Lock,
+                                modifier = Modifier.weight(1f),
+                                isEstimated = uiState.isRemainingEstimated
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        stringResource(R.string.swipe_check_before_delete),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    val isLoadingDeletedAssets = uiState.deletedCount > uiState.deletedAssets.size
+                    if (isLoadingDeletedAssets) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(12.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                "${uiState.deletedAssets.size} / ${uiState.deletedCount}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else if (uiState.deletedAssets.isNotEmpty()) {
+                        Text(
+                            "${uiState.deletedAssets.size} photos",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
-
-                Text(
-                    text = stringResource(R.string.swipe_check_before_delete),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                val deletedAssets = remember(uiState) {
-                    uiState.deletedAssets
-                }
-                val isLoadingDeletedAssets = uiState.deletedCount > 0 && deletedAssets.size < uiState.deletedCount
-
-                if (deletedAssets.isNotEmpty()) {
-                    Box(modifier = Modifier.height(220.dp).fillMaxWidth()) {
+                if (uiState.deletedAssets.isNotEmpty()) {
+                    val isLoadingDeletedAssets = uiState.deletedCount > uiState.deletedAssets.size
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(3),
+                            contentPadding = PaddingValues(8.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp)
+                            modifier = Modifier.fillMaxWidth().height(220.dp)
                         ) {
                             items(
-                                items = deletedAssets,
+                                items = uiState.deletedAssets,
                                 key = { it.id }
                             ) { asset ->
                                 DeletedAssetThumbnail(
@@ -288,7 +318,8 @@ fun SummaryDialog(
 
     if (previewAsset != null) {
         SummaryFullscreenPreviewDialog(
-            asset = previewAsset!!,
+            initialAsset = previewAsset!!,
+            assets = if (uiState.deletedAssets.isNotEmpty()) uiState.deletedAssets else listOf(previewAsset!!),
             uiState = uiState,
             onDismiss = { previewAsset = null },
             onRevert = { assetToRevert ->
@@ -447,7 +478,8 @@ fun DeletedAssetThumbnail(
 
 @Composable
 fun SummaryFullscreenPreviewDialog(
-    asset: Asset,
+    initialAsset: Asset,
+    assets: List<Asset>,
     uiState: SwipeUiState,
     onDismiss: () -> Unit,
     onRevert: (Asset) -> Unit
@@ -465,17 +497,23 @@ fun SummaryFullscreenPreviewDialog(
             val window = (dialogView.parent as? DialogWindowProvider)?.window
             if (window != null) {
                 val insetsController = WindowCompat.getInsetsController(window, dialogView)
-                insetsController.hide(WindowInsetsCompat.Type.systemBars())
-                insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                insetsController.show(WindowInsetsCompat.Type.systemBars())
             }
         }
 
         val context = LocalContext.current
+        val scope = rememberCoroutineScope()
         val baseUrlClean = uiState.baseUrl.removeSuffix("/")
         val apiKey = uiState.apiKey
 
-        var isZoomedIn by remember(asset.id) { mutableStateOf(false) }
-        var dismissOffsetY by remember(asset.id) { mutableFloatStateOf(0f) }
+        val initialIndex = remember(initialAsset.id) {
+            assets.indexOfFirst { it.id == initialAsset.id }.coerceAtLeast(0)
+        }
+        val pagerState = rememberPagerState(initialPage = initialIndex) { assets.size }
+        val currentAsset = assets.getOrNull(pagerState.currentPage) ?: initialAsset
+
+        var isZoomedIn by remember(currentAsset.id) { mutableStateOf(false) }
+        var dismissOffsetY by remember(currentAsset.id) { mutableFloatStateOf(0f) }
 
         val animOffsetY by animateFloatAsState(
             targetValue = dismissOffsetY,
@@ -493,13 +531,15 @@ fun SummaryFullscreenPreviewDialog(
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = bgAlpha))
         ) {
-            Box(
+            HorizontalPager(
+                state = pagerState,
+                userScrollEnabled = !isZoomedIn,
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
                         translationY = animOffsetY
                     }
-                    .pointerInput(asset.id, isZoomedIn) {
+                    .pointerInput(currentAsset.id, isZoomedIn) {
                         if (isZoomedIn) return@pointerInput
                         detectVerticalDragGestures(
                             onDragEnd = {
@@ -520,26 +560,27 @@ fun SummaryFullscreenPreviewDialog(
                             }
                         )
                     }
-            ) {
+            ) { page ->
+                val pageAsset = assets.getOrNull(page) ?: currentAsset
                 ZoomableBox(
                     modifier = Modifier.fillMaxSize(),
                     resetOnRelease = false,
                     onIsZoomedChanged = { isZoomedIn = it }
                 ) {
-                    if (asset.type == "VIDEO") {
+                    if (pageAsset.type == "VIDEO") {
                         DuplicateVideoPlayer(
-                            asset = asset,
+                            asset = pageAsset,
                             baseUrl = baseUrlClean,
                             apiKey = apiKey,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Fit
                         )
                     } else {
-                        val photoRequest = remember(asset.id, baseUrlClean, apiKey, asset.isGif) {
+                        val photoRequest = remember(pageAsset.id, baseUrlClean, apiKey, pageAsset.isGif) {
                             ImageRequest.Builder(context)
                                 .data(
-                                    if (asset.isGif) "$baseUrlClean/api/assets/${asset.id}/original"
-                                    else "$baseUrlClean/api/assets/${asset.id}/thumbnail?format=WEBP&size=preview"
+                                    if (pageAsset.isGif) "$baseUrlClean/api/assets/${pageAsset.id}/original"
+                                    else "$baseUrlClean/api/assets/${pageAsset.id}/thumbnail?format=WEBP&size=preview"
                                 )
                                 .addHeader("x-api-key", apiKey)
                                 .crossfade(true)
@@ -565,22 +606,38 @@ fun SummaryFullscreenPreviewDialog(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val fileSize = asset.exifInfo?.fileSizeInBytes ?: 0L
-                if (fileSize > 0) {
-                    Surface(
-                        color = Color.Black.copy(alpha = 0.6f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = formatSize(fileSize),
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                        )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val fileSize = currentAsset.exifInfo?.fileSizeInBytes ?: 0L
+                    if (fileSize > 0) {
+                        Surface(
+                            color = Color.Black.copy(alpha = 0.6f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = formatSize(fileSize),
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(8.dp))
                     }
-                } else {
-                    Spacer(Modifier.width(1.dp))
+
+                    if (assets.size > 1) {
+                        Surface(
+                            color = Color.Black.copy(alpha = 0.6f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = "${pagerState.currentPage + 1} / ${assets.size}",
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
                 }
 
                 IconButton(
@@ -603,12 +660,22 @@ fun SummaryFullscreenPreviewDialog(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(bottom = if (asset.type == "VIDEO") 88.dp else 24.dp)
+                    .padding(bottom = if (currentAsset.type == "VIDEO") 88.dp else 24.dp)
             ) {
                 Button(
                     onClick = {
-                        onRevert(asset)
-                        onDismiss()
+                        val assetToRevert = currentAsset
+                        onRevert(assetToRevert)
+                        if (assets.size <= 1) {
+                            onDismiss()
+                        } else {
+                            val nextTargetPage = (pagerState.currentPage).coerceAtMost(assets.size - 2)
+                            if (nextTargetPage >= 0) {
+                                scope.launch {
+                                    pagerState.scrollToPage(nextTargetPage)
+                                }
+                            }
+                        }
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
