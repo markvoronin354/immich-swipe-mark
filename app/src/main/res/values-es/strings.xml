@@ -203,6 +203,9 @@
     </plurals>
     <string name="duplicates_reset_confirm_title">¿Restablecer elecciones de duplicados?</string>
     <string name="duplicates_reset_confirm_msg">Esto borrará todas las elecciones locales (CONSERVAR/ELIMINAR) para los grupos de duplicados.</string>
+    <string name="duplicates_select_button">Seleccionar</string>
+    <string name="duplicates_keep_largest">Conservar más grandes</string>
+    <string name="duplicates_keep_smallest">Conservar más pequeños</string>
 
     <!-- Estadísticas -->
     <string name="stats_popup_title">Estadísticas de uso</string>

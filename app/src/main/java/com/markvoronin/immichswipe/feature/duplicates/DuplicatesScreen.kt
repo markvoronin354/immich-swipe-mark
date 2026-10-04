@@ -21,13 +21,18 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -165,7 +170,7 @@ fun DuplicatesScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f, fill = false)) {
                             Text(
                                 text = "Duplicates",
                                 style = MaterialTheme.typography.titleLarge,
@@ -178,47 +183,114 @@ fun DuplicatesScreen(
                             )
                         }
 
-                        val containerColor by animateColorAsState(
-                            targetValue = if (deleteCount > 0) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            animationSpec = tween(durationMillis = 200),
-                            label = "DeleteButtonContainerColor"
-                        )
-                        val contentColor by animateColorAsState(
-                            targetValue = if (deleteCount > 0) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.outline,
-                            animationSpec = tween(durationMillis = 200),
-                            label = "DeleteButtonContentColor"
-                        )
-
-                        Box(
-                            modifier = Modifier.tutorialTarget("dup_delete", tutorialController),
-                            contentAlignment = Alignment.CenterEnd
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Surface(
-                                onClick = { if (deleteCount > 0) viewModel.toggleDeleteConfirmation(true) },
-                                enabled = deleteCount > 0,
-                                color = containerColor,
-                                contentColor = contentColor,
-                                shape = RoundedCornerShape(16.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                            var selectMenuExpanded by remember { mutableStateOf(false) }
+
+                            Box {
+                                Surface(
+                                    onClick = { selectMenuExpanded = true },
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    shape = RoundedCornerShape(16.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DeleteForever,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(
-                                        text = if (deleteCount > 1) {
-                                            "Delete ($deleteCount)"
-                                        } else {
-                                            stringResource(R.string.swipe_delete)
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.duplicates_select_button),
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.labelLarge
+                                        )
+                                        Spacer(Modifier.width(2.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowDropDown,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+
+                                DropdownMenu(
+                                    expanded = selectMenuExpanded,
+                                    onDismissRequest = { selectMenuExpanded = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.duplicates_keep_largest)) },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.ExpandMore,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
                                         },
-                                        fontWeight = FontWeight.Bold,
-                                        style = MaterialTheme.typography.labelLarge
+                                        onClick = {
+                                            selectMenuExpanded = false
+                                            viewModel.autoSelect(keepLargest = true)
+                                        }
                                     )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.duplicates_keep_smallest)) },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.ExpandLess,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        },
+                                        onClick = {
+                                            selectMenuExpanded = false
+                                            viewModel.autoSelect(keepLargest = false)
+                                        }
+                                    )
+                                }
+                            }
+
+                            val containerColor by animateColorAsState(
+                                targetValue = if (deleteCount > 0) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                animationSpec = tween(durationMillis = 200),
+                                label = "DeleteButtonContainerColor"
+                            )
+                            val contentColor by animateColorAsState(
+                                targetValue = if (deleteCount > 0) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.outline,
+                                animationSpec = tween(durationMillis = 200),
+                                label = "DeleteButtonContentColor"
+                            )
+
+                            Box(
+                                modifier = Modifier.tutorialTarget("dup_delete", tutorialController),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                Surface(
+                                    onClick = { if (deleteCount > 0) viewModel.toggleDeleteConfirmation(true) },
+                                    enabled = deleteCount > 0,
+                                    color = containerColor,
+                                    contentColor = contentColor,
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.DeleteForever,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = if (deleteCount > 1) {
+                                                "Delete ($deleteCount)"
+                                            } else {
+                                                stringResource(R.string.swipe_delete)
+                                            },
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.labelLarge
+                                        )
+                                    }
                                 }
                             }
                         }

@@ -203,6 +203,9 @@
     </plurals>
     <string name="duplicates_reset_confirm_title">Reset Duplicate Choices?</string>
     <string name="duplicates_reset_confirm_msg">This will clear all local KEEP/DELETE choices for duplicate clusters.</string>
+    <string name="duplicates_select_button">Select</string>
+    <string name="duplicates_keep_largest">Keep largest</string>
+    <string name="duplicates_keep_smallest">Keep smallest</string>
 
     <!-- Statistics -->
     <string name="stats_popup_title">Usage Statistics</string>

@@ -204,6 +204,9 @@
     </plurals>
     <string name="duplicates_reset_confirm_title">Réinitialiser les choix ?</string>
     <string name="duplicates_reset_confirm_msg">Cela effacera tous les choix locaux (GARDER/SUPPRIMER) pour les doublons.</string>
+    <string name="duplicates_select_button">Sélectionner</string>
+    <string name="duplicates_keep_largest">Garder les plus grands</string>
+    <string name="duplicates_keep_smallest">Garder les plus petits</string>
 
     <!-- Statistiques -->
     <string name="stats_popup_title">Statistiques d\'usage</string>
