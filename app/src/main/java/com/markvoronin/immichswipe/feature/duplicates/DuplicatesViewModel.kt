@@ -126,7 +126,8 @@ class DuplicatesViewModel @Inject constructor(
                 it.copy(
                     isLoading = false,
                     isSyncing = false,
-                    clusters = mappedClusters
+                    clusters = mappedClusters,
+                    selectedAutoSelectMode = null
                 ) 
             }
         } catch (e: Exception) {
@@ -185,7 +186,10 @@ class DuplicatesViewModel @Inject constructor(
     fun clearAllDecisions() {
         val currentDecidedAssetIds = _uiState.value.decisions.keys.toList()
         _uiState.update { state ->
-            state.copy(decisions = emptyMap())
+            state.copy(
+                decisions = emptyMap(),
+                selectedAutoSelectMode = null
+            )
         }
         viewModelScope.launch {
             val userId = sessionManager.getUserId() ?: return@launch
@@ -352,8 +356,12 @@ class DuplicatesViewModel @Inject constructor(
                 newDecisions[asset.id] = if (asset.id == toKeep?.id) DuplicateDecision.KEEP else DuplicateDecision.DELETE
             }
         }
+        val mode = if (keepLargest) AutoSelectMode.KEEP_LARGEST else AutoSelectMode.KEEP_SMALLEST
         _uiState.update { state ->
-            state.copy(decisions = newDecisions)
+            state.copy(
+                decisions = newDecisions,
+                selectedAutoSelectMode = mode
+            )
         }
 
         viewModelScope.launch {

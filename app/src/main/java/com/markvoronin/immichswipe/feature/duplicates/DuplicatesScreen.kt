@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.ExpandLess
@@ -170,24 +171,28 @@ fun DuplicatesScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(modifier = Modifier.weight(1f, fill = false)) {
-                            Text(
-                                text = "Duplicates",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "${uiState.clusters.size} clusters (${uiState.totalAssetsCount} items)",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        Text(
+                            text = pluralStringResource(
+                                R.plurals.duplicates_groups_count,
+                                uiState.clusters.size,
+                                uiState.clusters.size
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             var selectMenuExpanded by remember { mutableStateOf(false) }
+
+                            val selectButtonText = when (uiState.selectedAutoSelectMode) {
+                                AutoSelectMode.KEEP_LARGEST -> stringResource(R.string.duplicates_keep_largest)
+                                AutoSelectMode.KEEP_SMALLEST -> stringResource(R.string.duplicates_keep_smallest)
+                                null -> stringResource(R.string.duplicates_select_button)
+                            }
 
                             Box {
                                 Surface(
@@ -201,7 +206,7 @@ fun DuplicatesScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = stringResource(R.string.duplicates_select_button),
+                                            text = selectButtonText,
                                             fontWeight = FontWeight.Bold,
                                             style = MaterialTheme.typography.labelLarge
                                         )
@@ -227,6 +232,15 @@ fun DuplicatesScreen(
                                                 modifier = Modifier.size(18.dp)
                                             )
                                         },
+                                        trailingIcon = if (uiState.selectedAutoSelectMode == AutoSelectMode.KEEP_LARGEST) {
+                                            {
+                                                Icon(
+                                                    imageVector = Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        } else null,
                                         onClick = {
                                             selectMenuExpanded = false
                                             viewModel.autoSelect(keepLargest = true)
@@ -241,6 +255,15 @@ fun DuplicatesScreen(
                                                 modifier = Modifier.size(18.dp)
                                             )
                                         },
+                                        trailingIcon = if (uiState.selectedAutoSelectMode == AutoSelectMode.KEEP_SMALLEST) {
+                                            {
+                                                Icon(
+                                                    imageVector = Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        } else null,
                                         onClick = {
                                             selectMenuExpanded = false
                                             viewModel.autoSelect(keepLargest = false)

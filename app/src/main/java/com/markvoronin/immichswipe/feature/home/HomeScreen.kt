@@ -183,7 +183,8 @@ fun HomeScreen(
                 topBar = {
                     HomeTopBar(
                         isHome = isHome,
-                        isSwipeTab = currentTopKey is NavKey.Swipe || currentTopKey is NavKey.Duplicates,
+                        isSwipeTab = currentTopKey is NavKey.Swipe,
+                        isDuplicatesTab = currentTopKey is NavKey.Duplicates,
                         isSettingsTab = currentTopKey is NavKey.Settings,
                         activeSubMenu = activeSubMenu,
                         user = uiState.user,

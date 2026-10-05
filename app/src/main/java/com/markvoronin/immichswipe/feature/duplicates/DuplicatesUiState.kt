@@ -7,6 +7,7 @@ data class DuplicatesUiState(
     val clusters: List<DuplicateClusterUiModel> = emptyList(),
     val decisions: Map<String, DuplicateDecision> = emptyMap(), // assetId -> Decision
     val favorites: Map<String, Boolean> = emptyMap(), // assetId -> isFavorite
+    val selectedAutoSelectMode: AutoSelectMode? = null,
     val isSyncing: Boolean = false,
     val showDeleteConfirmation: Boolean = false,
     val baseUrl: String = "",
@@ -38,6 +39,11 @@ data class DuplicateClusterUiModel(
     val clusterId: String,
     val assets: List<Asset>
 )
+
+enum class AutoSelectMode {
+    KEEP_LARGEST,
+    KEEP_SMALLEST
+}
 
 enum class DuplicateDecision {
     KEEP,

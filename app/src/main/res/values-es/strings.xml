@@ -206,6 +206,10 @@
     <string name="duplicates_select_button">Seleccionar</string>
     <string name="duplicates_keep_largest">Conservar más grandes</string>
     <string name="duplicates_keep_smallest">Conservar más pequeños</string>
+    <plurals name="duplicates_groups_count">
+        <item quantity="one">%1$d grupo</item>
+        <item quantity="other">%1$d grupos</item>
+    </plurals>
 
     <!-- Estadísticas -->
     <string name="stats_popup_title">Estadísticas de uso</string>

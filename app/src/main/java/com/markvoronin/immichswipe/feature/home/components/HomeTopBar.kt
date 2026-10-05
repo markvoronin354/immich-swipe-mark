@@ -33,6 +33,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AdsClick
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -76,12 +77,13 @@ fun HomeTopBar(
     onOpenProfile: () -> Unit,
     modifier: Modifier = Modifier,
     isSettingsTab: Boolean = false,
+    isDuplicatesTab: Boolean = false,
     activeSubMenu: SettingsSubMenu = SettingsSubMenu.NONE,
     baseUrl: String = "",
     apiKey: String = "",
     onBack: () -> Unit = {},
 ) {
-    val showBackButton = isSettingsTab || isSwipeTab
+    val showBackButton = isSettingsTab || isSwipeTab || isDuplicatesTab
 
     Column(modifier = modifier) {
         TopAppBar(
@@ -108,7 +110,7 @@ fun HomeTopBar(
             },
             title = {
                 AnimatedContent(
-                    targetState = isSettingsTab to activeSubMenu,
+                    targetState = Triple(isSettingsTab, isDuplicatesTab, activeSubMenu),
                     transitionSpec = {
                         fadeIn(animationSpec = tween(280, easing = FastOutSlowInEasing)) +
                             scaleIn(initialScale = 0.94f, animationSpec = tween(280, easing = FastOutSlowInEasing)) togetherWith
@@ -117,7 +119,7 @@ fun HomeTopBar(
                             SizeTransform(clip = false)
                     },
                     label = "TopBarTitleTransition"
-                ) { (settingsTab, subMenu) ->
+                ) { (settingsTab, duplicatesTab, subMenu) ->
                     if (settingsTab) {
                         val (icon, titleRes) = when (subMenu) {
                             SettingsSubMenu.INTERACTIONS -> Icons.Default.TouchApp to R.string.settings_interactions_dialog_title
@@ -148,6 +150,34 @@ fun HomeTopBar(
                             Spacer(Modifier.width(12.dp))
                             Text(
                                 text = stringResource(titleRes),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    } else if (duplicatesTab) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(38.dp)
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ContentCopy,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                text = stringResource(R.string.home_virtual_duplicates),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
@@ -187,8 +217,8 @@ fun HomeTopBar(
                         }
                     }
 
-                    // 2. Reset Icon (Home or Swipe tab) - Stays 100% static when navigating between Home and Swipe!
-                    val showReset = isHome || isSwipeTab
+                    // 2. Reset Icon (Home or Swipe or Duplicates tab) - Stays 100% static when navigating!
+                    val showReset = isHome || isSwipeTab || isDuplicatesTab
                     AnimatedVisibility(
                         visible = showReset,
                         enter = fadeIn(animationSpec = tween(280, easing = FastOutSlowInEasing)) +
