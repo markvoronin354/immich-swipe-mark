@@ -8,6 +8,7 @@ import com.markvoronin.immichswipe.data.api.AssetEditActionItem
 import com.markvoronin.immichswipe.data.api.DeleteAssetsRequest
 import com.markvoronin.immichswipe.data.api.EditAssetRequest
 import com.markvoronin.immichswipe.data.api.ImmichApi
+import com.markvoronin.immichswipe.data.api.RotateAssetRequest
 import com.markvoronin.immichswipe.data.api.SearchAssetsRequest
 import com.markvoronin.immichswipe.data.api.UpdateAssetsRequest
 import com.markvoronin.immichswipe.data.local.dao.AlbumAssetDao
@@ -377,14 +378,20 @@ class AssetRepository @Inject constructor(
         return api.getAssetDetail(assetId)
     }
 
+    suspend fun deleteLocalAssets(assetIds: List<String>) {
+        if (assetIds.isNotEmpty()) {
+            assetIds.chunked(500).forEach { chunk ->
+                albumAssetDao?.deleteAssets(chunk)
+            }
+        }
+    }
+
     suspend fun deleteAssets(assetIds: List<String>) {
         if (assetIds.isNotEmpty()) {
             AppLogger.i("AssetRepo", "Deleting ${assetIds.size} assets from Immich server...")
             try {
                 api.deleteAssets(DeleteAssetsRequest(ids = assetIds, force = false))
-                assetIds.chunked(500).forEach { chunk ->
-                    albumAssetDao?.deleteAssets(chunk)
-                }
+                deleteLocalAssets(assetIds)
                 AppLogger.i("AssetRepo", "Successfully deleted ${assetIds.size} assets from Immich server")
             } catch (e: Exception) {
                 AppLogger.e("AssetRepo", "Failed to delete ${assetIds.size} assets from Immich server: ${e.message}", e)
@@ -435,12 +442,25 @@ class AssetRepository @Inject constructor(
     }
 
     suspend fun syncAssetRotationToServer(assetId: String, rotation: Int) {
+        val normalizedRotation = ((rotation % 360) + 360) % 360
+        if (normalizedRotation == 0) return
+
         try {
-            updateAssetEdits(assetId, rotation)
+            updateAssetEdits(assetId, normalizedRotation)
             AppLogger.i("AssetRepo", "Successfully synced asset rotation edits to Immich server for asset $assetId")
         } catch (e: Exception) {
             val errBody = (e as? HttpException)?.response()?.errorBody()?.string()
-            AppLogger.e("AssetRepo", "Failed to sync rotation edits to Immich server for asset $assetId: ${e.message} body=$errBody", e)
+            AppLogger.w("AssetRepo", "Failed to sync via editAsset endpoint for asset $assetId (body=$errBody). Falling back to rotate endpoint...")
+            try {
+                val steps = normalizedRotation / 90
+                repeat(steps) {
+                    api.rotateAsset(assetId, RotateAssetRequest(direction = "cw"))
+                }
+                AppLogger.i("AssetRepo", "Successfully synced asset rotation via rotate endpoint ($steps steps) for asset $assetId")
+            } catch (fallbackEx: Exception) {
+                val fallbackErrBody = (fallbackEx as? HttpException)?.response()?.errorBody()?.string()
+                AppLogger.e("AssetRepo", "Failed to sync rotation via fallback endpoint for asset $assetId: ${fallbackEx.message} body=$fallbackErrBody", fallbackEx)
+            }
         }
     }
 

@@ -669,23 +669,37 @@ class SwipeViewModel @Inject constructor(
 
                 // 1. Delete on server (and local cache via AssetRepository)
                 if (toDelete.isNotEmpty()) {
-                    assetRepository.deleteAssets(toDelete)
-                    // Also delete these decisions from local DB as they are no longer relevant
-                    swipeDecisionRepository.removeDecisions(toDelete, config.userId)
+                    try {
+                        assetRepository.deleteAssets(toDelete)
+                        // Also delete these decisions from local DB as they are no longer relevant
+                        swipeDecisionRepository.removeDecisions(toDelete, config.userId)
+                    } catch (e: Exception) {
+                        AppLogger.e("SwipeViewModel", "Failed to delete assets on server: ${e.message}", e)
+                    }
                 }
 
                 // 1b. Sync archive decisions to Immich server
                 if (toArchive.isNotEmpty()) {
-                    assetRepository.updateAssets(toArchive, visibility = "archive")
+                    try {
+                        assetRepository.updateAssets(toArchive, visibility = "archive")
+                    } catch (e: Exception) {
+                        AppLogger.e("SwipeViewModel", "Failed to archive assets on server: ${e.message}", e)
+                    }
                 }
 
-                // 1c. Sync lock decisions to Immich server
+                // 1c. Sync lock decisions to Immich server (Immich API expects "hidden" for locked/hidden assets)
                 if (toLock.isNotEmpty()) {
-                    assetRepository.updateAssets(toLock, visibility = "locked")
+                    try {
+                        assetRepository.updateAssets(toLock, visibility = "hidden")
+                        assetRepository.deleteLocalAssets(toLock)
+                        swipeDecisionRepository.removeDecisions(toLock, config.userId)
+                    } catch (e: Exception) {
+                        AppLogger.e("SwipeViewModel", "Failed to lock assets on server: ${e.message}", e)
+                    }
                 }
                 
-                // 2. Mark remaining decisions as synced in DB (KEPT, ARCHIVE, LOCK)
-                val toMarkSynced = allSwipedIds.filter { it !in toDelete }
+                // 2. Mark remaining decisions as synced in DB (KEPT, ARCHIVE)
+                val toMarkSynced = allSwipedIds.filter { it !in toDelete && it !in toLock }
                 if (toMarkSynced.isNotEmpty()) {
                     swipeDecisionRepository.markAsSynced(toMarkSynced, config.userId)
                 }
@@ -693,12 +707,12 @@ class SwipeViewModel @Inject constructor(
                 // 2b. Persist rotation changes permanently locally and sync to Immich server
                 currentState.localRotations.forEach { (assetId, rot) ->
                     assetRepository.updateAssetRotation(assetId, config.userId, rot)
-                    val asset = currentState.assets.find { it.id == assetId }
-                    val canSync = asset == null || !asset.isEdited || assetsEditedThisSession.contains(assetId)
-                    if (canSync) {
-                        assetRepository.syncAssetRotationToServer(assetId, rot)
-                    } else {
-                        AppLogger.d("SwipeViewModel", "Sync rotation skipped to protect existing edits on $assetId")
+                    if (rot != 0 || assetsEditedThisSession.contains(assetId)) {
+                        try {
+                            assetRepository.syncAssetRotationToServer(assetId, rot)
+                        } catch (e: Exception) {
+                            AppLogger.e("SwipeViewModel", "Failed to sync rotation for $assetId: ${e.message}", e)
+                        }
                     }
                 }
                 
@@ -706,10 +720,18 @@ class SwipeViewModel @Inject constructor(
                 val favsToAdd = currentState.localFavorites.filter { it.value }.keys.toList()
                 val favsToRemove = currentState.localFavorites.filter { !it.value }.keys.toList()
                 if (favsToAdd.isNotEmpty()) {
-                    assetRepository.updateAssets(favsToAdd, isFavorite = true)
+                    try {
+                        assetRepository.updateAssets(favsToAdd, isFavorite = true)
+                    } catch (e: Exception) {
+                        AppLogger.e("SwipeViewModel", "Failed to sync favorite add: ${e.message}", e)
+                    }
                 }
                 if (favsToRemove.isNotEmpty()) {
-                    assetRepository.updateAssets(favsToRemove, isFavorite = false)
+                    try {
+                        assetRepository.updateAssets(favsToRemove, isFavorite = false)
+                    } catch (e: Exception) {
+                        AppLogger.e("SwipeViewModel", "Failed to sync favorite remove: ${e.message}", e)
+                    }
                 }
 
                 // Update memory work pile with favorite changes
@@ -735,23 +757,24 @@ class SwipeViewModel @Inject constructor(
                     lockedCount = currentState.lockedCount
                 )
 
-                // 4. Update local work pile to remove deleted assets permanently for this session
-                if (toDelete.isNotEmpty()) {
-                    masterWorkPile = masterWorkPile.filter { it.id !in toDelete }
-                    val updatedWorkPile = allAssetsFoundFlow.value.filter { it.id !in toDelete }
+                // 4. Update local work pile to remove deleted and locked assets permanently for this session
+                val toRemoveFromWorkPile = (toDelete + toLock).toSet()
+                if (toRemoveFromWorkPile.isNotEmpty()) {
+                    masterWorkPile = masterWorkPile.filter { it.id !in toRemoveFromWorkPile }
+                    val updatedWorkPile = allAssetsFoundFlow.value.filter { it.id !in toRemoveFromWorkPile }
                     allAssetsFoundFlow.value = updatedWorkPile
                     
-                    // Update the total count to reflect deletions
-                    _uiState.update { it.copy(remoteTotalCount = (it.remoteTotalCount - toDelete.size).coerceAtLeast(0)) }
+                    // Update the total count to reflect removals
+                    _uiState.update { it.copy(remoteTotalCount = (it.remoteTotalCount - toRemoveFromWorkPile.size).coerceAtLeast(0)) }
                 }
 
                 // 5. Success state
-                val remainingDecisions = currentState.decisions.filterKeys { id -> id !in toDelete }
+                val remainingDecisions = currentState.decisions.filterKeys { id -> id !in toRemoveFromWorkPile }
                 _uiState.update { it.copy(
                     isSyncing = false, 
                     showSummary = false, 
                     showSuccessAnimation = true,
-                    // Remove deleted assets from current UI decisions too
+                    // Remove deleted & locked assets from current UI decisions too
                     decisions = remainingDecisions,
                     history = emptyList(), // Reset history for undo after sync
                     localFavorites = emptyMap()
