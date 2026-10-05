@@ -330,14 +330,6 @@ fun SwipeCard(
             modifier = Modifier
                 .fillMaxSize()
                 .alpha(animatedAlpha)
-                .graphicsLayer {
-                    scaleX = animatedScale
-                    scaleY = animatedScale
-                    if (!isNext) {
-                        translationX = offsetX.value
-                        rotationZ = offsetX.value / 40f
-                    }
-                }
                 .pointerInput(isNext, asset.id) {
                     if (isNext) return@pointerInput
                     var startProgress = 0f
@@ -368,8 +360,8 @@ fun SwipeCard(
                                 val velocityX = velocity.x
 
                                 if (dragDirection == 1) { // Horizontal swipe
-                                    val isFlickRight = velocityX > 1000f
-                                    val isFlickLeft = velocityX < -1000f
+                                    val isFlickRight = velocityX > 1000f && currentX >= -50f
+                                    val isFlickLeft = velocityX < -1000f && currentX <= 50f
                                     if (currentX > 250 || isFlickRight) {
                                         offsetX.animateTo(1500f, tween(150))
                                         actions.onSwipe(SwipeDecision.KEEP)
@@ -483,7 +475,7 @@ fun SwipeCard(
                             } else {
                                 scope.launch {
                                     if (dragDirection == 1) {
-                                        offsetX.snapTo(offsetX.value + dragAmount.x)
+                                        offsetX.snapTo(totalDX)
                                     } else if (dragDirection == 2) {
                                         val heightPx = if (metadataHeightPx > 0f) metadataHeightPx else maxHeightPx
                                         if (heightPx > 0f) {
@@ -495,6 +487,14 @@ fun SwipeCard(
                             }
                         }
                     )
+                }
+                .graphicsLayer {
+                    scaleX = animatedScale
+                    scaleY = animatedScale
+                    if (!isNext) {
+                        translationX = offsetX.value
+                        rotationZ = offsetX.value / 40f
+                    }
                 },
             elevation = CardDefaults.cardElevation(defaultElevation = if (isNext) 0.dp else 8.dp),
             shape = RoundedCornerShape(16.dp)
