@@ -132,8 +132,8 @@ fun InstagramZoomOverlay(
                     translationX = offsetXAnim.value
                     translationY = offsetYAnim.value
                 }
-                .clip(RoundedCornerShape(8.dp))
-                .border(3.dp, borderColor, RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(14.dp))
+                .border(2.dp, borderColor, RoundedCornerShape(14.dp))
         ) {
             val imageRequest = remember(zoomData.asset.id, baseUrlClean, apiKey, zoomData.asset.isGif) {
                 ImageRequest.Builder(context)

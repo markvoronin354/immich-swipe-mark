@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -77,6 +78,7 @@ import com.markvoronin.immichswipe.feature.tutorial.TutorialStep
 import com.markvoronin.immichswipe.feature.tutorial.rememberTutorialController
 import com.markvoronin.immichswipe.feature.tutorial.tutorialTarget
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -157,7 +159,7 @@ fun SwipeScreen(
     }
     val localCtx = LocalContext.current
     
-    // Background Preloader Trigger
+    // Background Preloader Trigger - Deferred to prevent background IO / decoding from stealing CPU frames during animations
     LaunchedEffect(uiState.currentIndex, uiState.apiKey, uiState.baseUrl) {
         val currentIndex = uiState.currentIndex
         val assets = uiState.assets
@@ -165,6 +167,9 @@ fun SwipeScreen(
         val baseUrl = uiState.baseUrl.removeSuffix("/")
         
         if (apiKey.isNullOrEmpty() || baseUrl.isNullOrEmpty()) return@LaunchedEffect
+
+        // Wait 350ms for active gestures, card swipes, or top bar transitions to finish smoothly before preloading
+        delay(350)
 
         // Cancel preload for the previous asset if it was a video
         if (currentIndex > 0) {
@@ -528,6 +533,9 @@ fun SwipeScreen(
                     )
                 }
 
+                val nextUnprocessedIndex = viewModel.getNextUnprocessedIndex()
+                var topCardSwipeOffset by remember(uiState.currentIndex) { mutableFloatStateOf(0f) }
+
                 AssetTimeline(
                     assets = uiState.assets,
                     decisions = uiState.decisions,
@@ -541,13 +549,18 @@ fun SwipeScreen(
                     isBulkMode = uiState.isBulkDeleteMode || uiState.isBulkKeepMode,
                     bulkSelection = uiState.bulkSelection,
                     isBulkDelete = uiState.isBulkDeleteMode,
-                    getRotation = { uiState.getRotation(it) }
+                    getRotation = { uiState.getRotation(it) },
+                    swipeOffset = topCardSwipeOffset,
+                    nextIndex = nextUnprocessedIndex
                 )
 
                 SwipeCardDeck(
                     uiState = uiState,
                     viewModel = viewModel,
                     sharedPlayer = sharedPlayer,
+                    onTopCardSwipeOffsetChanged = { offset ->
+                        topCardSwipeOffset = offset
+                    },
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()

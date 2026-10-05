@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -77,7 +78,15 @@ fun DuplicateAssetItem(
     }
 
     var itemBounds by remember { mutableStateOf<Rect?>(null) }
+    var lastScale by remember { mutableFloatStateOf(1f) }
+    var lastOffset by remember { mutableStateOf(Offset.Zero) }
+    var lastGestureActive by remember { mutableStateOf(false) }
+
     val currentItemBounds by rememberUpdatedState(itemBounds)
+    val currentIsBeingZoomed by rememberUpdatedState(isBeingZoomed)
+    val currentLastScale by rememberUpdatedState(lastScale)
+    val currentLastOffset by rememberUpdatedState(lastOffset)
+    val currentLastGestureActive by rememberUpdatedState(lastGestureActive)
 
     Column(
         modifier = modifier,
@@ -87,7 +96,22 @@ fun DuplicateAssetItem(
             modifier = Modifier
                 .aspectRatio(0.75f)
                 .onGloballyPositioned { coords ->
-                    itemBounds = coords.boundsInWindow()
+                    val newBounds = coords.boundsInWindow()
+                    val oldBounds = itemBounds
+                    itemBounds = newBounds
+
+                    if (currentIsBeingZoomed && oldBounds != null && newBounds != oldBounds) {
+                        currentOnZoomStateUpdate(
+                            ZoomData(
+                                asset = asset,
+                                decision = currentDecision,
+                                initialBounds = newBounds,
+                                scale = currentLastScale,
+                                offset = currentLastOffset,
+                                isGestureActive = currentLastGestureActive
+                            )
+                        )
+                    }
                 }
                 .graphicsLayer {
                     alpha = if (isBeingZoomed) 0f else 1f
@@ -114,15 +138,24 @@ fun DuplicateAssetItem(
 
                             if (pressedCount >= 2) {
                                 activeZooming = true
-                                val zoom = event.calculateZoom()
-                                val pan = event.calculatePan()
+                            }
 
-                                currentScale = (currentScale * zoom).coerceIn(1f, 4f)
+                            if (activeZooming && (pressedCount >= 1)) {
+                                val pan = event.calculatePan()
+                                if (pressedCount >= 2) {
+                                    val zoom = event.calculateZoom()
+                                    currentScale = (currentScale * zoom).coerceIn(1f, 4f)
+                                }
+
                                 val maxOffset = 250f * currentScale
                                 currentOffset = Offset(
                                     (currentOffset.x + pan.x).coerceIn(-maxOffset, maxOffset),
                                     (currentOffset.y + pan.y).coerceIn(-maxOffset, maxOffset)
                                 )
+
+                                lastScale = currentScale
+                                lastOffset = currentOffset
+                                lastGestureActive = true
 
                                 currentItemBounds?.let { bounds ->
                                     currentOnZoomStateUpdate(
@@ -141,16 +174,14 @@ fun DuplicateAssetItem(
                                         it.consume()
                                     }
                                 }
-                            } else if (activeZooming) {
-                                event.changes.forEach {
-                                    if (it.positionChange() != Offset.Zero) {
-                                        it.consume()
-                                    }
-                                }
                             }
                         } while (event.changes.any { it.pressed })
 
                         if (activeZooming) {
+                            lastScale = currentScale
+                            lastOffset = currentOffset
+                            lastGestureActive = false
+
                             currentItemBounds?.let { bounds ->
                                 currentOnZoomStateUpdate(
                                     ZoomData(

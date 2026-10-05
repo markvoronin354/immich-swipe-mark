@@ -148,7 +148,7 @@ class AssetRepository @Inject constructor(
 
         // 3. Fetch first page to check if we need a full sync
         val firstPageResp = try {
-            api.searchAssets(baseRequest.copy(page = 1, size = 1000))
+            api.searchAssets(baseRequest.copy(page = 1, size = 500))
         } catch (e: Exception) {
             AppLogger.e("AssetRepo", "Error fetching first page: ${e.message}")
             if (mappedLocal.isEmpty()) send(AssetBatch(emptyList(), totalFromServer, isLocalCache = false, isSyncing = false))
@@ -199,7 +199,7 @@ class AssetRepository @Inject constructor(
                 return@channelFlow
             }
             try {
-                val resp = if (nextPage == "1") firstPageResp else api.searchAssets(baseRequest.copy(page = nextPage.toIntOrNull() ?: 1, size = 1000))
+                val resp = if (nextPage == "1") firstPageResp else api.searchAssets(baseRequest.copy(page = nextPage.toIntOrNull() ?: 1, size = 500))
                 val items = resp.assets.items
                 
                 if (items.isNotEmpty()) {

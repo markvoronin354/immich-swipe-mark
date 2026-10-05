@@ -6,11 +6,13 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.cache.CacheWriter
 import com.markvoronin.immichswipe.core.AppLogger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Utility to pre-cache the first segments of video files to ensure instant playback.
@@ -18,14 +20,23 @@ import kotlinx.coroutines.launch
 @OptIn(UnstableApi::class)
 object VideoPreloader {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val activeJobs = mutableMapOf<String, Job>()
+    private val activeJobs = ConcurrentHashMap<String, Job>()
     private const val PRELOAD_SIZE = 2 * 1024 * 1024L // Preload first 2MB
+    private const val MAX_CONCURRENT_PRELOADS = 1
 
     /**
      * Starts pre-caching the first segment of a video.
      */
     fun preload(context: Context, assetId: String, videoUrl: String, apiKey: String) {
         if (activeJobs.containsKey(assetId)) return
+
+        // Cap concurrent preloads to MAX_CONCURRENT_PRELOADS to avoid I/O disk thrashing
+        if (activeJobs.size >= MAX_CONCURRENT_PRELOADS) {
+            val oldestKey = activeJobs.keys.firstOrNull()
+            if (oldestKey != null) {
+                cancel(oldestKey)
+            }
+        }
 
         val job = scope.launch {
             try {
@@ -48,7 +59,7 @@ object VideoPreloader {
                 cacheWriter.cache()
                 AppLogger.d("VideoPreloader", "Finished preload for $assetId")
             } catch (e: Exception) {
-                if (e !is kotlinx.coroutines.CancellationException) {
+                if (e !is CancellationException) {
                     AppLogger.e("VideoPreloader", "Failed to preload $assetId: ${e.message}")
                 }
             } finally {

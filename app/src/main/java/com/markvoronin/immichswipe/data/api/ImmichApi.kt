@@ -125,7 +125,7 @@ data class SearchAssetsRequest(
     val albumIds: List<String>? = null,
     val ids: List<String>? = null, // A vérifier si supporté ou si c'est 'id' unique
     val isNotInAlbum: Boolean? = null,
-    val size: Int = 1000,
+    val size: Int = 500,
     val page: Int = 1,
     val visibility: String? = null, // archive, timeline, hidden, locked
     val type: String? = null, // IMAGE, VIDEO

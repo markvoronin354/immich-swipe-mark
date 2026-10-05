@@ -109,8 +109,9 @@ fun ZoomableBox(
                         val zoomChange = event.calculateZoom()
                         val panChange = event.calculatePan()
                         val centroid = event.calculateCentroid(useCurrent = false)
+                        val pressedCount = event.changes.filter { it.pressed }.size
 
-                        if (event.changes.size >= 2) {
+                        if (pressedCount >= 2) {
                             // Zooming with 2 fingers
                             if (zoomChange != 1f || panChange != Offset.Zero) {
                                 val oldScale = if (resetOnRelease) animatedScale.value else scale
@@ -132,7 +133,7 @@ fun ZoomableBox(
                                 }
                                 event.changes.forEach { it.consume() }
                             }
-                        } else if (event.changes.size == 1 && (if(resetOnRelease) animatedScale.value else scale) > 1.05f) {
+                        } else if (pressedCount == 1 && (if(resetOnRelease) animatedScale.value else scale) > 1.05f) {
                             // Panning with 1 finger ONLY if zoomed in
                             if (panChange != Offset.Zero) {
                                 if (resetOnRelease) {

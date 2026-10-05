@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -91,20 +92,37 @@ fun AssetTimeline(
     isBulkMode: Boolean = false,
     bulkSelection: Set<String> = emptySet(),
     isBulkDelete: Boolean = false,
-    getRotation: (String) -> Int = { 0 }
+    getRotation: (String) -> Int = { 0 },
+    swipeOffset: Float = 0f,
+    nextIndex: Int = -1
 ) {
     val listState = rememberLazyListState()
     val baseUrlClean = baseUrl.removeSuffix("/")
+    val density = LocalDensity.current
+    val itemSizePx = with(density) { 64.dp.toPx() }
 
-    val targetIndex = if (isBulkMode && bulkSelection.isNotEmpty()) {
-        assets.indices.lastOrNull { i -> bulkSelection.contains(assets[i].id) } ?: currentIndex
-    } else {
-        currentIndex
+    val swipeProgress = (abs(swipeOffset) / 250f).coerceIn(0f, 1f)
+    val hasValidNext = nextIndex in assets.indices && nextIndex != currentIndex
+    val isActivelySwiping = swipeProgress > 0f && hasValidNext && !isBulkMode
+
+    val targetIndex = when {
+        isBulkMode && bulkSelection.isNotEmpty() -> {
+            assets.indices.lastOrNull { i -> bulkSelection.contains(assets[i].id) } ?: currentIndex
+        }
+        else -> currentIndex
     }
-    val currentAssetId = assets.getOrNull(targetIndex)?.id
 
-    LaunchedEffect(targetIndex, currentAssetId, isBulkMode, bulkSelection) {
-        if (assets.isNotEmpty() && targetIndex in assets.indices) {
+    LaunchedEffect(targetIndex, nextIndex, swipeOffset, isBulkMode, bulkSelection, assets.size) {
+        if (assets.isEmpty()) return@LaunchedEffect
+
+        if (isActivelySwiping) {
+            val indexDelta = nextIndex - currentIndex
+            val basePx = currentIndex * itemSizePx + (indexDelta * swipeProgress * itemSizePx)
+            val scrollItemIndex = (basePx / itemSizePx).toInt().coerceIn(0, assets.lastIndex)
+            val scrollOffsetPx = (basePx - (scrollItemIndex * itemSizePx)).toInt()
+
+            listState.scrollToItem(scrollItemIndex, scrollOffsetPx)
+        } else if (targetIndex in assets.indices) {
             val currentVisible = listState.firstVisibleItemIndex
             val distance = abs(targetIndex - currentVisible)
             if (distance > 3) {
@@ -128,7 +146,9 @@ fun AssetTimeline(
             AssetTimelineItem(
                 asset = asset,
                 index = index,
-                isCurrent = index == currentIndex,
+                currentIndex = currentIndex,
+                nextIndex = nextIndex,
+                swipeProgress = if (isActivelySwiping) swipeProgress else 0f,
                 isSelected = bulkSelection.contains(asset.id),
                 decision = decisions[asset.id],
                 hasHeart = isFavorite(asset.id),
@@ -148,7 +168,9 @@ fun AssetTimeline(
 private fun AssetTimelineItem(
     asset: Asset,
     index: Int,
-    isCurrent: Boolean,
+    currentIndex: Int,
+    nextIndex: Int,
+    swipeProgress: Float,
     isSelected: Boolean,
     decision: SwipeDecision?,
     hasHeart: Boolean,
@@ -167,16 +189,41 @@ private fun AssetTimelineItem(
         label = "TimelineRotation"
     )
 
+    val isCurrent = index == currentIndex
+    val isNext = index == nextIndex
+
+    val borderProgress = when {
+        isCurrent -> 1f - swipeProgress
+        isNext -> swipeProgress
+        else -> 0f
+    }
+
+    val itemAlpha = when {
+        isCurrent -> 1f - (swipeProgress * 0.4f)
+        isNext -> 0.6f + (swipeProgress * 0.4f)
+        else -> 0.6f
+    }
+
+    val borderColor = when {
+        isSelected -> if (isBulkDelete) MaterialRed else MaterialGreen
+        borderProgress > 0.05f -> MaterialTheme.colorScheme.primary.copy(alpha = borderProgress)
+        else -> Color.Transparent
+    }
+
+    val borderWidth = when {
+        isSelected -> 3.dp
+        borderProgress > 0.05f -> (1.dp + (1.dp * borderProgress))
+        else -> 0.dp
+    }
+
     Box(
         modifier = Modifier
             .size(60.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .border(
-                width = if (isSelected) 3.dp else if (isCurrent) 2.dp else 0.dp,
-                color = if (isSelected) {
-                    if (isBulkDelete) MaterialRed else MaterialGreen
-                } else if (isCurrent) MaterialTheme.colorScheme.primary else Color.Transparent,
+                width = borderWidth,
+                color = borderColor,
                 shape = RoundedCornerShape(8.dp)
             )
             .clickable { onAssetClick(index) }
@@ -200,7 +247,7 @@ private fun AssetTimelineItem(
                     .fillMaxSize()
                     .graphicsLayer { rotationZ = animatedRotation }
                     .rotateLayout(rotation)
-                    .alpha(if (isCurrent) 1f else 0.6f)
+                    .alpha(itemAlpha)
             )
         }
 

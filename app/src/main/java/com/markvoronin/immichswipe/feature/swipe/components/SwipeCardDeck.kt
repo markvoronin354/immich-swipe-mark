@@ -56,7 +56,8 @@ fun SwipeCardDeck(
     uiState: SwipeUiState,
     viewModel: SwipeViewModel,
     sharedPlayer: ExoPlayer,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onTopCardSwipeOffsetChanged: (Float) -> Unit = {}
 ) {
     Box(
         modifier = modifier,
@@ -149,6 +150,7 @@ fun SwipeCardDeck(
                             onSwipeOffsetChanged = { offset ->
                                 if (!isNextCard) {
                                     topCardOffsetX = offset
+                                    onTopCardSwipeOffsetChanged(offset)
                                 }
                             }
                         )

@@ -356,6 +356,14 @@ class SwipeViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val detail = assetRepository.getAssetDetail(assetId)
+                
+                // Skip emission if asset detail is identical to current asset in state
+                val currentAssets = _uiState.value.assets
+                val existingAsset = currentAssets.getOrNull(index)?.takeIf { it.id == assetId }
+                if (existingAsset != null && existingAsset == detail) {
+                    return@launch
+                }
+
                 val masterIndex = masterWorkPile.indexOfFirst { it.id == assetId }
                 if (masterIndex != -1) {
                     val newMaster = masterWorkPile.toMutableList()
@@ -363,13 +371,13 @@ class SwipeViewModel @Inject constructor(
                     masterWorkPile = newMaster
                 }
 
-                val currentAssets = _uiState.value.assets.toMutableList()
-                if (index < currentAssets.size && currentAssets[index].id == assetId) {
-                    currentAssets[index] = detail
+                val updatedAssets = currentAssets.toMutableList()
+                if (index < updatedAssets.size && updatedAssets[index].id == assetId) {
+                    updatedAssets[index] = detail
                 }
                 val newSizes = _uiState.value.assetSizes.toMutableMap()
                 detail.exifInfo?.fileSizeInBytes?.let { newSizes[assetId] = it }
-                _uiState.update { it.copy(assets = currentAssets, masterWorkPile = masterWorkPile, assetSizes = newSizes) }
+                _uiState.update { it.copy(assets = updatedAssets, masterWorkPile = masterWorkPile, assetSizes = newSizes) }
 
                 // Call preloader logic for the next items in queue
                 preloadNextAssets(index)
