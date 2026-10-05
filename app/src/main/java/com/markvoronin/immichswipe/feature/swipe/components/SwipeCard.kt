@@ -1,5 +1,6 @@
 package com.markvoronin.immichswipe.feature.swipe
 
+import android.content.Context
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -762,132 +763,20 @@ fun SwipeCard(
                     }
                 }
 
-                if (!isNext) {
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = !isHoldingByPress && !wasHoldDetected,
-                        enter = fadeIn(),
-                        exit = fadeOut(),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            listOf(Alignment.Start, Alignment.End).forEach { side ->
-                            Column(
-                                modifier = Modifier
-                                    .align(if (side == Alignment.Start) Alignment.TopStart else Alignment.TopEnd)
-                                    .fillMaxHeight()
-                                    .padding(8.dp),
-                                horizontalAlignment = side
-                            ) {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    if (config.showFullscreenButton && config.fullscreenButtonPosition.toHorizontalAlignment() == side && (config.fullscreenButtonPosition == IconPosition.TOP_LEFT || config.fullscreenButtonPosition == IconPosition.TOP_RIGHT)) {
-                                        SwipeActionIconButton(
-                                            icon = Icons.Default.Fullscreen,
-                                            contentDescription = stringResource(R.string.settings_fullscreen_pos_label),
-                                            onClick = actions.onOpenFullscreen
-                                        )
-                                    }
-                                    if (config.showRotationButton && asset.type != "VIDEO" && config.rotationButtonPosition.toHorizontalAlignment() == side && (config.rotationButtonPosition == IconPosition.TOP_LEFT || config.rotationButtonPosition == IconPosition.TOP_RIGHT)) {
-                                        SwipeActionIconButton(
-                                            icon = Icons.AutoMirrored.Filled.RotateRight,
-                                            contentDescription = stringResource(R.string.swipe_rotate_asset),
-                                            onClick = actions.onRotateAsset
-                                        )
-                                    }
-                                    if (config.showImmichButton && config.immichButtonPosition.toHorizontalAlignment() == side && (config.immichButtonPosition == IconPosition.TOP_LEFT || config.immichButtonPosition == IconPosition.TOP_RIGHT)) {
-                                        SwipeActionIconButton(
-                                            icon = Icons.AutoMirrored.Filled.OpenInNew,
-                                            contentDescription = stringResource(R.string.settings_immich_pos_label),
-                                            onClick = {
-                                                ImmichLauncher.openAssetInImmich(context, baseUrl, asset.id, mode = config.immichOpenMode)
-                                            },
-                                            onLongClick = if (config.immichLongPressWeb && !baseUrl.isNullOrBlank()) {
-                                                { ImmichLauncher.openInWeb(context, baseUrl, asset.id) }
-                                            } else null
-                                        )
-                                    }
-                                    if (config.showMuteButton && config.muteButtonPosition.toHorizontalAlignment() == side && (config.muteButtonPosition == IconPosition.TOP_LEFT || config.muteButtonPosition == IconPosition.TOP_RIGHT) && asset.type == "VIDEO") {
-                                        SwipeActionIconButton(
-                                            icon = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                                            contentDescription = "Mute",
-                                            onClick = {
-                                                actions.onToggleMute()
-                                                showMuteIndicator = true
-                                            }
-                                        )
-                                    }
-                                    if (config.showDownloadButton && config.downloadButtonPosition.toHorizontalAlignment() == side && (config.downloadButtonPosition == IconPosition.TOP_LEFT || config.downloadButtonPosition == IconPosition.TOP_RIGHT)) {
-                                        SwipeActionIconButton(
-                                            icon = Icons.Default.FileDownload,
-                                            contentDescription = "Download",
-                                            onClick = { actions.onDownload(asset) }
-                                        )
-                                    }
-                                    if (config.showShareButton && config.shareButtonPosition.toHorizontalAlignment() == side && (config.shareButtonPosition == IconPosition.TOP_LEFT || config.shareButtonPosition == IconPosition.TOP_RIGHT)) {
-                                        SwipeActionIconButton(
-                                            icon = Icons.Default.Share,
-                                            contentDescription = "Share",
-                                            onClick = { actions.onShare(asset) }
-                                        )
-                                    }
-                                }
-
-                                Spacer(Modifier.weight(1f))
-
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    if (config.showFullscreenButton && config.fullscreenButtonPosition.toHorizontalAlignment() == side && (config.fullscreenButtonPosition == IconPosition.BOTTOM_LEFT || config.fullscreenButtonPosition == IconPosition.BOTTOM_RIGHT)) {
-                                        SwipeActionIconButton(
-                                            icon = Icons.Default.Fullscreen,
-                                            contentDescription = stringResource(R.string.settings_fullscreen_pos_label),
-                                            onClick = actions.onOpenFullscreen
-                                        )
-                                    }
-                                    if (config.showRotationButton && asset.type != "VIDEO" && config.rotationButtonPosition.toHorizontalAlignment() == side && (config.rotationButtonPosition == IconPosition.BOTTOM_LEFT || config.rotationButtonPosition == IconPosition.BOTTOM_RIGHT)) {
-                                        SwipeActionIconButton(
-                                            icon = Icons.AutoMirrored.Filled.RotateRight,
-                                            contentDescription = stringResource(R.string.swipe_rotate_asset),
-                                            onClick = actions.onRotateAsset
-                                        )
-                                    }
-                                    if (config.showImmichButton && config.immichButtonPosition.toHorizontalAlignment() == side && (config.immichButtonPosition == IconPosition.BOTTOM_LEFT || config.immichButtonPosition == IconPosition.BOTTOM_RIGHT)) {
-                                        SwipeActionIconButton(
-                                            icon = Icons.AutoMirrored.Filled.OpenInNew,
-                                            contentDescription = stringResource(R.string.settings_immich_pos_label),
-                                            onClick = {
-                                                ImmichLauncher.openAssetInImmich(context, baseUrl, asset.id, mode = config.immichOpenMode)
-                                            },
-                                            onLongClick = if (config.immichLongPressWeb && !baseUrl.isNullOrBlank()) {
-                                                { ImmichLauncher.openInWeb(context, baseUrl, asset.id) }
-                                            } else null
-                                        )
-                                    }
-                                    if (config.showMuteButton && config.muteButtonPosition.toHorizontalAlignment() == side && (config.muteButtonPosition == IconPosition.BOTTOM_LEFT || config.muteButtonPosition == IconPosition.BOTTOM_RIGHT) && asset.type == "VIDEO") {
-                                        SwipeActionIconButton(
-                                            icon = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                                            contentDescription = "Mute",
-                                            onClick = {
-                                                actions.onToggleMute()
-                                                showMuteIndicator = true
-                                            }
-                                        )
-                                    }
-                                    if (config.showDownloadButton && config.downloadButtonPosition.toHorizontalAlignment() == side && (config.downloadButtonPosition == IconPosition.BOTTOM_LEFT || config.downloadButtonPosition == IconPosition.BOTTOM_RIGHT)) {
-                                        SwipeActionIconButton(
-                                            icon = Icons.Default.FileDownload,
-                                            contentDescription = "Download",
-                                            onClick = { actions.onDownload(asset) }
-                                        )
-                                    }
-                                    if (config.showShareButton && config.shareButtonPosition.toHorizontalAlignment() == side && (config.shareButtonPosition == IconPosition.BOTTOM_LEFT || config.shareButtonPosition == IconPosition.BOTTOM_RIGHT)) {
-                                        SwipeActionIconButton(
-                                            icon = Icons.Default.Share,
-                                            contentDescription = "Share",
-                                            onClick = { actions.onShare(asset) }
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                ActionButtonsOverlay(
+                    visible = !isHoldingByPress && !wasHoldDetected,
+                    isNext = isNext,
+                    asset = asset,
+                    config = config,
+                    actions = actions,
+                    isMuted = isMuted,
+                    baseUrl = baseUrl,
+                    context = context,
+                    onToggleMuteWithIndicator = {
+                        actions.onToggleMute()
+                        showMuteIndicator = true
                     }
+                )
 
                 if (!isNext) {
                     Box(
@@ -990,7 +879,151 @@ fun SwipeCard(
     }
 }
 }
-}
+
+@Composable
+private fun ActionButtonsOverlay(
+    visible: Boolean,
+    isNext: Boolean,
+    asset: Asset,
+    config: SwipeCardConfig,
+    actions: SwipeCardActions,
+    isMuted: Boolean,
+    baseUrl: String,
+    context: Context,
+    onToggleMuteWithIndicator: () -> Unit
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            listOf(Alignment.Start, Alignment.End).forEach { side ->
+                Column(
+                    modifier = Modifier
+                        .align(if (side == Alignment.Start) Alignment.TopStart else Alignment.TopEnd)
+                        .fillMaxHeight()
+                        .padding(8.dp),
+                    horizontalAlignment = side
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (config.showFullscreenButton && config.fullscreenButtonPosition.toHorizontalAlignment() == side && (config.fullscreenButtonPosition == IconPosition.TOP_LEFT || config.fullscreenButtonPosition == IconPosition.TOP_RIGHT)) {
+                            SwipeActionIconButton(
+                                icon = Icons.Default.Fullscreen,
+                                contentDescription = stringResource(R.string.settings_fullscreen_pos_label),
+                                enabled = !isNext,
+                                onClick = actions.onOpenFullscreen
+                            )
+                        }
+                        if (config.showRotationButton && asset.type != "VIDEO" && config.rotationButtonPosition.toHorizontalAlignment() == side && (config.rotationButtonPosition == IconPosition.TOP_LEFT || config.rotationButtonPosition == IconPosition.TOP_RIGHT)) {
+                            SwipeActionIconButton(
+                                icon = Icons.AutoMirrored.Filled.RotateRight,
+                                contentDescription = stringResource(R.string.swipe_rotate_asset),
+                                enabled = !isNext,
+                                onClick = actions.onRotateAsset
+                            )
+                        }
+                        if (config.showImmichButton && config.immichButtonPosition.toHorizontalAlignment() == side && (config.immichButtonPosition == IconPosition.TOP_LEFT || config.immichButtonPosition == IconPosition.TOP_RIGHT)) {
+                            SwipeActionIconButton(
+                                icon = Icons.AutoMirrored.Filled.OpenInNew,
+                                contentDescription = stringResource(R.string.settings_immich_pos_label),
+                                enabled = !isNext,
+                                onClick = {
+                                    ImmichLauncher.openAssetInImmich(context, baseUrl, asset.id, mode = config.immichOpenMode)
+                                },
+                                onLongClick = if (config.immichLongPressWeb && !baseUrl.isNullOrBlank()) {
+                                    { ImmichLauncher.openInWeb(context, baseUrl, asset.id) }
+                                } else null
+                            )
+                        }
+                        if (config.showMuteButton && config.muteButtonPosition.toHorizontalAlignment() == side && (config.muteButtonPosition == IconPosition.TOP_LEFT || config.muteButtonPosition == IconPosition.TOP_RIGHT) && asset.type == "VIDEO") {
+                            SwipeActionIconButton(
+                                icon = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                                contentDescription = "Mute",
+                                enabled = !isNext,
+                                onClick = onToggleMuteWithIndicator
+                            )
+                        }
+                        if (config.showDownloadButton && config.downloadButtonPosition.toHorizontalAlignment() == side && (config.downloadButtonPosition == IconPosition.TOP_LEFT || config.downloadButtonPosition == IconPosition.TOP_RIGHT)) {
+                            SwipeActionIconButton(
+                                icon = Icons.Default.FileDownload,
+                                contentDescription = "Download",
+                                enabled = !isNext,
+                                onClick = { actions.onDownload(asset) }
+                            )
+                        }
+                        if (config.showShareButton && config.shareButtonPosition.toHorizontalAlignment() == side && (config.shareButtonPosition == IconPosition.TOP_LEFT || config.shareButtonPosition == IconPosition.TOP_RIGHT)) {
+                            SwipeActionIconButton(
+                                icon = Icons.Default.Share,
+                                contentDescription = "Share",
+                                enabled = !isNext,
+                                onClick = { actions.onShare(asset) }
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.weight(1f))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (config.showFullscreenButton && config.fullscreenButtonPosition.toHorizontalAlignment() == side && (config.fullscreenButtonPosition == IconPosition.BOTTOM_LEFT || config.fullscreenButtonPosition == IconPosition.BOTTOM_RIGHT)) {
+                            SwipeActionIconButton(
+                                icon = Icons.Default.Fullscreen,
+                                contentDescription = stringResource(R.string.settings_fullscreen_pos_label),
+                                enabled = !isNext,
+                                onClick = actions.onOpenFullscreen
+                            )
+                        }
+                        if (config.showRotationButton && asset.type != "VIDEO" && config.rotationButtonPosition.toHorizontalAlignment() == side && (config.rotationButtonPosition == IconPosition.BOTTOM_LEFT || config.rotationButtonPosition == IconPosition.BOTTOM_RIGHT)) {
+                            SwipeActionIconButton(
+                                icon = Icons.AutoMirrored.Filled.RotateRight,
+                                contentDescription = stringResource(R.string.swipe_rotate_asset),
+                                enabled = !isNext,
+                                onClick = actions.onRotateAsset
+                            )
+                        }
+                        if (config.showImmichButton && config.immichButtonPosition.toHorizontalAlignment() == side && (config.immichButtonPosition == IconPosition.BOTTOM_LEFT || config.immichButtonPosition == IconPosition.BOTTOM_RIGHT)) {
+                            SwipeActionIconButton(
+                                icon = Icons.AutoMirrored.Filled.OpenInNew,
+                                contentDescription = stringResource(R.string.settings_immich_pos_label),
+                                enabled = !isNext,
+                                onClick = {
+                                    ImmichLauncher.openAssetInImmich(context, baseUrl, asset.id, mode = config.immichOpenMode)
+                                },
+                                onLongClick = if (config.immichLongPressWeb && !baseUrl.isNullOrBlank()) {
+                                    { ImmichLauncher.openInWeb(context, baseUrl, asset.id) }
+                                } else null
+                            )
+                        }
+                        if (config.showMuteButton && config.muteButtonPosition.toHorizontalAlignment() == side && (config.muteButtonPosition == IconPosition.BOTTOM_LEFT || config.muteButtonPosition == IconPosition.BOTTOM_RIGHT) && asset.type == "VIDEO") {
+                            SwipeActionIconButton(
+                                icon = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                                contentDescription = "Mute",
+                                enabled = !isNext,
+                                onClick = onToggleMuteWithIndicator
+                            )
+                        }
+                        if (config.showDownloadButton && config.downloadButtonPosition.toHorizontalAlignment() == side && (config.downloadButtonPosition == IconPosition.BOTTOM_LEFT || config.downloadButtonPosition == IconPosition.BOTTOM_RIGHT)) {
+                            SwipeActionIconButton(
+                                icon = Icons.Default.FileDownload,
+                                contentDescription = "Download",
+                                enabled = !isNext,
+                                onClick = { actions.onDownload(asset) }
+                            )
+                        }
+                        if (config.showShareButton && config.shareButtonPosition.toHorizontalAlignment() == side && (config.shareButtonPosition == IconPosition.BOTTOM_LEFT || config.shareButtonPosition == IconPosition.BOTTOM_RIGHT)) {
+                            SwipeActionIconButton(
+                                icon = Icons.Default.Share,
+                                contentDescription = "Share",
+                                enabled = !isNext,
+                                onClick = { actions.onShare(asset) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 

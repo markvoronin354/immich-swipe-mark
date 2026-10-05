@@ -22,6 +22,7 @@ fun SwipeActionIconButton(
     icon: ImageVector,
     contentDescription: String,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
@@ -31,6 +32,7 @@ fun SwipeActionIconButton(
             .clip(CircleShape)
             .background(Color.Black.copy(alpha = 0.3f))
             .combinedClickable(
+                enabled = enabled,
                 onClick = onClick,
                 onLongClick = onLongClick
             )
