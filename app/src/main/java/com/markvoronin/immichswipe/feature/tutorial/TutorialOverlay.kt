@@ -1,7 +1,9 @@
 package com.markvoronin.immichswipe.feature.tutorial
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateRectAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -52,6 +54,8 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -63,6 +67,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.markvoronin.immichswipe.R
@@ -81,6 +86,7 @@ fun TutorialOverlay(
 
     val targetBoundsInWindow = controller.getBoundsForTarget(currentStep.targetKey)
     var overlayWindowOffset by remember { mutableStateOf(Offset.Zero) }
+    var overlaySize by remember { mutableStateOf(IntSize.Zero) }
 
     val infiniteTransition = rememberInfiniteTransition(label = "PulseTransition")
     val pulseAlpha by infiniteTransition.animateFloat(
@@ -139,6 +145,7 @@ fun TutorialOverlay(
             .zIndex(999f)
             .onGloballyPositioned { coords ->
                 overlayWindowOffset = coords.positionInWindow()
+                overlaySize = coords.size
             }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -195,16 +202,29 @@ fun TutorialOverlay(
         }
 
         // Floating Tooltip Card
+        val isTargetAtBottom = currentStep.targetKey == "swipe_actions"
+
+        val targetBottomPaddingDp = if (isTargetAtBottom && localTargetRect != null && overlaySize.height > 0) {
+            val bottomGapPx = overlaySize.height - localTargetRect.top + with(density) { 12.dp.toPx() }
+            with(density) { bottomGapPx.toDp() }.coerceAtLeast(24.dp)
+        } else {
+            24.dp
+        }
+
+        val animatedBottomPaddingDp by animateDpAsState(
+            targetValue = targetBottomPaddingDp,
+            animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+            label = "TooltipBottomPaddingAnimation"
+        )
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 24.dp)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = animatedBottomPaddingDp, top = 24.dp)
         ) {
-            val alignment = when {
-                localTargetRect == null -> Alignment.Center
-                else -> Alignment.BottomCenter
-            }
-
             TooltipCard(
                 step = currentStep,
                 stepIndex = stepIndex,
@@ -213,7 +233,7 @@ fun TutorialOverlay(
                 onPrevious = { controller.previousStep() },
                 onSkip = { controller.skipTutorial() },
                 modifier = Modifier
-                    .align(alignment)
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
             )
         }
@@ -231,7 +251,9 @@ fun TooltipCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.animateContentSize(
+            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+        ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
