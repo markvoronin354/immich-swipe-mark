@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.data.api.DeleteAssetsRequest
+import com.markvoronin.immichswipe.data.api.DuplicateCluster
 import com.markvoronin.immichswipe.data.api.ImmichApi
 import com.markvoronin.immichswipe.data.api.UpdateAssetsRequest
 import com.markvoronin.immichswipe.data.local.entity.SwipeDecisionEntity
@@ -105,16 +106,21 @@ class DuplicatesViewModel @Inject constructor(
             // Fetch clusters directly from Immich API
             val duplicateClusters = api.getDuplicates()
             
-            // Map to UI model and assign a unique ID to each cluster (sorted largest to smallest)
-            val mappedClusters = duplicateClusters.map { cluster ->
-                DuplicateClusterUiModel(
-                    clusterId = UUID.randomUUID().toString(),
-                    assets = cluster.assets.sortedWith(
-                        compareByDescending<Asset> { it.exifInfo?.fileSizeInBytes ?: 0L }
-                            .thenByDescending { (it.exifInfo?.imageWidth ?: 0) * (it.exifInfo?.imageHeight ?: 0) }
-                    )
+            // Map to UI model and assign a unique ID to each cluster (sorted with most duplicates on top)
+            val mappedClusters = duplicateClusters
+                .sortedWith(
+                    compareByDescending<DuplicateCluster> { it.assets.size }
+                        .thenByDescending { cluster -> cluster.assets.sumOf { it.exifInfo?.fileSizeInBytes ?: 0L } }
                 )
-            }
+                .map { cluster ->
+                    DuplicateClusterUiModel(
+                        clusterId = UUID.randomUUID().toString(),
+                        assets = cluster.assets.sortedWith(
+                            compareByDescending<Asset> { it.exifInfo?.fileSizeInBytes ?: 0L }
+                                .thenByDescending { (it.exifInfo?.imageWidth ?: 0) * (it.exifInfo?.imageHeight ?: 0) }
+                        )
+                    )
+                }
             
             _uiState.update { 
                 it.copy(

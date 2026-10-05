@@ -6,6 +6,7 @@ import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.data.api.AssetEditAction
 import com.markvoronin.immichswipe.data.api.AssetEditActionItem
 import com.markvoronin.immichswipe.data.api.DeleteAssetsRequest
+import com.markvoronin.immichswipe.data.api.DuplicateCluster
 import com.markvoronin.immichswipe.data.api.EditAssetRequest
 import com.markvoronin.immichswipe.data.api.ImmichApi
 import com.markvoronin.immichswipe.data.api.RotateAssetRequest
@@ -100,13 +101,18 @@ class AssetRepository @Inject constructor(
             // Handle duplicates endpoint differently as it returns clusters
             try {
                 val duplicates = api.getDuplicates()
-                // Flatten the clusters into a single list with assets sorted largest to smallest per cluster
-                val flatAssets = duplicates.flatMap { cluster ->
-                    cluster.assets.sortedWith(
-                        compareByDescending<Asset> { it.exifInfo?.fileSizeInBytes ?: 0L }
-                            .thenByDescending { (it.exifInfo?.imageWidth ?: 0) * (it.exifInfo?.imageHeight ?: 0) }
+                // Flatten the clusters into a single list with assets sorted with most duplicates on top
+                val flatAssets = duplicates
+                    .sortedWith(
+                        compareByDescending<DuplicateCluster> { it.assets.size }
+                            .thenByDescending { cluster -> cluster.assets.sumOf { it.exifInfo?.fileSizeInBytes ?: 0L } }
                     )
-                }
+                    .flatMap { cluster ->
+                        cluster.assets.sortedWith(
+                            compareByDescending<Asset> { it.exifInfo?.fileSizeInBytes ?: 0L }
+                                .thenByDescending { (it.exifInfo?.imageWidth ?: 0) * (it.exifInfo?.imageHeight ?: 0) }
+                        )
+                    }
                 
                 // For duplicates, we don't cache them in the DB yet, just return them directly
                 send(AssetBatch(flatAssets, flatAssets.size, isLocalCache = false, isSyncing = false))
