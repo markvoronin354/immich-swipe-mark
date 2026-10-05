@@ -88,7 +88,7 @@ object CacheManager {
 
     /**
      * Vérifie si le cache dépasse la limite autorisée et supprime les fichiers les plus vieux.
-     * Exclut video_cache car SimpleCache gère son propre éviction LRU.
+     * Exclut video_cache et image_cache car ils gèrent leur propre éviction LRU.
      */
     private fun checkAndLimitGlobalCache(context: Context) {
         val cacheDir = context.cacheDir
@@ -125,7 +125,7 @@ object CacheManager {
     private fun getFolderSize(file: File): Long {
         var size = 0L
         if (file.isDirectory) {
-            if (file.name == "video_cache") return 0L
+            if (file.name == "video_cache" || file.name == "image_cache") return 0L
             file.listFiles()?.forEach { size += getFolderSize(it) }
         } else {
             size = file.length()
@@ -136,7 +136,7 @@ object CacheManager {
     private fun getAllFiles(file: File): List<File> {
         val result = mutableListOf<File>()
         if (file.isDirectory) {
-            if (file.name == "video_cache") return emptyList()
+            if (file.name == "video_cache" || file.name == "image_cache") return emptyList()
             file.listFiles()?.forEach { result.addAll(getAllFiles(it)) }
         } else {
             result.add(file)
