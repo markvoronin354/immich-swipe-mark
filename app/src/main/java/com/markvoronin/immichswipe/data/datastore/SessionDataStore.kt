@@ -50,6 +50,7 @@ class SessionDataStore(private val context: Context) {
         private val KEY_SYNC_LOCAL_DELETION = androidx.datastore.preferences.core.booleanPreferencesKey("sync_local_deletion")
         private val KEY_TRASH_LOCAL_DELETION = androidx.datastore.preferences.core.booleanPreferencesKey("trash_local_deletion")
         private val KEY_TAP_TO_SWIPE = androidx.datastore.preferences.core.booleanPreferencesKey("tap_to_swipe")
+        private val KEY_INITIAL_INSTALL_PROCESSED = booleanPreferencesKey("initial_install_processed")
         private val KEY_HAS_COMPLETED_SWIPE_TUTORIAL = booleanPreferencesKey("has_completed_swipe_tutorial")
         private val KEY_HAS_COMPLETED_DUPLICATES_TUTORIAL = booleanPreferencesKey("has_completed_duplicates_tutorial")
     }
@@ -226,10 +227,29 @@ class SessionDataStore(private val context: Context) {
     fun isTapToSwipeEnabled(): Flow<Boolean> = context.dataStore.data.map { it[KEY_TAP_TO_SWIPE] ?: false }
     suspend fun saveTapToSwipeEnabled(enabled: Boolean) { context.dataStore.edit { it[KEY_TAP_TO_SWIPE] = enabled } }
 
-    fun hasCompletedSwipeTutorial(): Flow<Boolean> = context.dataStore.data.map { it[KEY_HAS_COMPLETED_SWIPE_TUTORIAL] ?: false }
+    suspend fun initializeTutorialStateForInstallOrUpgrade() {
+        context.dataStore.edit { prefs ->
+            if (prefs[KEY_INITIAL_INSTALL_PROCESSED] != true) {
+                val hasExistingAccount = prefs[KEY_BASE_URL] != null || prefs[KEY_API_KEY] != null
+                if (prefs[KEY_HAS_COMPLETED_SWIPE_TUTORIAL] == null) {
+                    prefs[KEY_HAS_COMPLETED_SWIPE_TUTORIAL] = hasExistingAccount
+                }
+                if (prefs[KEY_HAS_COMPLETED_DUPLICATES_TUTORIAL] == null) {
+                    prefs[KEY_HAS_COMPLETED_DUPLICATES_TUTORIAL] = hasExistingAccount
+                }
+                prefs[KEY_INITIAL_INSTALL_PROCESSED] = true
+            }
+        }
+    }
+
+    fun hasCompletedSwipeTutorial(): Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_HAS_COMPLETED_SWIPE_TUTORIAL] ?: (prefs[KEY_BASE_URL] != null || prefs[KEY_API_KEY] != null)
+    }
     suspend fun setHasCompletedSwipeTutorial(completed: Boolean) { context.dataStore.edit { it[KEY_HAS_COMPLETED_SWIPE_TUTORIAL] = completed } }
 
-    fun hasCompletedDuplicatesTutorial(): Flow<Boolean> = context.dataStore.data.map { it[KEY_HAS_COMPLETED_DUPLICATES_TUTORIAL] ?: false }
+    fun hasCompletedDuplicatesTutorial(): Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_HAS_COMPLETED_DUPLICATES_TUTORIAL] ?: (prefs[KEY_BASE_URL] != null || prefs[KEY_API_KEY] != null)
+    }
     suspend fun setHasCompletedDuplicatesTutorial(completed: Boolean) { context.dataStore.edit { it[KEY_HAS_COMPLETED_DUPLICATES_TUTORIAL] = completed } }
 
     suspend fun resetTutorials() {

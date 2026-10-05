@@ -311,6 +311,10 @@ class SessionRepository @Inject constructor(
         dataStore.removeSavedServerUrl(url)
     }
 
+    suspend fun initializeTutorialState() {
+        dataStore.initializeTutorialStateForInstallOrUpgrade()
+    }
+
     val hasCompletedSwipeTutorial: Flow<Boolean> = dataStore.hasCompletedSwipeTutorial()
     suspend fun setHasCompletedSwipeTutorial(completed: Boolean) {
         dataStore.setHasCompletedSwipeTutorial(completed)

@@ -25,10 +25,17 @@ class AppViewModel @Inject constructor(
     val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
 
     init {
-        // Au démarrage, on lance l'observation réactive de la session et du thème
+        // Au démarrage, on initialise l'état du tutoriel et l'observation réactive de la session et du thème
+        initializeTutorialState()
         observeSession()
         observeTheme()
         observeDynamicColor()
+    }
+
+    private fun initializeTutorialState() {
+        viewModelScope.launch {
+            sessionRepository.initializeTutorialState()
+        }
     }
 
     private fun observeSession() {
