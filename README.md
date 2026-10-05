@@ -51,19 +51,18 @@ This project is a fork based on the original project at [Minos2020/immich-swipe-
 
 To ensure proper functionality while adhering to the **Principle of Least Privilege**, configure your API key with the following permissions on your Immich server:
 
-#### **Required Permissions**
-- `user.read` – Fetch profile details for current user authentication (`/api/users/me`).
-- `album.read` – Fetch user's albums list (`/api/albums`).
-- `asset.read` / `asset.view` – Browse assets, thumbnails, and asset metadata (`/api/assets/{id}`).
-- `search.read` – Query assets in albums/collections and count statistics (`/api/search/metadata`, `/api/search/statistics`).
-- `asset.delete` – Move photos/videos to Immich trash upon syncing (`/api/assets`).
-- `asset.download` – View high-resolution photos and stream videos smoothly.
-
-#### **Optional Permissions (Feature-Dependent)**
-- `duplicate.read` – **Required for Duplicates Feature**: Allows scanning and resolving duplicate asset clusters (`/api/duplicates`).
-- `asset.update` – **Required for Actions**: Allows archiving, favoriting, locking, or editing/rotating assets (`/api/assets`, `/api/assets/{id}/edits`).
-- `album.asset.add` / `album.update` – **Required for "Add to Album"**: Allows adding assets directly to an existing album (`/api/albums/{id}/assets`).
-- `userProfileImage.read` – Displays user avatar images in the account switcher popup (`/api/users/me`).
+- `Asset.read` – Browse assets and asset metadata (`/api/search/metadata`, `/api/assets/{id}`).
+- `Asset.statistics` – Fetch search statistics and count assets (`/api/search/statistics`).
+- `Asset.download` – View high-resolution photos and stream videos (`/api/assets/{id}/original`, `/video/playback`).
+- `Asset.update` – Archive, favorite, lock, or update assets (`/api/assets`, `/api/assets/{id}`).
+- `Asset.edit.create` – Apply edits or rotations to assets (`/api/assets/{id}/edits`).
+- `Asset.delete` – Move photos/videos to Immich trash upon syncing (`/api/assets`).
+- `Asset.view` – View asset thumbnails (`/api/assets/{id}/thumbnail`).
+- `Album.read` – Fetch user's albums list (`/api/albums`).
+- `Album.update` – Add assets directly to an existing album (`/api/albums/{id}/assets`).
+- `Duplicate.read` – Scan and resolve duplicate asset clusters (`/api/duplicates`).
+- `User.read` – Fetch profile details for current user authentication (`/api/users/me`).
+- `userProfileImage.read` – Display user avatar image in the account switcher popup (`/api/users/{id}/profile-image`).
 
 3. Select an album or virtual collection and start sorting!
 

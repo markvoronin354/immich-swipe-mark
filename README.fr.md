@@ -51,19 +51,18 @@ Ce projet est un fork basé sur le projet original [Minos2020/immich-swipe-andro
 
 Afin d'assurer le bon fonctionnement tout en respectant le **Principe de Moindre Privilège**, configurez votre clé API avec les permissions suivantes sur votre serveur Immich :
 
-#### **Permissions Requises**
-- `user.read` – Récupérer les informations du profil utilisateur (`/api/users/me`).
-- `album.read` – Récupérer la liste de vos albums (`/api/albums`).
-- `asset.read` / `asset.view` – Parcourir vos médias, miniatures et métadonnées (`/api/assets/{id}`).
-- `search.read` – Rechercher les médias dans vos albums/collections et calculer les statistiques (`/api/search/metadata`, `/api/search/statistics`).
-- `asset.delete` – Déplacer les médias supprimés vers la corbeille Immich lors de la synchronisation (`/api/assets`).
-- `asset.download` – Afficher les photos en haute résolution et lire les vidéos de manière fluide.
-
-#### **Permissions Optionnelles (Selon les fonctionnalités utilisées)**
-- `duplicate.read` – **Requis pour la fonctionnalité Doublons** : Permet de scanner et résoudre les clusters de photos dupliquées (`/api/duplicates`).
-- `asset.update` – **Requis pour les Actions** : Permet d'archiver, de mettre en favori, de verrouiller ou d'éditer/pivoter des médias (`/api/assets`, `/api/assets/{id}/edits`).
-- `album.asset.add` / `album.update` – **Requis pour "Ajouter à un album"** : Permet d'ajouter directement un média à un album existant (`/api/albums/{id}/assets`).
-- `userProfileImage.read` – Permet d'afficher la photo de profil dans le menu de changement de compte (`/api/users/me`).
+- `Asset.read` – Parcourir vos médias et métadonnées (`/api/search/metadata`, `/api/assets/{id}`).
+- `Asset.statistics` – Calculer les statistiques et compter les médias (`/api/search/statistics`).
+- `Asset.download` – Afficher les photos en haute résolution et lire les vidéos (`/api/assets/{id}/original`, `/video/playback`).
+- `Asset.update` – Archiver, mettre en favori, verrouiller ou modifier des médias (`/api/assets`, `/api/assets/{id}`).
+- `Asset.edit.create` – Appliquer des éditions ou rotations sur les médias (`/api/assets/{id}/edits`).
+- `Asset.delete` – Déplacer les médias supprimés vers la corbeille Immich lors de la synchronisation (`/api/assets`).
+- `Asset.view` – Afficher les miniatures des médias (`/api/assets/{id}/thumbnail`).
+- `Album.read` – Récupérer la liste de vos albums (`/api/albums`).
+- `Album.update` – Ajouter directement un média à un album existant (`/api/albums/{id}/assets`).
+- `Duplicate.read` – Scanner et résoudre les clusters de photos dupliquées (`/api/duplicates`).
+- `User.read` – Récupérer les informations du profil utilisateur (`/api/users/me`).
+- `userProfileImage.read` – Afficher la photo de profil dans le menu de changement de compte (`/api/users/{id}/profile-image`).
 
 3. Sélectionnez un album ou une collection virtuelle et commencez à trier !
 
