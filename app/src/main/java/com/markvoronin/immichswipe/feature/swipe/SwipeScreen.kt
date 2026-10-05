@@ -50,7 +50,6 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import coil.imageLoader
@@ -63,6 +62,7 @@ import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.core.cache.VideoCache
 import com.markvoronin.immichswipe.core.cache.VideoPreloader
+import com.markvoronin.immichswipe.core.player.PlayerLoadControlFactory
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.feature.swipe.components.AddToAlbumDialog
 import com.markvoronin.immichswipe.feature.swipe.components.ResetConfirmationDialog
@@ -219,10 +219,7 @@ fun SwipeScreen(
 
     // On crée l'ExoPlayer une seule fois pour tout l'écran Swipe et on change juste la source
     val sharedPlayer: ExoPlayer = remember {
-        val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(25_000, 60_000, 1_000, 1_000)
-            .setBackBuffer(60_000, true) // 1 minute back-buffer
-            .build()
+        val loadControl = PlayerLoadControlFactory.createSwipeLoadControl(context)
         
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)

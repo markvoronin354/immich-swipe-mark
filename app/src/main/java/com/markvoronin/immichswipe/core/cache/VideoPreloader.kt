@@ -6,6 +6,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.cache.CacheWriter
 import com.markvoronin.immichswipe.core.AppLogger
+import com.markvoronin.immichswipe.core.util.MemoryTier
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,8 +22,15 @@ import java.util.concurrent.ConcurrentHashMap
 object VideoPreloader {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val activeJobs = ConcurrentHashMap<String, Job>()
-    private const val PRELOAD_SIZE = 2 * 1024 * 1024L // Preload first 2MB
     private const val MAX_CONCURRENT_PRELOADS = 1
+
+    private fun getPreloadSize(context: Context): Long {
+        return when (MemoryTier.getMemoryTier(context)) {
+            MemoryTier.LOW -> 1 * 1024 * 1024L
+            MemoryTier.MEDIUM -> 2 * 1024 * 1024L
+            MemoryTier.HIGH -> 4 * 1024 * 1024L
+        }
+    }
 
     /**
      * Starts pre-caching the first segment of a video.
@@ -40,13 +48,14 @@ object VideoPreloader {
 
         val job = scope.launch {
             try {
-                AppLogger.d("VideoPreloader", "Starting preload for $assetId")
+                val preloadSize = getPreloadSize(context)
+                AppLogger.d("VideoPreloader", "Starting preload for $assetId (size=${preloadSize / (1024 * 1024)}MB)")
                 
                 val dataSourceFactory = VideoCache.getCacheDataSourceFactory(context, apiKey)
                 val dataSpec = DataSpec.Builder()
                     .setUri(videoUrl)
                     .setKey(assetId) // Match the cache key used in ExoPlayer
-                    .setLength(PRELOAD_SIZE)
+                    .setLength(preloadSize)
                     .build()
 
                 val cacheWriter = CacheWriter(

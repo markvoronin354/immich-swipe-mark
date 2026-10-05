@@ -84,7 +84,6 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import coil.compose.AsyncImage
@@ -93,6 +92,7 @@ import coil.size.Precision
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.CardDisplayMode
+import com.markvoronin.immichswipe.core.player.PlayerLoadControlFactory
 import com.markvoronin.immichswipe.core.IconPosition
 import com.markvoronin.immichswipe.core.ImmichLauncher
 import com.markvoronin.immichswipe.core.PlaybackBehavior
@@ -177,11 +177,7 @@ fun SwipeCard(
 
     val internalExoPlayer = remember(asset.id, isNext, isFullscreenOpen) {
         if (asset.type == "VIDEO" && !isNext && providedPlayer == null && !isFullscreenOpen) {
-            val loadControl = DefaultLoadControl.Builder()
-                .setBufferDurationsMs(30_000, 120_000, 1_000, 1_000)
-                .setBackBuffer(120_000, true)
-                .setPrioritizeTimeOverSizeThresholds(true)
-                .build()
+            val loadControl = PlayerLoadControlFactory.createSwipeLoadControl(context)
             
             val audioAttributes = AudioAttributes.Builder()
                 .setUsage(C.USAGE_MEDIA)

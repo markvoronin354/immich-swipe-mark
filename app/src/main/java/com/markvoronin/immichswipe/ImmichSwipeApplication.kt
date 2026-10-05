@@ -1,6 +1,5 @@
 package com.markvoronin.immichswipe
 
-import android.app.ActivityManager
 import android.app.Application
 import android.os.Build
 import coil.ImageLoader
@@ -10,6 +9,7 @@ import coil.decode.ImageDecoderDecoder
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import com.markvoronin.immichswipe.core.cache.CacheManager
+import com.markvoronin.immichswipe.core.util.MemoryTier
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
@@ -20,13 +20,16 @@ class ImmichSwipeApplication : Application(), ImageLoaderFactory {
     }
 
     override fun newImageLoader(): ImageLoader {
-        val activityManager = getSystemService(ACTIVITY_SERVICE) as? ActivityManager
-        val isLowRam = activityManager?.isLowRamDevice ?: false
+        val memoryCachePercent = when (MemoryTier.getMemoryTier(this)) {
+            MemoryTier.LOW -> 0.15
+            MemoryTier.MEDIUM -> 0.25
+            MemoryTier.HIGH -> 0.35
+        }
 
         return ImageLoader.Builder(this)
             .memoryCache {
                 MemoryCache.Builder(this)
-                    .maxSizePercent(if (isLowRam) 0.15 else 0.25)
+                    .maxSizePercent(memoryCachePercent)
                     .build()
             }
             .diskCache {

@@ -52,7 +52,6 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.AspectRatioFrameLayout
@@ -62,6 +61,7 @@ import coil.request.ImageRequest
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.cache.VideoCache
+import com.markvoronin.immichswipe.core.player.PlayerLoadControlFactory
 import com.markvoronin.immichswipe.data.datastore.SessionDataStore
 import com.markvoronin.immichswipe.domain.model.Asset
 import kotlinx.coroutines.delay
@@ -108,10 +108,7 @@ fun DuplicateVideoPlayer(
             return@DisposableEffect onDispose {}
         }
 
-        val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(15_000, 50_000, 500, 1_000)
-            .setPrioritizeTimeOverSizeThresholds(true)
-            .build()
+        val loadControl = PlayerLoadControlFactory.createDuplicateLoadControl(context)
 
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
