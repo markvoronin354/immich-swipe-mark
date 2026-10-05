@@ -64,6 +64,13 @@ import com.markvoronin.immichswipe.core.ConnectionStatus
 import com.markvoronin.immichswipe.domain.model.User
 import com.markvoronin.immichswipe.feature.settings.SettingsSubMenu
 
+private sealed interface TopBarTitleState {
+    data class Settings(val subMenu: SettingsSubMenu) : TopBarTitleState
+    data object Duplicates : TopBarTitleState
+    data object Swipe : TopBarTitleState
+    data object Home : TopBarTitleState
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeTopBar(
@@ -109,8 +116,15 @@ fun HomeTopBar(
                 }
             },
             title = {
+                val titleState = when {
+                    isSettingsTab -> TopBarTitleState.Settings(activeSubMenu)
+                    isDuplicatesTab -> TopBarTitleState.Duplicates
+                    isSwipeTab -> TopBarTitleState.Swipe
+                    else -> TopBarTitleState.Home
+                }
+
                 AnimatedContent(
-                    targetState = Triple(isSettingsTab, isDuplicatesTab, activeSubMenu),
+                    targetState = titleState,
                     transitionSpec = {
                         fadeIn(animationSpec = tween(280, easing = FastOutSlowInEasing)) +
                             scaleIn(initialScale = 0.94f, animationSpec = tween(280, easing = FastOutSlowInEasing)) togetherWith
@@ -119,81 +133,88 @@ fun HomeTopBar(
                             SizeTransform(clip = false)
                     },
                     label = "TopBarTitleTransition"
-                ) { (settingsTab, duplicatesTab, subMenu) ->
-                    if (settingsTab) {
-                        val (icon, titleRes) = when (subMenu) {
-                            SettingsSubMenu.INTERACTIONS -> Icons.Default.TouchApp to R.string.settings_interactions_dialog_title
-                            SettingsSubMenu.ACTION_BUTTONS -> Icons.Default.AdsClick to R.string.settings_action_buttons_dialog_title
-                            else -> Icons.Default.Settings to R.string.settings_title
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(38.dp)
-                            ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    Icon(
-                                        imageVector = icon,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
+                ) { state ->
+                    when (state) {
+                        is TopBarTitleState.Settings -> {
+                            val (icon, titleRes) = when (state.subMenu) {
+                                SettingsSubMenu.INTERACTIONS -> Icons.Default.TouchApp to R.string.settings_interactions_dialog_title
+                                SettingsSubMenu.ACTION_BUTTONS -> Icons.Default.AdsClick to R.string.settings_action_buttons_dialog_title
+                                else -> Icons.Default.Settings to R.string.settings_title
                             }
-                            Spacer(Modifier.width(12.dp))
-                            Text(
-                                text = stringResource(titleRes),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(38.dp)
+                                ) {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        Icon(
+                                            imageVector = icon,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    text = stringResource(titleRes),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        TopBarTitleState.Duplicates -> {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(38.dp)
+                                ) {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ContentCopy,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    text = stringResource(R.string.home_virtual_duplicates),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        TopBarTitleState.Swipe -> {
+                            // Empty title on Swipe screen - logo smoothly fades out
+                        }
+                        TopBarTitleState.Home -> {
+                            val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+                            val logoRes = if (isDark) R.drawable.immichswipe_logo_colors_dark else R.drawable.immichswipe_logo_colors_light
+
+                            Image(
+                                painter = painterResource(id = logoRes),
+                                contentDescription = stringResource(R.string.app_name),
+                                modifier = Modifier
+                                    .height(32.dp)
+                                    .padding(vertical = 2.dp),
+                                contentScale = ContentScale.Fit,
                             )
                         }
-                    } else if (duplicatesTab) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(38.dp)
-                            ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.ContentCopy,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                            }
-                            Spacer(Modifier.width(12.dp))
-                            Text(
-                                text = stringResource(R.string.home_virtual_duplicates),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    } else {
-                        val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-                        val logoRes = if (isDark) R.drawable.immichswipe_logo_colors_dark else R.drawable.immichswipe_logo_colors_light
-
-                        Image(
-                            painter = painterResource(id = logoRes),
-                            contentDescription = stringResource(R.string.app_name),
-                            modifier = Modifier
-                                .height(32.dp)
-                                .padding(vertical = 2.dp),
-                            contentScale = ContentScale.Fit,
-                        )
                     }
                 }
             },
