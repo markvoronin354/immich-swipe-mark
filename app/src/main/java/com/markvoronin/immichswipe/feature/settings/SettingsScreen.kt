@@ -311,7 +311,13 @@ fun SettingsScreen(
                         checked = uiState.syncLocalDeletion,
                         onCheckedChange = { checked ->
                             if (checked) {
-                                val perms = if (Build.VERSION.SDK_INT >= 33) {
+                                val perms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                                    arrayOf(
+                                        Manifest.permission.READ_MEDIA_IMAGES,
+                                        Manifest.permission.READ_MEDIA_VIDEO,
+                                        Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED
+                                    )
+                                } else if (Build.VERSION.SDK_INT >= 33) {
                                     arrayOf(
                                         Manifest.permission.READ_MEDIA_IMAGES,
                                         Manifest.permission.READ_MEDIA_VIDEO
