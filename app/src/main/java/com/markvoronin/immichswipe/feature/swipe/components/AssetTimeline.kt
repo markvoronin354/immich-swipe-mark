@@ -33,7 +33,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -101,6 +103,8 @@ fun AssetTimeline(
     val density = LocalDensity.current
     val itemSizePx = with(density) { 64.dp.toPx() }
 
+    var previousAssets by remember { mutableStateOf<List<Asset>?>(null) }
+
     val swipeProgress = (abs(swipeOffset) / 250f).coerceIn(0f, 1f)
     val hasValidNext = nextIndex in assets.indices && nextIndex != currentIndex
     val isActivelySwiping = swipeProgress > 0f && hasValidNext && !isBulkMode
@@ -112,8 +116,11 @@ fun AssetTimeline(
         else -> currentIndex
     }
 
-    LaunchedEffect(targetIndex, nextIndex, swipeOffset, isBulkMode, bulkSelection, assets.size) {
+    LaunchedEffect(targetIndex, nextIndex, swipeOffset, isBulkMode, bulkSelection, assets) {
         if (assets.isEmpty()) return@LaunchedEffect
+
+        val assetsChanged = assets !== previousAssets
+        previousAssets = assets
 
         if (isActivelySwiping) {
             val indexDelta = nextIndex - currentIndex
@@ -125,7 +132,7 @@ fun AssetTimeline(
         } else if (targetIndex in assets.indices) {
             val currentVisible = listState.firstVisibleItemIndex
             val distance = abs(targetIndex - currentVisible)
-            if (distance > 3) {
+            if (assetsChanged || distance > 3) {
                 listState.scrollToItem(targetIndex, scrollOffset = 0)
             } else {
                 listState.animateScrollToItem(targetIndex, scrollOffset = 0)
