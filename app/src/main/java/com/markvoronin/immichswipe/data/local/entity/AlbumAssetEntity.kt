@@ -11,7 +11,13 @@ import androidx.room.Index
 @Entity(
     tableName = "album_assets",
     primaryKeys = ["albumId", "assetId", "userId"],
-    indices = [Index(value = ["assetId"]), Index(value = ["userId"])]
+    indices = [
+        Index(value = ["assetId"]),
+        Index(value = ["userId"]),
+        Index(value = ["albumId", "userId", "fileCreatedAt"]),
+        Index(value = ["albumId", "userId", "fileSizeInBytes"]),
+        Index(value = ["albumId", "userId", "type", "fileCreatedAt"])
+    ]
 )
 data class AlbumAssetEntity(
     val albumId: String,

@@ -21,7 +21,7 @@ import com.markvoronin.immichswipe.data.local.entity.UserAccountEntity
  */
 @Database(
     entities = [SwipeDecisionEntity::class, SyncHistoryEntity::class, AlbumAssetEntity::class, UserAccountEntity::class],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -30,6 +30,16 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userAccountDao(): UserAccountDao
 
     companion object {
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                AppLogger.i("Database", "Executing Migration 12 -> 13 (Adding composite indexes for sorted queries)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_album_assets_albumId_userId_fileCreatedAt ON album_assets (albumId, userId, fileCreatedAt)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_album_assets_albumId_userId_fileSizeInBytes ON album_assets (albumId, userId, fileSizeInBytes)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_album_assets_albumId_userId_type_fileCreatedAt ON album_assets (albumId, userId, type, fileCreatedAt)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_swipe_decisions_userId_albumId ON swipe_decisions (userId, albumId)")
+            }
+        }
+
         private val MIGRATION_11_12 = object : Migration(11, 12) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 AppLogger.i("Database", "Executing Migration 11 -> 12 (Adding rotation to album_assets)")
@@ -241,7 +251,7 @@ abstract class AppDatabase : RoomDatabase() {
                                 "immich_swipe_database"
                             )
                     // On enregistre nos scripts de migration
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
                     .fallbackToDestructiveMigration(false)
                 .build()
                 INSTANCE = instance

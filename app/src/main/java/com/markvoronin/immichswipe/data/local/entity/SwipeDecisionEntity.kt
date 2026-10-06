@@ -1,6 +1,7 @@
 package com.markvoronin.immichswipe.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 
 /**
  * Représente une décision de tri (Swipe) pour un asset donné.
@@ -19,7 +20,8 @@ import androidx.room.Entity
  */
 @Entity(
     tableName = "swipe_decisions",
-    primaryKeys = ["assetId", "userId"]
+    primaryKeys = ["assetId", "userId"],
+    indices = [Index(value = ["userId", "albumId"])]
 )
 data class SwipeDecisionEntity(
     val assetId: String,
