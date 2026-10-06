@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
@@ -97,14 +98,12 @@ fun HomeTopBar(
             navigationIcon = {
                 AnimatedVisibility(
                     visible = showBackButton,
-                    enter = fadeIn(animationSpec = tween(320, easing = FastOutSlowInEasing)) +
-                            slideInHorizontally(animationSpec = tween(320, easing = FastOutSlowInEasing)) { -it } +
-                            expandHorizontally(animationSpec = tween(320, easing = FastOutSlowInEasing), expandFrom = Alignment.Start) +
-                            scaleIn(initialScale = 0.7f, animationSpec = tween(320, easing = FastOutSlowInEasing)),
-                    exit = fadeOut(animationSpec = tween(260, easing = FastOutSlowInEasing)) +
-                           slideOutHorizontally(animationSpec = tween(260, easing = FastOutSlowInEasing)) { -it } +
-                           shrinkHorizontally(animationSpec = tween(260, easing = FastOutSlowInEasing), shrinkTowards = Alignment.Start) +
-                           scaleOut(targetScale = 0.7f, animationSpec = tween(260, easing = FastOutSlowInEasing))
+                    enter = fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)) +
+                            slideInHorizontally(animationSpec = tween(300, easing = FastOutSlowInEasing)) { -it } +
+                            expandHorizontally(animationSpec = tween(300, easing = FastOutSlowInEasing), expandFrom = Alignment.Start),
+                    exit = fadeOut(animationSpec = tween(250, easing = FastOutSlowInEasing)) +
+                           slideOutHorizontally(animationSpec = tween(250, easing = FastOutSlowInEasing)) { -it } +
+                           shrinkHorizontally(animationSpec = tween(250, easing = FastOutSlowInEasing), shrinkTowards = Alignment.Start),
                 ) {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -125,95 +124,119 @@ fun HomeTopBar(
 
                 AnimatedContent(
                     targetState = titleState,
+                    contentAlignment = Alignment.CenterStart,
+                    modifier = Modifier.fillMaxWidth(),
                     transitionSpec = {
-                        fadeIn(animationSpec = tween(280, easing = FastOutSlowInEasing)) +
-                            scaleIn(initialScale = 0.94f, animationSpec = tween(280, easing = FastOutSlowInEasing)) togetherWith
-                            fadeOut(animationSpec = tween(220, easing = FastOutSlowInEasing)) +
-                            scaleOut(targetScale = 0.94f, animationSpec = tween(220, easing = FastOutSlowInEasing)) using
-                            SizeTransform(clip = false)
+                        if ((targetState is TopBarTitleState.Settings) || (initialState is TopBarTitleState.Settings)) {
+                            // Settings headers fade in/out only without any horizontal sliding
+                            fadeIn(animationSpec = tween(220, easing = FastOutSlowInEasing)) togetherWith
+                                fadeOut(animationSpec = tween(180, easing = FastOutSlowInEasing)) using
+                                SizeTransform(clip = false) { _, _ -> snap() }
+                        } else if (targetState == TopBarTitleState.Home) {
+                            // Backward transition (Subscreen -> Home): Everything moves Right-to-Left (<-)
+                            (fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)) +
+                                slideInHorizontally(animationSpec = tween(300, easing = FastOutSlowInEasing)) { it / 4 }) togetherWith
+                                (fadeOut(animationSpec = tween(250, easing = FastOutSlowInEasing)) +
+                                slideOutHorizontally(animationSpec = tween(250, easing = FastOutSlowInEasing)) { -it / 4 }) using
+                                SizeTransform(clip = false) { _, _ -> snap() }
+                        } else {
+                            // Forward transition (Home -> Subscreen): Everything moves Left-to-Right (->)
+                            (fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)) +
+                                slideInHorizontally(animationSpec = tween(300, easing = FastOutSlowInEasing)) { -it / 4 }) togetherWith
+                                (fadeOut(animationSpec = tween(250, easing = FastOutSlowInEasing)) +
+                                slideOutHorizontally(animationSpec = tween(250, easing = FastOutSlowInEasing)) { it / 4 }) using
+                                SizeTransform(clip = false) { _, _ -> snap() }
+                        }
                     },
                     label = "TopBarTitleTransition"
                 ) { state ->
-                    when (state) {
-                        is TopBarTitleState.Settings -> {
-                            val (icon, titleRes) = when (state.subMenu) {
-                                SettingsSubMenu.INTERACTIONS -> Icons.Default.TouchApp to R.string.settings_interactions_dialog_title
-                                SettingsSubMenu.ACTION_BUTTONS -> Icons.Default.AdsClick to R.string.settings_action_buttons_dialog_title
-                                else -> Icons.Default.Settings to R.string.settings_title
-                            }
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(38.dp)
-                                ) {
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier.fillMaxSize()
-                                    ) {
-                                        Icon(
-                                            imageVector = icon,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        when (state) {
+                            is TopBarTitleState.Settings -> {
+                                val (icon, titleRes) = when (state.subMenu) {
+                                    SettingsSubMenu.INTERACTIONS -> Icons.Default.TouchApp to R.string.settings_interactions_dialog_title
+                                    SettingsSubMenu.ACTION_BUTTONS -> Icons.Default.AdsClick to R.string.settings_action_buttons_dialog_title
+                                    else -> Icons.Default.Settings to R.string.settings_title
                                 }
-                                Spacer(Modifier.width(12.dp))
-                                Text(
-                                    text = stringResource(titleRes),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(38.dp)
+                                    ) {
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier.fillMaxSize()
+                                        ) {
+                                            Icon(
+                                                imageVector = icon,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(Modifier.width(12.dp))
+                                    Text(
+                                        text = stringResource(titleRes),
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            TopBarTitleState.Duplicates -> {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(38.dp)
+                                    ) {
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier.fillMaxSize()
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.ContentCopy,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(Modifier.width(12.dp))
+                                    Text(
+                                        text = stringResource(R.string.home_virtual_duplicates),
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            TopBarTitleState.Swipe -> {
+                                // Empty title container filling width to prevent layout pops
+                            }
+                            TopBarTitleState.Home -> {
+                                val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+                                val logoRes = if (isDark) R.drawable.immichswipe_logo_colors_dark else R.drawable.immichswipe_logo_colors_light
+
+                                Image(
+                                    painter = painterResource(id = logoRes),
+                                    contentDescription = stringResource(R.string.app_name),
+                                    modifier = Modifier
+                                        .height(32.dp)
+                                        .padding(vertical = 2.dp),
+                                    contentScale = ContentScale.Fit,
                                 )
                             }
-                        }
-                        TopBarTitleState.Duplicates -> {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(38.dp)
-                                ) {
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier.fillMaxSize()
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.ContentCopy,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-                                Spacer(Modifier.width(12.dp))
-                                Text(
-                                    text = stringResource(R.string.home_virtual_duplicates),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                        TopBarTitleState.Swipe -> {
-                            // Empty title on Swipe screen - logo smoothly fades out
-                        }
-                        TopBarTitleState.Home -> {
-                            val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-                            val logoRes = if (isDark) R.drawable.immichswipe_logo_colors_dark else R.drawable.immichswipe_logo_colors_light
-
-                            Image(
-                                painter = painterResource(id = logoRes),
-                                contentDescription = stringResource(R.string.app_name),
-                                modifier = Modifier
-                                    .height(32.dp)
-                                    .padding(vertical = 2.dp),
-                                contentScale = ContentScale.Fit,
-                            )
                         }
                     }
                 }
