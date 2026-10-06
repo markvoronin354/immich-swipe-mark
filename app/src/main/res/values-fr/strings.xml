@@ -87,7 +87,6 @@
     <string name="settings_include_archived_label">Inclure les archives externes</string>
     <string name="settings_include_archived_desc">Afficher et trier les photos déjà archivées dans Immich (hors de Immich Swipe)</string>
     <string name="settings_sort_order_label">Ordre de tri</string>
-    <string name="settings_sort_desc">Choisir l\'ordre dans lequel les médias sont présentés</string>
     <string name="settings_sort_newest">Plus récents d\'abord</string>
     <string name="settings_sort_oldest">Plus anciens d\'abord</string>
     <string name="settings_sort_shuffled">Mélanger</string>
@@ -116,7 +115,6 @@
     <string name="settings_video_behavior_desc">Gérer l\'interaction avec les autres sons de l\'appareil lors de la lecture d\'une vidéo</string>
     <string name="settings_video_pause">Couper tous les autres sons</string>
     <string name="settings_video_ignore">Jouer par dessus les autres sons</string>
-    <string name="settings_tri_actions_label">Actions de tri affichées</string>
     <string name="settings_tri_favorite">Bouton Favori</string>
     <string name="settings_auto_next_label">Avancer automatiquement</string>
     <string name="settings_auto_next_desc">Passer à la photo suivante et marquer automatiquement comme KEEP après avoir marqué en favori</string>
@@ -184,7 +182,6 @@
     <!-- Commun -->
     <string name="common_confirm">Confirmer</string>
     <string name="common_cancel">Annuler</string>
-    <string name="common_retry">Réessayer</string>
     <string name="common_close">Fermer</string>
     <string name="common_back">Retour</string>
     <string name="common_loading">Chargement…</string>
@@ -195,8 +192,6 @@
     <string name="swipe_reset_button">Réinitialiser l\'album</string>
     <string name="swipe_reset_confirm_title">Réinitialiser le tri ?</string>
     <string name="swipe_reset_confirm_msg">Cela supprimera définitivement toutes les décisions locales pour cet album. Les décisions déjà synchronisées (KEEP/DELETE) sur Immich ne seront PAS annulées sur le serveur, mais elles seront effacées de votre progression locale dans cette application.</string>
-    <string name="duplicates_delete_button_title">Supprimer %1$d éléments marqués</string>
-    <string name="duplicates_delete_frees_space">Libère %1$s</string>
     <string name="duplicates_delete_confirm_title">Supprimer les doublons ?</string>
     <plurals name="duplicates_delete_confirm_msg">
         <item quantity="one">Cela supprimera définitivement %1$d photo (%2$s) de votre serveur Immich. Êtes-vous sûr ?</item>
