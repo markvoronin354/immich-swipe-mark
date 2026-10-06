@@ -38,7 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -87,6 +87,7 @@ import okhttp3.Request
 import okhttp3.Response
 import java.io.File
 import java.io.IOException
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -166,10 +167,10 @@ fun SwipeScreen(
         val apiKey = uiState.apiKey
         val baseUrl = uiState.baseUrl.removeSuffix("/")
         
-        if (apiKey.isNullOrEmpty() || baseUrl.isNullOrEmpty()) return@LaunchedEffect
+        if (apiKey.isEmpty() || baseUrl.isEmpty()) return@LaunchedEffect
 
         // Wait 350ms for active gestures, card swipes, or top bar transitions to finish smoothly before preloading
-        delay(350)
+        delay(350.milliseconds)
 
         // Cancel preload for the previous asset if it was a video
         if (currentIndex > 0) {
@@ -371,7 +372,7 @@ fun SwipeScreen(
                             .addHeader("x-api-key", apiKey)
                             .build()
                         val resp = client.newCall(req).execute()
-                        if (resp.isSuccessful && resp.body != null) {
+                        if (resp.isSuccessful) {
                             response = resp
                             break
                         } else {
@@ -382,14 +383,14 @@ fun SwipeScreen(
                     }
                 }
 
-                if (response == null || !response.isSuccessful || response.body == null) {
+                if (response == null) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Download failed: Server error", Toast.LENGTH_LONG).show()
                     }
                     return@launch
                 }
 
-                val body = response.body!!
+                val body = response.body
                 val mimeType = if (asset.type == "VIDEO") "video/*" else if (asset.isGif) "image/gif" else "image/*"
 
                 try {
@@ -462,7 +463,7 @@ fun SwipeScreen(
                             .addHeader("x-api-key", apiKey)
                             .build()
                         val resp = client.newCall(req).execute()
-                        if (resp.isSuccessful && resp.body != null) {
+                        if (resp.isSuccessful) {
                             response = resp
                             break
                         } else {
@@ -473,7 +474,7 @@ fun SwipeScreen(
                     }
                 }
 
-                if (response == null || !response.isSuccessful || response.body == null) {
+                if (response == null) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Share failed: Server error", Toast.LENGTH_LONG).show()
                     }
@@ -481,7 +482,7 @@ fun SwipeScreen(
                 }
 
                 try {
-                    val body = response.body!!
+                    val body = response.body
                     val fileName = asset.originalFileName?.substringAfterLast('/')?.substringAfterLast('\\')
                         ?: "immich_${asset.id}.${asset.fileExtension ?: "jpg"}"
 

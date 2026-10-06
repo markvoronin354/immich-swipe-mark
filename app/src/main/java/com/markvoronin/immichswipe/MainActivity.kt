@@ -15,14 +15,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.AppTheme
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.feature.auth.AuthScreen
 import com.markvoronin.immichswipe.feature.common.LoadingScreen
-import com.markvoronin.immichswipe.feature.home.HomeScreen
+import com.markvoronin.immichswipe.feature.home.homeScreen
 import com.markvoronin.immichswipe.ui.theme.ImmichSwipeTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -79,7 +79,7 @@ class MainActivity : ComponentActivity() {
                                 val sessionKey = "$activeUserId-$baseUrl-$apiKey"
                                 
                                 key(sessionKey) {
-                                    HomeScreen(
+                                    homeScreen(
                                         viewModel = hiltViewModel(key = sessionKey),
                                         sessionKey = sessionKey,
                                         deepLinkIntent = intent
