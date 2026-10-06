@@ -26,13 +26,13 @@ object PlayerLoadControlFactory {
 
         val (minBuffer, maxBuffer, backBuffer) = when (tier) {
             MemoryTier.LOW -> {
-                Triple(10_000, 20_000, 15_000)
+                Triple(10_000, 20_000, 10_000)
             }
             MemoryTier.MEDIUM -> {
-                Triple(20_000, 60_000, 60_000)
+                Triple(15_000, 40_000, 20_000)
             }
             MemoryTier.HIGH -> {
-                Triple(30_000, 120_000, 120_000)
+                Triple(25_000, 60_000, 30_000)
             }
         }
 
