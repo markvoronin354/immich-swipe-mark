@@ -39,6 +39,9 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
         }
+        lint {
+            disable.add("ModifierParameter")
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

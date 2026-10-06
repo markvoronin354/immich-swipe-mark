@@ -71,9 +71,9 @@ import kotlin.time.Duration.Companion.milliseconds
 @Composable
 fun DuplicateVideoPlayer(
     asset: Asset,
+    modifier: Modifier = Modifier,
     baseUrl: String = "",
     apiKey: String = "",
-    modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit,
     onTap: (() -> Unit)? = null,
     videoSurfaceWrapper: @Composable (surfaceContent: @Composable () -> Unit) -> Unit = { surface -> surface() }
