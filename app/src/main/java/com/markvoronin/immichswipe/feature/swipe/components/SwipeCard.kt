@@ -103,16 +103,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.milliseconds
 
 
 private fun Modifier.rotateLayout(rotation: Int) = layout { measurable, constraints ->
-    val isRotated = rotation % 180 != 0
+    val isRotated = (rotation % 180) != 0
     val newConstraints = if (isRotated) {
         Constraints(
             minWidth = constraints.minHeight,
             maxWidth = constraints.maxHeight,
             minHeight = constraints.minWidth,
-            maxHeight = constraints.maxWidth
+            maxHeight = constraints.maxWidth,
         )
     } else constraints
     val placeable = measurable.measure(newConstraints)
@@ -152,22 +153,22 @@ fun SwipeCard(
     // Directional lock for gestures
     var dragDirection by remember { mutableIntStateOf(0) } // 0: undecided, 1: horizontal, 2: vertical
 
-    var isHoldingByPress by remember(asset.id) { mutableStateOf(false) }
-    var wasHoldDetected by remember(asset.id) { mutableStateOf(false) }
+    var isHoldingByPress by remember(asset.id) { mutableStateOf(value = false) }
+    var wasHoldDetected by remember(asset.id) { mutableStateOf(value = false) }
     val currentIsHolding by rememberUpdatedState(isHoldingByPress || wasHoldDetected)
-    var pausedByHoldState by remember(asset.id) { mutableStateOf(false) }
-    var ignoreNextTap by remember(asset.id) { mutableStateOf(false) }
+    var pausedByHoldState by remember(asset.id) { mutableStateOf(value = false) }
+    var ignoreNextTap by remember(asset.id) { mutableStateOf(value = false) }
 
-    var isVideoReady by remember(asset.id) { mutableStateOf(false) }
+    var isVideoReady by remember(asset.id) { mutableStateOf(value = false) }
     var showLoadingIndicator by remember(asset.id, providedPlayer) {
         val isSameAsset = providedPlayer?.currentMediaItem?.mediaId == asset.id
-        mutableStateOf(asset.type == "VIDEO" && !(isSameAsset && providedPlayer?.playbackState == Player.STATE_READY))
+        mutableStateOf(asset.type == "VIDEO" && !(isSameAsset && providedPlayer.playbackState == Player.STATE_READY))
     }
-    var showMuteIndicator by remember { mutableStateOf(false) }
+    var showMuteIndicator by remember { mutableStateOf(value = false) }
 
     LaunchedEffect(showMuteIndicator) {
         if (showMuteIndicator) {
-            delay(1000)
+            delay(1000.milliseconds)
             showMuteIndicator = false
         }
     }
@@ -208,12 +209,18 @@ fun SwipeCard(
 
     val exoPlayer = providedPlayer ?: internalExoPlayer
 
+    LaunchedEffect(exoPlayer) {
+        if (exoPlayer == null) {
+            isVideoReady = false
+        }
+    }
+
     LaunchedEffect(asset.id, isVideoReady) {
         AppLogger.d("SwipeCard", "Video readiness: ready=$isVideoReady, indicator=$showLoadingIndicator, asset=${asset.id}")
         if (isVideoReady) {
             showLoadingIndicator = false
         } else if (asset.type == "VIDEO" && !isNext) {
-            delay(500)
+            delay(500.milliseconds)
             if (!isVideoReady) {
                 showLoadingIndicator = true
             }
@@ -248,7 +255,7 @@ fun SwipeCard(
             override fun onPlaybackStateChanged(state: Int) {
                 val isSameAsset = exoPlayer?.currentMediaItem?.mediaId == asset.id
                 if (state == Player.STATE_READY && isSameAsset) {
-                    if ((exoPlayer?.videoSize?.height ?: 0) == 0) {
+                    if ((exoPlayer.videoSize.height) == 0) {
                         isVideoReady = true
                     }
                     showLoadingIndicator = false
@@ -515,16 +522,18 @@ fun SwipeCard(
                             .build()
                     }
 
-                    // Always render base thumbnail to prevent 1-frame unmount flicker when transitioning from next -> top card
-                    AsyncImage(
-                        model = placeholderRequest,
-                        contentDescription = null,
-                        contentScale = if (config.cardDisplayMode == CardDisplayMode.FILL) ContentScale.Crop else ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer { rotationZ = animatedRotation }
-                            .rotateLayout(config.rotationAngle)
-                    )
+                    // Render base thumbnail until video is ready to prevent flicker when transitioning cards or loading
+                    if (!isVideoReady) {
+                        AsyncImage(
+                            model = placeholderRequest,
+                            contentDescription = null,
+                            contentScale = if (config.cardDisplayMode == CardDisplayMode.FILL) ContentScale.Crop else ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer { rotationZ = animatedRotation }
+                                .rotateLayout(config.rotationAngle)
+                        )
+                    }
 
                     if (!isNext && exoPlayer != null && !isFullscreenOpen) {
                         SharedVideoPlayer(
@@ -542,8 +551,8 @@ fun SwipeCard(
                                 ZoomableBox(
                                     modifier = Modifier.fillMaxSize(),
                                     resetOnRelease = true,
-                                    aspectRatio = asset.exifInfo?.let {
-                                        val baseAR = (it.imageWidth?.toFloat() ?: 1f) / (it.imageHeight?.toFloat() ?: 1f)
+                                    aspectRatio = asset.exifInfo?.let { (imageWidth, imageHeight) ->
+                                        val baseAR = (imageWidth?.toFloat() ?: 1f) / (imageHeight?.toFloat() ?: 1f)
                                         if (config.rotationAngle % 180 != 0) 1f / baseAR else baseAR
                                     },
                                     isFillMode = config.cardDisplayMode == CardDisplayMode.FILL,
@@ -572,7 +581,7 @@ fun SwipeCard(
                                     onPress = { offset, size ->
                                         ignoreNextTap = false
                                         wasHoldDetected = false
-                                        val wasReleased = withTimeoutOrNull(500) {
+                                        val wasReleased = withTimeoutOrNull(500.milliseconds) {
                                             awaitRelease()
                                             true
                                         }
@@ -605,7 +614,7 @@ fun SwipeCard(
                                                 isHoldingByPress = false
                                                 pausedByHoldState = false
                                                 wasHoldDetected = false
-                                            } catch (e: GestureCancellationException) {
+                                            } catch (_: GestureCancellationException) {
                                                 isHoldingByPress = false
                                             }
                                         }
@@ -657,8 +666,8 @@ fun SwipeCard(
                         modifier = Modifier.fillMaxSize(),
                         resetOnRelease = true,
                         enabled = !isNext,
-                        aspectRatio = asset.exifInfo?.let {
-                            val baseAR = (it.imageWidth?.toFloat() ?: 1f) / (it.imageHeight?.toFloat() ?: 1f)
+                        aspectRatio = asset.exifInfo?.let { (imageWidth, imageHeight) ->
+                            val baseAR = (imageWidth?.toFloat() ?: 1f) / (imageHeight?.toFloat() ?: 1f)
                             if (config.rotationAngle % 180 != 0) 1f / baseAR else baseAR
                         },
                         isFillMode = config.cardDisplayMode == CardDisplayMode.FILL,
@@ -681,7 +690,7 @@ fun SwipeCard(
                         onPress = { offset, size ->
                             ignoreNextTap = false
                             wasHoldDetected = false
-                            val wasReleased = withTimeoutOrNull(500) {
+                            val wasReleased = withTimeoutOrNull(500.milliseconds) {
                                 awaitRelease()
                                 true
                             }
@@ -712,7 +721,7 @@ fun SwipeCard(
                                     awaitRelease()
                                     isHoldingByPress = false
                                     wasHoldDetected = false
-                                } catch (e: GestureCancellationException) {
+                                } catch (_: GestureCancellationException) {
                                     isHoldingByPress = false
                                 }
                             }
@@ -838,10 +847,9 @@ fun SwipeCard(
                                 panelProgress = panelProgress.value,
                                 maxHeightPx = metadataHeightPx
                             )
+                        }
                     }
-                }
 
-                if (!isNext) {
                     if (offsetX.value > 0f) {
                         IndicatorBadge(stringResource(R.string.swipe_keep_upper), MaterialGreen, Alignment.TopStart) { (offsetX.value / 200f).coerceIn(0f, 1f) * 0.9f }
                     } else if (offsetX.value < 0f) {
@@ -873,7 +881,6 @@ fun SwipeCard(
             }
         }
     }
-}
 }
 
 @Composable
@@ -928,7 +935,7 @@ private fun ActionButtonsOverlay(
                                 onClick = {
                                     ImmichLauncher.openAssetInImmich(context, baseUrl, asset.id, mode = config.immichOpenMode)
                                 },
-                                onLongClick = if (config.immichLongPressWeb && !baseUrl.isNullOrBlank()) {
+                                onLongClick = if (config.immichLongPressWeb && baseUrl.isNotBlank()) {
                                     { ImmichLauncher.openInWeb(context, baseUrl, asset.id) }
                                 } else null
                             )
@@ -986,7 +993,7 @@ private fun ActionButtonsOverlay(
                                 onClick = {
                                     ImmichLauncher.openAssetInImmich(context, baseUrl, asset.id, mode = config.immichOpenMode)
                                 },
-                                onLongClick = if (config.immichLongPressWeb && !baseUrl.isNullOrBlank()) {
+                                onLongClick = if (config.immichLongPressWeb && baseUrl.isNotBlank()) {
                                     { ImmichLauncher.openInWeb(context, baseUrl, asset.id) }
                                 } else null
                             )

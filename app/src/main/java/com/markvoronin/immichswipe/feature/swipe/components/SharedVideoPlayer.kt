@@ -91,16 +91,16 @@ fun SharedVideoPlayer(
     showSize: Boolean = false,
     onControllerVisibilityChanged: ((Boolean) -> Unit)? = null,
     controlsOffset: Dp = 0.dp,
-    videoSurfaceWrapper: @Composable (surfaceContent: @Composable () -> Unit) -> Unit = { surfaceContent -> surfaceContent() }
+    videoSurfaceWrapper: @Composable (surfaceContent: @Composable () -> Unit) -> Unit = { surfaceContent -> surfaceContent() },
 ) {
     var currentTime by remember(assetId) { mutableLongStateOf(0L) }
     var duration by remember(assetId) { mutableLongStateOf(0L) }
     var isVideoPlaying by remember(player) { mutableStateOf(player.isPlaying) }
-    var isScrubbing by remember(assetId) { mutableStateOf(false) }
+    var isScrubbing by remember(assetId) { mutableStateOf(value = false) }
     var scrubValue by remember(assetId) { mutableLongStateOf(0L) }
 
         val togglePlayPause = {
-            if (player.playWhenReady && player.playbackState != Player.STATE_ENDED) {
+            if (player.playWhenReady && (player.playbackState != Player.STATE_ENDED)) {
                 player.pause()
             } else {
                 if (player.playbackState == Player.STATE_ENDED) {
@@ -161,7 +161,7 @@ fun SharedVideoPlayer(
         Box(modifier = Modifier.fillMaxSize()) {
             videoSurfaceWrapper {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    if (assetId != null && baseUrlClean.isNotEmpty()) {
+                    if (assetId != null && baseUrlClean.isNotEmpty() && !isVideoReady) {
                         val context = LocalContext.current
                         val thumbnailRequest = remember(assetId, baseUrlClean, apiKey) {
                             ImageRequest.Builder(context)
@@ -202,9 +202,11 @@ fun SharedVideoPlayer(
                             factory = { context ->
                                 AppLogger.d("VideoPlayer", "AndroidView Factory: isFullscreen=$isFullscreen, asset=$assetId")
                                 val view = LayoutInflater.from(context).inflate(R.layout.view_player_texture, null) as PlayerView
-                                view.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { visibility ->
-                                    onControllerVisibilityChanged?.invoke(visibility == View.VISIBLE)
-                                })
+                                view.setControllerVisibilityListener(
+                                    PlayerView.ControllerVisibilityListener { visibility ->
+                                        onControllerVisibilityChanged?.invoke(visibility == View.VISIBLE)
+                                    }
+                                )
                                 
                                 // Clear content on player reset to prevent showing stale frames from previous videos
                                 view.setKeepContentOnPlayerReset(false)

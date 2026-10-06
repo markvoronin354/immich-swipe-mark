@@ -91,6 +91,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.milliseconds
 
 
 private fun Modifier.rotateLayout(rotation: Int) = layout { measurable, constraints ->
@@ -174,13 +175,13 @@ fun FullscreenViewer(
     var isVideoReady by remember(asset.id) { mutableStateOf(false) }
     var showLoadingIndicator by remember(asset.id, providedPlayer) {
         val isSameAsset = providedPlayer?.currentMediaItem?.mediaId == asset.id
-        mutableStateOf(asset.type == "VIDEO" && !(isSameAsset && providedPlayer?.playbackState == Player.STATE_READY))
+        mutableStateOf(asset.type == "VIDEO" && !(isSameAsset && providedPlayer.playbackState == Player.STATE_READY))
     }
     var showMuteIndicator by remember { mutableStateOf(false) }
 
     LaunchedEffect(showMuteIndicator) {
         if (showMuteIndicator) {
-            delay(1000)
+            delay(1000.milliseconds)
             showMuteIndicator = false
         }
     }
@@ -191,7 +192,7 @@ fun FullscreenViewer(
             showLoadingIndicator = false
         } else if (asset.type == "VIDEO") {
             // Delay showing the indicator to avoid flickering on fast transitions
-            delay(500)
+            delay(500.milliseconds)
             if (!isVideoReady) {
                 showLoadingIndicator = true
             }
@@ -216,7 +217,8 @@ fun FullscreenViewer(
     LaunchedEffect(asset.id) {
         swipeX.snapTo(0f)
         swipeY.snapTo(0f)
-        if (exoPlayer?.playbackState != Player.STATE_READY) {
+        val isSameAssetAndReady = (exoPlayer?.currentMediaItem?.mediaId == asset.id) && (exoPlayer.playbackState == Player.STATE_READY)
+        if (!isSameAssetAndReady) {
             isVideoReady = false
             showLoadingIndicator = true
         }
@@ -260,7 +262,7 @@ fun FullscreenViewer(
                 val isSameAsset = exoPlayer?.currentMediaItem?.mediaId == asset.id
                 AppLogger.d("Fullscreen", "Playback state changed: $state, asset=${asset.id}, same=$isSameAsset")
                 if (state == Player.STATE_READY && isSameAsset) {
-                    if ((exoPlayer?.videoSize?.height ?: 0) == 0) {
+                    if (exoPlayer.videoSize.height == 0) {
                         isVideoReady = true
                     }
                     showLoadingIndicator = false
@@ -414,6 +416,8 @@ fun FullscreenViewer(
                     player = exoPlayer,
                     isFullscreen = true,
                     assetId = asset.id,
+                    baseUrl = baseUrlClean,
+                    apiKey = apiKeyLocal,
                     isMuted = isMuted,
                     isPaused = pausedByHoldState,
                     isVideoReady = isVideoReady,
@@ -448,7 +452,7 @@ fun FullscreenViewer(
                             onPress = { offset, size ->
                                 ignoreNextTap = false
                                 wasHoldDetected = false
-                                val wasReleased = withTimeoutOrNull(500) {
+                                val wasReleased = withTimeoutOrNull(500.milliseconds) {
                                     awaitRelease()
                                     true
                                 }
@@ -480,7 +484,7 @@ fun FullscreenViewer(
                                         isHoldingByPress = false
                                         pausedByHoldState = false
                                         wasHoldDetected = false
-                                    } catch (e: GestureCancellationException) {
+                                    } catch (_: GestureCancellationException) {
                                         isHoldingByPress = false
                                     }
                                 }
@@ -539,7 +543,7 @@ fun FullscreenViewer(
                     onPress = { offset, size ->
                         ignoreNextTap = false
                         wasHoldDetected = false
-                        val wasReleased = withTimeoutOrNull(500) {
+                        val wasReleased = withTimeoutOrNull(500.milliseconds) {
                             awaitRelease()
                             true
                         }
@@ -565,7 +569,7 @@ fun FullscreenViewer(
                                 awaitRelease()
                                 isHoldingByPress = false
                                 wasHoldDetected = false
-                            } catch (e: GestureCancellationException) {
+                            } catch (_: GestureCancellationException) {
                                 isHoldingByPress = false
                             }
                         }
