@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
+import com.markvoronin.immichswipe.BuildConfig
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.ConnectionLevel
 import com.markvoronin.immichswipe.core.ConnectionStatus
@@ -376,17 +377,8 @@ fun ProfilePopup(
                 }
 
                 // Application version
-                val packageInfo = remember {
-                    try {
-                        context.packageManager.getPackageInfo(context.packageName, 0)
-                    } catch (_: Exception) {
-                        null
-                    }
-                }
-                val versionName = packageInfo?.versionName ?: "3.5.1"
-                
                 Text(
-                    text = "v$versionName",
+                    text = "v${BuildConfig.VERSION_NAME}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
                     modifier = Modifier.padding(top = 8.dp)
