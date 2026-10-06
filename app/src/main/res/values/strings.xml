@@ -86,7 +86,6 @@
     <string name="settings_include_archived_label">Include external archives</string>
     <string name="settings_include_archived_desc">View and sort photos that have been archived in Immich (outside of Immich Swipe)</string>
     <string name="settings_sort_order_label">Sort order</string>
-    <string name="settings_sort_desc">Choose the order in which media is presented</string>
     <string name="settings_sort_newest">Newest first</string>
     <string name="settings_sort_oldest">Oldest first</string>
     <string name="settings_sort_shuffled">Shuffle</string>
@@ -115,7 +114,6 @@
     <string name="settings_video_behavior_desc">Manage interaction with other device sounds when playing a video</string>
     <string name="settings_video_pause">Pause other sounds</string>
     <string name="settings_video_ignore">Play over other sounds</string>
-    <string name="settings_tri_actions_label">Displayed sorting actions</string>
     <string name="settings_tri_favorite">Favorite button</string>
     <string name="settings_auto_next_label">Auto-advance</string>
     <string name="settings_auto_next_desc">Move to the next photo and automatically mark as KEEP after marking as favorite</string>
@@ -183,7 +181,6 @@
     <!-- Common -->
     <string name="common_confirm">Confirm</string>
     <string name="common_cancel">Cancel</string>
-    <string name="common_retry">Retry</string>
     <string name="common_close">Close</string>
     <string name="common_back">Back</string>
     <string name="common_loading">Loading…</string>
@@ -194,8 +191,6 @@
     <string name="swipe_reset_button">Reset album sorting</string>
     <string name="swipe_reset_confirm_title">Reset Album Sorting?</string>
     <string name="swipe_reset_confirm_msg">This will permanently delete all local decisions for this album. Previously synced decisions (KEEP/DELETE) on Immich will NOT be undone on the server, but they will be cleared from your local progress in this app.</string>
-    <string name="duplicates_delete_button_title">Delete %1$d marked items</string>
-    <string name="duplicates_delete_frees_space">Frees up %1$s</string>
     <string name="duplicates_delete_confirm_title">Delete Duplicate Photos?</string>
     <plurals name="duplicates_delete_confirm_msg">
         <item quantity="one">This will permanently delete %1$d photo (%2$s) from your Immich server. Are you sure?</item>

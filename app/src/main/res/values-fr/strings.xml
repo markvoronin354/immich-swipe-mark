@@ -200,6 +200,7 @@
     <string name="duplicates_delete_confirm_title">Supprimer les doublons ?</string>
     <plurals name="duplicates_delete_confirm_msg">
         <item quantity="one">Cela supprimera définitivement %1$d photo (%2$s) de votre serveur Immich. Êtes-vous sûr ?</item>
+        <item quantity="many">Cela supprimera définitivement %1$d photos (%2$s) de votre serveur Immich. Êtes-vous sûr ?</item>
         <item quantity="other">Cela supprimera définitivement %1$d photos (%2$s) de votre serveur Immich. Êtes-vous sûr ?</item>
     </plurals>
     <string name="duplicates_reset_confirm_title">Réinitialiser les choix ?</string>
@@ -209,6 +210,7 @@
     <string name="duplicates_keep_smallest">Garder les plus petits</string>
     <plurals name="duplicates_groups_count">
         <item quantity="one">%1$d groupe</item>
+        <item quantity="many">%1$d groupes</item>
         <item quantity="other">%1$d groupes</item>
     </plurals>
 
@@ -242,11 +244,13 @@
     <string name="settings_db_delete_success">Données supprimées avec succès</string>
     <plurals name="settings_db_export_success">
         <item quantity="one">Export terminé (%1$d décision)</item>
+        <item quantity="many">Export terminé (%1$d décisions)</item>
         <item quantity="other">Export terminé (%1$d décisions)</item>
     </plurals>
     <string name="settings_db_export_error">Erreur export: %1$s</string>
     <plurals name="settings_db_import_success">
         <item quantity="one">Import réussi (%1$d décision)</item>
+        <item quantity="many">Import réussi (%1$d décisions)</item>
         <item quantity="other">Import réussi (%1$d décisions)</item>
     </plurals>
     <string name="settings_db_import_error">Erreur import: %1$s</string>

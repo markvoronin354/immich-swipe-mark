@@ -199,6 +199,7 @@
     <string name="duplicates_delete_confirm_title">¿Eliminar fotos duplicadas?</string>
     <plurals name="duplicates_delete_confirm_msg">
         <item quantity="one">Esto eliminará permanentemente %1$d foto (%2$s) de tu servidor Immich. ¿Estás seguro?</item>
+        <item quantity="many">Esto eliminará permanentemente %1$d fotos (%2$s) de tu servidor Immich. ¿Estás seguro?</item>
         <item quantity="other">Esto eliminará permanentemente %1$d fotos (%2$s) de tu servidor Immich. ¿Estás seguro?</item>
     </plurals>
     <string name="duplicates_reset_confirm_title">¿Restablecer elecciones de duplicados?</string>
@@ -208,6 +209,7 @@
     <string name="duplicates_keep_smallest">Conservar más pequeños</string>
     <plurals name="duplicates_groups_count">
         <item quantity="one">%1$d grupo</item>
+        <item quantity="many">%1$d grupos</item>
         <item quantity="other">%1$d grupos</item>
     </plurals>
 
@@ -241,11 +243,13 @@
     <string name="settings_db_delete_success">Datos eliminados con éxito</string>
     <plurals name="settings_db_export_success">
         <item quantity="one">Exportación completada (%1$d decisión)</item>
+        <item quantity="many">Exportación completada (%1$d decisiones)</item>
         <item quantity="other">Exportación completada (%1$d decisiones)</item>
     </plurals>
     <string name="settings_db_export_error">Error al exportar: %1$s</string>
     <plurals name="settings_db_import_success">
         <item quantity="one">Importación exitosa (%1$d decisión)</item>
+        <item quantity="many">Importación exitosa (%1$d decisiones)</item>
         <item quantity="other">Importación exitosa (%1$d decisiones)</item>
     </plurals>
     <string name="settings_db_import_error">Error al importar: %1$s</string>
