@@ -61,16 +61,15 @@ object VideoPreloader {
                 val cacheWriter = CacheWriter(
                     dataSourceFactory.createDataSource(),
                     dataSpec,
-                    null, // temporaryBuffer
+                    ByteArray(128 * 1024), // Reuse 128KB buffer to avoid internal reallocations
                     null // Progress listener
                 )
 
                 cacheWriter.cache()
                 AppLogger.d("VideoPreloader", "Finished preload for $assetId")
-            } catch (e: Exception) {
-                if (e !is CancellationException) {
-                    AppLogger.e("VideoPreloader", "Failed to preload $assetId: ${e.message}")
-                }
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                AppLogger.e("VideoPreloader", "Failed to preload $assetId: ${e.message}")
             } finally {
                 activeJobs.remove(assetId)
             }
