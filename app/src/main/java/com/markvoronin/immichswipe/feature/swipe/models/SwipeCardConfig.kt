@@ -17,7 +17,7 @@ data class SwipeCardConfig(
     val downloadButtonPosition: IconPosition = IconPosition.TOP_LEFT,
     val shareButtonPosition: IconPosition = IconPosition.TOP_RIGHT,
     val showFullscreenButton: Boolean = true,
-    val showImmichButton: Boolean = true,
+    val showImmichButton: Boolean = false,
     val showRotationButton: Boolean = true,
     val showMuteButton: Boolean = true,
     val showDownloadButton: Boolean = false,

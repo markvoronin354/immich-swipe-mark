@@ -88,6 +88,15 @@ fun ActionButtonsScreen(
                 onShowIconChange = { viewModel.setShowFullscreenButton(it) }
             )
 
+            IconPositionPickerCard(
+                title = stringResource(R.string.settings_rotation_pos_label),
+                icon = Icons.AutoMirrored.Filled.RotateRight,
+                selectedPosition = uiState.rotationButtonPosition,
+                onPositionSelected = { viewModel.setRotationButtonPosition(it) },
+                showIcon = uiState.showRotationButton,
+                onShowIconChange = { viewModel.setShowRotationButton(it) }
+            )
+
             ImmichCardAction(
                 title = stringResource(R.string.settings_card_immich),
                 icon = Icons.AutoMirrored.Filled.OpenInNew,
@@ -99,15 +108,6 @@ fun ActionButtonsScreen(
                 onOpenModeSelected = { viewModel.setImmichOpenMode(it) },
                 longPressWeb = uiState.immichLongPressWeb,
                 onLongPressWebChange = { viewModel.setImmichLongPressWeb(it) }
-            )
-
-            IconPositionPickerCard(
-                title = stringResource(R.string.settings_rotation_pos_label),
-                icon = Icons.AutoMirrored.Filled.RotateRight,
-                selectedPosition = uiState.rotationButtonPosition,
-                onPositionSelected = { viewModel.setRotationButtonPosition(it) },
-                showIcon = uiState.showRotationButton,
-                onShowIconChange = { viewModel.setShowRotationButton(it) }
             )
 
             IconPositionPickerCard(

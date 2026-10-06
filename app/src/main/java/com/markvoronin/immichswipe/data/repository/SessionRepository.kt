@@ -97,7 +97,7 @@ class SessionRepository @Inject constructor(
      * Expose la position de l'icône Immich.
      */
     val immichButtonPosition: Flow<IconPosition> = dataStore.getImmichIconPosition().map {
-        it?.let { try { IconPosition.valueOf(it) } catch(e: Exception) { IconPosition.TOP_LEFT } } ?: IconPosition.TOP_LEFT
+        it?.let { try { IconPosition.valueOf(it) } catch(e: Exception) { IconPosition.BOTTOM_LEFT } } ?: IconPosition.BOTTOM_LEFT
     }
 
     val immichOpenMode: Flow<ImmichOpenMode> = dataStore.getImmichOpenMode().map {
@@ -110,7 +110,7 @@ class SessionRepository @Inject constructor(
      * Expose la position de l'icône de rotation d'asset.
      */
     val rotationButtonPosition: Flow<IconPosition> = dataStore.getCardDisplayIconPosition().map {
-        it?.let { try { IconPosition.valueOf(it) } catch(e: Exception) { IconPosition.BOTTOM_LEFT } } ?: IconPosition.BOTTOM_LEFT
+        it?.let { try { IconPosition.valueOf(it) } catch(e: Exception) { IconPosition.TOP_LEFT } } ?: IconPosition.TOP_LEFT
     }
     val cardDisplayButtonPosition: Flow<IconPosition> get() = rotationButtonPosition
 

@@ -168,10 +168,10 @@ class SessionDataStore(private val context: Context) {
     fun isShowFullscreenIcon(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_FULLSCREEN_ICON] ?: true }
     suspend fun saveShowFullscreenIcon(show: Boolean) { context.dataStore.edit { it[KEY_SHOW_FULLSCREEN_ICON] = show } }
 
-    fun isShowImmichIcon(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_IMMICH_ICON] ?: true }
+    fun isShowImmichIcon(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_IMMICH_ICON] ?: false }
     suspend fun saveShowImmichIcon(show: Boolean) { context.dataStore.edit { it[KEY_SHOW_IMMICH_ICON] = show } }
 
-    fun isShowCardDisplayIcon(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_CARD_DISPLAY_ICON] ?: false }
+    fun isShowCardDisplayIcon(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_CARD_DISPLAY_ICON] ?: true }
     suspend fun saveShowCardDisplayIcon(show: Boolean) { context.dataStore.edit { it[KEY_SHOW_CARD_DISPLAY_ICON] = show } }
 
     fun isShowMuteIcon(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_MUTE_ICON] ?: false }
