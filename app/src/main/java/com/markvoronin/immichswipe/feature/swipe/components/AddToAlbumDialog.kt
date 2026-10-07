@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -114,16 +113,20 @@ fun AddToAlbumDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Surface(
+        Box(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
-                .heightIn(max = 580.dp),
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 3.dp,
-            shadowElevation = 10.dp,
-            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+                .height(580.dp),
+            contentAlignment = Alignment.BottomCenter
         ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 3.dp,
+                shadowElevation = 10.dp,
+                border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+            ) {
             Column(
                 modifier = Modifier.padding(20.dp)
             ) {
@@ -289,6 +292,7 @@ fun AddToAlbumDialog(
             }
         }
     }
+}
 }
 
 @Composable
