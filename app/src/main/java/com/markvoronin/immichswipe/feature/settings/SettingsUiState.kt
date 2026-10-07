@@ -15,9 +15,7 @@ enum class DatabaseAction {
     DELETE, EXPORT, IMPORT
 }
 
-/**
- * État de l'écran des paramètres.
- */
+
 data class SettingsUiState(
     val isLoading: Boolean = false,
     val userName: String = "",

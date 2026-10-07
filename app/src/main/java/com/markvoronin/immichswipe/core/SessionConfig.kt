@@ -6,17 +6,13 @@ data class SessionConfig(
     val userId: String = ""
 )
 
-/**
- * Définit comment l'application doit gérer l'Audio Focus (le son par rapport aux autres apps).
- */
+
 enum class PlaybackBehavior {
-    PAUSE_OTHERS, // Coupe les autres sons (Musique)
-    IGNORE        // Joue par dessus sans rien changer
+    PAUSE_OTHERS,
+    IGNORE
 }
 
-/**
- * Position des icônes d'action sur l'écran.
- */
+
 enum class IconPosition {
     TOP_LEFT,
     TOP_RIGHT,
@@ -24,34 +20,28 @@ enum class IconPosition {
     BOTTOM_RIGHT
 }
 
-/**
- * Mode d'affichage des médias dans les cartes de tri.
- */
+
 enum class CardDisplayMode {
-    FILL, // Remplit toute la carte (Crop)
-    FIT   // Affiche l'image entière (Fit)
+    FILL,
+    FIT
 }
 
-/**
- * Ordre de tri des médias.
- */
+
 enum class SortOrder {
-    CHRONOLOGICAL_DESC, // Nouveau -> Ancien (Par défaut)
-    CHRONOLOGICAL_ASC,  // Ancien -> Nouveau
-    SHUFFLED,           // Aléatoire
-    SIZE_DESC,          // Plus gros -> Plus petit
-    SIZE_ASC,           // Plus petit -> Plus gros
-    TYPE_VIDEO_FIRST,   // Vidéos -> Photos (Date Desc)
-    TYPE_PHOTO_FIRST,   // Photos -> Vidéos (Date Desc)
-    TYPE_VIDEO_FIRST_ASC, // Vidéos -> Photos (Date Asc)
-    TYPE_PHOTO_FIRST_ASC, // Photos -> Vidéos (Date Asc)
-    TYPE_VIDEO_FIRST_SHUFFLED, // Vidéos -> Photos (Aléatoire)
-    TYPE_PHOTO_FIRST_SHUFFLED  // Photos -> Vidéos (Aléatoire)
+    CHRONOLOGICAL_DESC,
+    CHRONOLOGICAL_ASC,
+    SHUFFLED,
+    SIZE_DESC,
+    SIZE_ASC,
+    TYPE_VIDEO_FIRST,
+    TYPE_PHOTO_FIRST,
+    TYPE_VIDEO_FIRST_ASC,
+    TYPE_PHOTO_FIRST_ASC,
+    TYPE_VIDEO_FIRST_SHUFFLED,
+    TYPE_PHOTO_FIRST_SHUFFLED
 }
 
-/**
- * Catégories de tri.
- */
+
 enum class SortCategory {
     TIME,
     SIZE,

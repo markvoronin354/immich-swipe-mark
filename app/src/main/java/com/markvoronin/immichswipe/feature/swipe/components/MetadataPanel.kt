@@ -1,4 +1,4 @@
-package com.markvoronin.immichswipe.feature.swipe
+package com.markvoronin.immichswipe.feature.swipe.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.domain.model.Asset
+import com.markvoronin.immichswipe.feature.swipe.utils.formatSize
 
 @Composable
 fun MetadataPanel(

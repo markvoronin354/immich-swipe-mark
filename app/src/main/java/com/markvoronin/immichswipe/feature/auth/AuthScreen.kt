@@ -68,9 +68,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markvoronin.immichswipe.R
 
 
-/**
- * Écran d'authentification.
- */
+
 @Composable
 fun AuthScreen(
     viewModel: AuthViewModel,

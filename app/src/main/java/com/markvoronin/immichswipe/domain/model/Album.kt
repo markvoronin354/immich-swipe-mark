@@ -1,8 +1,6 @@
 package com.markvoronin.immichswipe.domain.model
 
-/**
- * Représente un album Immich.
- */
+
 data class Album(
     val id: String,
     val albumName: String,

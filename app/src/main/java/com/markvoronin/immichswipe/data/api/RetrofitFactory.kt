@@ -18,12 +18,12 @@ object RetrofitFactory {
         config: SessionConfig,
         onStatusUpdate: ((level: ConnectionLevel, type: DiagStatus, statusCode: Int?, rawMessage: String?) -> Unit)? = null
     ): ImmichApi {
-        // Intercepteur pour logger les requêtes et réponses HTTP
+
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BASIC
         }
 
-        // Intercepteur pour ajouter automatiquement la clé API dans les headers de chaque requête.
+
         val apiKeyInterceptor = Interceptor { chain ->
             val request = chain.request().newBuilder()
                 .addHeader("x-api-key", config.apiKey)
@@ -31,7 +31,7 @@ object RetrofitFactory {
             chain.proceed(request)
         }
 
-        // Intercepteur de Diagnostic pour logger les requêtes réseau et mettre à jour le statut
+
         val connectivityInterceptor = Interceptor { chain ->
             val request = chain.request()
             val urlPath = request.url.encodedPath
@@ -86,8 +86,7 @@ object RetrofitFactory {
             .addInterceptor(logging)
             .build()
 
-        // Configure Retrofit avec l'URL de base, le client HTTP et le convertisseur JSON (Gson).
-        // On s'assure que l'URL se termine par un slash pour Retrofit.
+
         val sanitizedUrl = if (config.baseUrl.endsWith("/")) config.baseUrl else "${config.baseUrl}/"
         
         val retrofit = Retrofit.Builder()

@@ -86,6 +86,13 @@ import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.IconPosition
 import com.markvoronin.immichswipe.domain.model.Asset
+import com.markvoronin.immichswipe.feature.swipe.components.IndicatorBadge
+import com.markvoronin.immichswipe.feature.swipe.components.SharedVideoPlayer
+import com.markvoronin.immichswipe.feature.swipe.components.ZoomableBox
+import com.markvoronin.immichswipe.feature.swipe.utils.MaterialGreen
+import com.markvoronin.immichswipe.feature.swipe.utils.MaterialRed
+import com.markvoronin.immichswipe.feature.swipe.utils.findActivity
+import com.markvoronin.immichswipe.feature.swipe.utils.formatSize
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -465,6 +472,7 @@ fun FullscreenViewer(
                                                 performSwipe(SwipeDecision.DELETE)
                                                 ignoreNextTap = true
                                             }
+
                                             offset.x > width * 0.7f -> {
                                                 performSwipe(SwipeDecision.KEEP)
                                                 ignoreNextTap = true
@@ -490,11 +498,16 @@ fun FullscreenViewer(
                                 }
                             },
                             aspectRatio = asset.exifInfo?.let {
-                                val baseAR = (it.imageWidth?.toFloat() ?: 1f) / (it.imageHeight?.toFloat() ?: 1f)
+                                val baseAR =
+                                    (it.imageWidth?.toFloat() ?: 1f) / (it.imageHeight?.toFloat()
+                                        ?: 1f)
                                 if (rotation % 180 != 0) 1f / baseAR else baseAR
                             }
                         ) {
-                            val animatedRotation by animateFloatAsState(targetValue = rotation.toFloat(), label = "FullscreenVideoRotation")
+                            val animatedRotation by animateFloatAsState(
+                                targetValue = rotation.toFloat(),
+                                label = "FullscreenVideoRotation"
+                            )
 
                             Box(
                                 modifier = Modifier
@@ -555,6 +568,7 @@ fun FullscreenViewer(
                                         performSwipe(SwipeDecision.DELETE)
                                         ignoreNextTap = true
                                     }
+
                                     offset.x > width * 0.7f -> {
                                         performSwipe(SwipeDecision.KEEP)
                                         ignoreNextTap = true
@@ -575,11 +589,15 @@ fun FullscreenViewer(
                         }
                     },
                     aspectRatio = asset.exifInfo?.let {
-                        val baseAR = (it.imageWidth?.toFloat() ?: 1f) / (it.imageHeight?.toFloat() ?: 1f)
+                        val baseAR =
+                            (it.imageWidth?.toFloat() ?: 1f) / (it.imageHeight?.toFloat() ?: 1f)
                         if (rotation % 180 != 0) 1f / baseAR else baseAR
                     }
                 ) {
-                    val animatedRotation by animateFloatAsState(targetValue = rotation.toFloat(), label = "FullscreenRotation")
+                    val animatedRotation by animateFloatAsState(
+                        targetValue = rotation.toFloat(),
+                        label = "FullscreenRotation"
+                    )
 
                     val photoRequest = remember(asset.id, baseUrlClean, apiKeyLocal, asset.isGif) {
                         ImageRequest.Builder(context)
@@ -631,8 +649,16 @@ fun FullscreenViewer(
                 }
             }
 
-            if (swipeX.value > 0f) IndicatorBadge(stringResource(R.string.swipe_keep_upper), MaterialGreen, Alignment.TopStart) { (swipeX.value / 200f).coerceIn(0f, 1f) * 0.9f }
-            else if (swipeX.value < 0f) IndicatorBadge(stringResource(R.string.swipe_delete_upper), MaterialRed, Alignment.TopEnd) { (-swipeX.value / 200f).coerceIn(0f, 1f) * 0.9f }
+            if (swipeX.value > 0f) IndicatorBadge(
+                stringResource(R.string.swipe_keep_upper),
+                MaterialGreen,
+                Alignment.TopStart
+            ) { (swipeX.value / 200f).coerceIn(0f, 1f) * 0.9f }
+            else if (swipeX.value < 0f) IndicatorBadge(
+                stringResource(R.string.swipe_delete_upper),
+                MaterialRed,
+                Alignment.TopEnd
+            ) { (-swipeX.value / 200f).coerceIn(0f, 1f) * 0.9f }
 
                 AnimatedVisibility(
                     visible = controlsVisible && !isHoldingByPress && !wasHoldDetected,
@@ -640,8 +666,7 @@ fun FullscreenViewer(
                     exit = fadeOut()
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
-                        // Indicateur de Favori (Coeur au centre en bas)
-                        val heartScale = animateFloatAsState(if (isFavorite) 1.2f else 1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = "HeartScale").value
+                         val heartScale = animateFloatAsState(if (isFavorite) 1.2f else 1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = "HeartScale").value
 
                         Box(
                             modifier = Modifier

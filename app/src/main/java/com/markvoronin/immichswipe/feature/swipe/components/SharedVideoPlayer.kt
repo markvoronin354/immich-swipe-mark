@@ -1,4 +1,4 @@
-package com.markvoronin.immichswipe.feature.swipe
+package com.markvoronin.immichswipe.feature.swipe.components
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration
@@ -69,6 +69,8 @@ import coil.size.Precision
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.CardDisplayMode
+import com.markvoronin.immichswipe.feature.swipe.utils.formatMediaTime
+import com.markvoronin.immichswipe.feature.swipe.utils.formatSize
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -307,7 +309,11 @@ fun SharedVideoPlayer(
                                     shape = RoundedCornerShape(4.dp)
                                 ) {
                                     Text(
-                                        text = "${formatMediaTime(timeToDisplay)} / ${formatMediaTime(duration)}",
+                                        text = "${formatMediaTime(timeToDisplay)} / ${
+                                            formatMediaTime(
+                                                duration
+                                            )
+                                        }",
                                         color = Color.White,
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,

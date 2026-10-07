@@ -82,7 +82,7 @@ import com.markvoronin.immichswipe.core.ImmichLauncher
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.feature.duplicates.DuplicateDecision
 import com.markvoronin.immichswipe.feature.settings.components.horizontalFadingEdges
-import com.markvoronin.immichswipe.feature.swipe.ZoomableBox
+import com.markvoronin.immichswipe.feature.swipe.components.ZoomableBox
 import kotlin.math.abs
 
 @Composable

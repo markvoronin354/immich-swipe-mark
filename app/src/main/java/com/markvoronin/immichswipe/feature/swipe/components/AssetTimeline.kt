@@ -1,4 +1,4 @@
-package com.markvoronin.immichswipe.feature.swipe
+package com.markvoronin.immichswipe.feature.swipe.components
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -56,6 +56,9 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.size.Precision
 import com.markvoronin.immichswipe.domain.model.Asset
+import com.markvoronin.immichswipe.feature.swipe.utils.MaterialGreen
+import com.markvoronin.immichswipe.feature.swipe.utils.MaterialRed
+import com.markvoronin.immichswipe.feature.swipe.SwipeDecision
 import kotlin.math.abs
 
 private fun Modifier.rotateLayout(rotation: Int) = layout { measurable, constraints ->

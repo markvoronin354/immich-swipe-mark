@@ -1,4 +1,4 @@
-package com.markvoronin.immichswipe.feature.swipe
+package com.markvoronin.immichswipe.feature.swipe.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -33,11 +33,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.toSize
 import kotlinx.coroutines.launch
 
-/**
- * Un conteneur qui permet le pinch-to-zoom et le panoramique avec inertie.
- * Supporte une réinitialisation automatique au relâchement (pour les cartes)
- * ou un zoom persistant avec double-tap pour réinitialiser (pour le plein écran).
- */
+
 @Composable
 fun ZoomableBox(
     modifier: Modifier = Modifier,

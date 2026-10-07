@@ -93,7 +93,6 @@ fun StatsPopup(
 
                 Spacer(Modifier.height(24.dp))
 
-                // Section "Depuis le début"
                 Text(
                     text = stringResource(R.string.stats_section_global),
                     style = MaterialTheme.typography.titleMedium,
@@ -142,7 +141,6 @@ fun StatsPopup(
 
                 Spacer(Modifier.height(24.dp))
 
-                // Section "Cette semaine"
                 Text(
                     text = stringResource(R.string.stats_section_weekly),
                     style = MaterialTheme.typography.titleMedium,
@@ -171,7 +169,6 @@ fun StatsPopup(
 
                 Spacer(Modifier.height(32.dp))
 
-                // Répartition des décisions
                 Text(
                     text = stringResource(R.string.stats_distribution_title),
                     style = MaterialTheme.typography.titleMedium,

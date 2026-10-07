@@ -1,8 +1,6 @@
 package com.markvoronin.immichswipe.domain.model
 
-/**
- * Représente une photo ou vidéo (Asset) sur Immich.
- */
+
 import com.google.gson.annotations.SerializedName
 
 data class Asset(

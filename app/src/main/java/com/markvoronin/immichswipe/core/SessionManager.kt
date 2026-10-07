@@ -16,18 +16,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Représente les différents niveaux de santé de la connexion.
- */
+
 enum class ConnectionLevel(val color: Color) {
     ONLINE(Color(0xFF4CAF50)),  // Vert
     ISSUES(Color(0xFFFF9800)),  // Orange
     OFFLINE(Color(0xFFF44336))  // Rouge
 }
 
-/**
- * Types de messages de diagnostic prédéfinis pour la traduction.
- */
+
 enum class DiagStatus {
     CONNECTED,
     AUTH_ERROR,
@@ -38,7 +34,6 @@ enum class DiagStatus {
     NO_INTERNET,
     CONNECTION_ERROR,
     LOGGED_OUT,
-    UNKNOWN
 }
 
 data class ConnectionStatus(
@@ -66,7 +61,7 @@ class SessionManager @Inject constructor(
     private val _sessionConfig = MutableStateFlow<SessionConfig?>(null)
     val sessionConfig: StateFlow<SessionConfig?> = _sessionConfig.asStateFlow()
 
-    // Flux global indiquant la santé de la connexion.
+
     private val _connectionStatus = MutableStateFlow(ConnectionStatus())
     val connectionStatus: StateFlow<ConnectionStatus> = _connectionStatus.asStateFlow()
 

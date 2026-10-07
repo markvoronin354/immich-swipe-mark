@@ -9,7 +9,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-// extension DataStore attachée au Context
+
 val Context.dataStore by preferencesDataStore(name = "session")
 
 class SessionDataStore(private val context: Context) {
@@ -30,26 +30,26 @@ class SessionDataStore(private val context: Context) {
         private val KEY_MUTE_ICON_POS = stringPreferencesKey("mute_icon_pos")
         private val KEY_DOWNLOAD_ICON_POS = stringPreferencesKey("download_icon_pos")
         private val KEY_SHARE_ICON_POS = stringPreferencesKey("share_icon_pos")
-        private val KEY_SHOW_FULLSCREEN_ICON = androidx.datastore.preferences.core.booleanPreferencesKey("show_fullscreen_icon")
-        private val KEY_SHOW_IMMICH_ICON = androidx.datastore.preferences.core.booleanPreferencesKey("show_immich_icon")
-        private val KEY_SHOW_CARD_DISPLAY_ICON = androidx.datastore.preferences.core.booleanPreferencesKey("show_card_display_icon")
-        private val KEY_SHOW_MUTE_ICON = androidx.datastore.preferences.core.booleanPreferencesKey("show_mute_icon")
-        private val KEY_SHOW_DOWNLOAD_ICON = androidx.datastore.preferences.core.booleanPreferencesKey("show_download_icon")
-        private val KEY_SHOW_SHARE_ICON = androidx.datastore.preferences.core.booleanPreferencesKey("show_share_icon")
-        private val KEY_DEFAULT_LAYOUT_GRID = androidx.datastore.preferences.core.booleanPreferencesKey("default_layout_grid")
-        private val KEY_SHOW_FAVORITE = androidx.datastore.preferences.core.booleanPreferencesKey("show_favorite")
-        private val KEY_AUTO_NEXT_ON_FAV = androidx.datastore.preferences.core.booleanPreferencesKey("auto_next_on_fav")
-        private val KEY_INCLUDE_ARCHIVED = androidx.datastore.preferences.core.booleanPreferencesKey("include_archived")
+        private val KEY_SHOW_FULLSCREEN_ICON = booleanPreferencesKey("show_fullscreen_icon")
+        private val KEY_SHOW_IMMICH_ICON = booleanPreferencesKey("show_immich_icon")
+        private val KEY_SHOW_CARD_DISPLAY_ICON = booleanPreferencesKey("show_card_display_icon")
+        private val KEY_SHOW_MUTE_ICON = booleanPreferencesKey("show_mute_icon")
+        private val KEY_SHOW_DOWNLOAD_ICON = booleanPreferencesKey("show_download_icon")
+        private val KEY_SHOW_SHARE_ICON = booleanPreferencesKey("show_share_icon")
+        private val KEY_DEFAULT_LAYOUT_GRID = booleanPreferencesKey("default_layout_grid")
+        private val KEY_SHOW_FAVORITE = booleanPreferencesKey("show_favorite")
+        private val KEY_AUTO_NEXT_ON_FAV = booleanPreferencesKey("auto_next_on_fav")
+        private val KEY_INCLUDE_ARCHIVED = booleanPreferencesKey("include_archived")
         private val KEY_SORT_ORDER = stringPreferencesKey("sort_order")
         private val KEY_DEFAULT_CARD_DISPLAY_MODE = stringPreferencesKey("default_card_display_mode")
-        private val KEY_SHOW_SWIPE_BUTTONS = androidx.datastore.preferences.core.booleanPreferencesKey("show_swipe_buttons")
+        private val KEY_SHOW_SWIPE_BUTTONS = booleanPreferencesKey("show_swipe_buttons")
         private val KEY_SHOW_ARCHIVE = booleanPreferencesKey("show_archive")
         private val KEY_SHOW_LOCK = booleanPreferencesKey("show_lock")
         private val KEY_SHOW_ADD_TO_ALBUM = booleanPreferencesKey("show_add_to_album")
-        private val KEY_BACKUP_WARNING_SHOWN = androidx.datastore.preferences.core.booleanPreferencesKey("backup_warning_shown")
-        private val KEY_SYNC_LOCAL_DELETION = androidx.datastore.preferences.core.booleanPreferencesKey("sync_local_deletion")
-        private val KEY_TRASH_LOCAL_DELETION = androidx.datastore.preferences.core.booleanPreferencesKey("trash_local_deletion")
-        private val KEY_TAP_TO_SWIPE = androidx.datastore.preferences.core.booleanPreferencesKey("tap_to_swipe")
+        private val KEY_BACKUP_WARNING_SHOWN = booleanPreferencesKey("backup_warning_shown")
+        private val KEY_SYNC_LOCAL_DELETION = booleanPreferencesKey("sync_local_deletion")
+        private val KEY_TRASH_LOCAL_DELETION = booleanPreferencesKey("trash_local_deletion")
+        private val KEY_TAP_TO_SWIPE = booleanPreferencesKey("tap_to_swipe")
         private val KEY_INITIAL_INSTALL_PROCESSED = booleanPreferencesKey("initial_install_processed")
         private val KEY_HAS_COMPLETED_SWIPE_TUTORIAL = booleanPreferencesKey("has_completed_swipe_tutorial")
         private val KEY_HAS_COMPLETED_DUPLICATES_TUTORIAL = booleanPreferencesKey("has_completed_duplicates_tutorial")
@@ -196,13 +196,11 @@ class SessionDataStore(private val context: Context) {
     suspend fun saveAutoNextOnFav(autoNext: Boolean) { context.dataStore.edit { it[KEY_AUTO_NEXT_ON_FAV] = autoNext } }
 
     fun isIncludeArchived(): Flow<Boolean> = context.dataStore.data.map { it[KEY_INCLUDE_ARCHIVED] ?: true }
-    suspend fun saveIncludeArchived(include: Boolean) { context.dataStore.edit { it[KEY_INCLUDE_ARCHIVED] = include } }
 
     fun getSortOrder(): Flow<String?> = context.dataStore.data.map { it[KEY_SORT_ORDER] }
     suspend fun saveSortOrder(order: String) { context.dataStore.edit { it[KEY_SORT_ORDER] = order } }
 
     fun getDefaultCardDisplayMode(): Flow<String?> = context.dataStore.data.map { it[KEY_DEFAULT_CARD_DISPLAY_MODE] }
-    suspend fun saveDefaultCardDisplayMode(mode: String) { context.dataStore.edit { it[KEY_DEFAULT_CARD_DISPLAY_MODE] = mode } }
 
     fun isShowSwipeButtons(): Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_SWIPE_BUTTONS] ?: false }
     suspend fun saveShowSwipeButtons(show: Boolean) { context.dataStore.edit { it[KEY_SHOW_SWIPE_BUTTONS] = show } }

@@ -55,7 +55,6 @@ class AssetRepository @Inject constructor(
             return@channelFlow
         }
 
-        // 1. Emit local cache instantly (up to 100,000 assets from DB)
         val maxDbLimit = 100000
         val cachedEntities = when (sortOrder) {
             SortOrder.CHRONOLOGICAL_DESC -> albumAssetDao.getAssetsChronologicalDesc(albumId, userId, limit = maxDbLimit, offset = 0)
@@ -80,7 +79,7 @@ class AssetRepository @Inject constructor(
                     type = entity.type ?: "IMAGE",
                     originalFileName = entity.originalFileName,
                     fileExtension = entity.originalFileName?.substringAfterLast('.', "")?.takeIf { it.isNotEmpty() },
-                    exifInfo = com.markvoronin.immichswipe.domain.model.ExifInfo(
+                    exifInfo = ExifInfo(
                         fileSizeInBytes = entity.fileSizeInBytes,
                         imageWidth = entity.imageWidth,
                         imageHeight = entity.imageHeight
@@ -306,9 +305,9 @@ class AssetRepository @Inject constructor(
             h = (h * 31L) + assetId[i].code
         }
         h = h xor (h ushr 33)
-        h = h * 0xff51afd7ed558ccdUL.toLong()
+        h *= 0xff51afd7ed558ccdUL.toLong()
         h = h xor (h ushr 33)
-        h = h * 0xc4ceb9fe1a85ec53UL.toLong()
+        h *= 0xc4ceb9fe1a85ec53UL.toLong()
         h = h xor (h ushr 33)
         return h
     }
@@ -342,10 +341,6 @@ class AssetRepository @Inject constructor(
                     .thenByDescending { it.effectiveDate }
             )
         }
-    }
-
-    suspend fun clearUserData(userId: String) {
-        albumAssetDao?.deleteAllAlbumAssetsForUser(userId)
     }
 
     suspend fun getTotalAssetCount(includeArchived: Boolean = false): Int {
@@ -431,9 +426,7 @@ class AssetRepository @Inject constructor(
         }
     }
 
-    /**
-     * Met à jour les édits d'un asset (rotation).
-     */
+
     suspend fun updateAssetEdits(assetId: String, rotation: Int) {
         val normalizedRotation = ((rotation % 360) + 360) % 360
         val edit = AssetEditActionItem(

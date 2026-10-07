@@ -1,4 +1,4 @@
-package com.markvoronin.immichswipe.feature.swipe
+package com.markvoronin.immichswipe.feature.swipe.components
 
 import android.content.Context
 import androidx.annotation.OptIn
@@ -92,13 +92,18 @@ import coil.size.Precision
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.CardDisplayMode
-import com.markvoronin.immichswipe.core.player.PlayerLoadControlFactory
 import com.markvoronin.immichswipe.core.IconPosition
 import com.markvoronin.immichswipe.core.ImmichLauncher
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.cache.VideoCache
+import com.markvoronin.immichswipe.core.player.PlayerLoadControlFactory
 import com.markvoronin.immichswipe.domain.model.Asset
-import com.markvoronin.immichswipe.feature.swipe.components.SwipeActionIconButton
+import com.markvoronin.immichswipe.feature.swipe.models.SwipeCardActions
+import com.markvoronin.immichswipe.feature.swipe.models.SwipeCardConfig
+import com.markvoronin.immichswipe.feature.swipe.utils.MaterialGreen
+import com.markvoronin.immichswipe.feature.swipe.utils.MaterialRed
+import com.markvoronin.immichswipe.feature.swipe.utils.formatSize
+import com.markvoronin.immichswipe.feature.swipe.utils.toHorizontalAlignment
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -227,8 +232,7 @@ fun SwipeCard(
         }
     }
 
-    // Mise à jour du volume quand isMuted change pour le player interne
-    LaunchedEffect(internalExoPlayer, isMuted) {
+     LaunchedEffect(internalExoPlayer, isMuted) {
         internalExoPlayer?.volume = if (isMuted) 0f else 1f
     }
 
@@ -368,10 +372,10 @@ fun SwipeCard(
                                     val isFlickLeft = velocityX < -1000f && currentX <= 50f
                                     if (currentX > 250 || isFlickRight) {
                                         offsetX.animateTo(1500f, tween(150))
-                                        actions.onSwipe(SwipeDecision.KEEP)
+                                        actions.onSwipe(com.markvoronin.immichswipe.feature.swipe.SwipeDecision.KEEP)
                                     } else if (currentX < -250 || isFlickLeft) {
                                         offsetX.animateTo(-1500f, tween(150))
-                                        actions.onSwipe(SwipeDecision.DELETE)
+                                        actions.onSwipe(com.markvoronin.immichswipe.feature.swipe.SwipeDecision.DELETE)
                                     } else {
                                         offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
                                     }
@@ -452,10 +456,10 @@ fun SwipeCard(
                             if (dragDirection == 0) {
                                 // Decision threshold: 12 pixels of movement
                                 if (accumulatedDX > 12f || accumulatedDY > 12f) {
-                                    if (startProgress > 0.1f && accumulatedDY > 5f) {
-                                        dragDirection = 2
+                                    dragDirection = if (startProgress > 0.1f && accumulatedDY > 5f) {
+                                        2
                                     } else {
-                                        dragDirection = if (accumulatedDY > accumulatedDX) 2 else 1
+                                        if (accumulatedDY > accumulatedDX) 2 else 1
                                     }
 
                                     if (dragDirection == 1) {
@@ -522,18 +526,16 @@ fun SwipeCard(
                             .build()
                     }
 
-                    // Render base thumbnail until video is ready to prevent flicker when transitioning cards or loading
-                    if (!isVideoReady) {
-                        AsyncImage(
-                            model = placeholderRequest,
-                            contentDescription = null,
-                            contentScale = if (config.cardDisplayMode == CardDisplayMode.FILL) ContentScale.Crop else ContentScale.Fit,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .graphicsLayer { rotationZ = animatedRotation }
-                                .rotateLayout(config.rotationAngle)
-                        )
-                    }
+                    // Always render base thumbnail to prevent 1-frame unmount flicker when transitioning from next -> top card
+                    AsyncImage(
+                        model = placeholderRequest,
+                        contentDescription = null,
+                        contentScale = if (config.cardDisplayMode == CardDisplayMode.FILL) ContentScale.Crop else ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer { rotationZ = animatedRotation }
+                            .rotateLayout(config.rotationAngle)
+                    )
 
                     if (!isNext && exoPlayer != null && !isFullscreenOpen) {
                         SharedVideoPlayer(
@@ -552,19 +554,32 @@ fun SwipeCard(
                                     modifier = Modifier.fillMaxSize(),
                                     resetOnRelease = true,
                                     aspectRatio = asset.exifInfo?.let { (imageWidth, imageHeight) ->
-                                        val baseAR = (imageWidth?.toFloat() ?: 1f) / (imageHeight?.toFloat() ?: 1f)
+                                        val baseAR =
+                                            (imageWidth?.toFloat() ?: 1f) / (imageHeight?.toFloat()
+                                                ?: 1f)
                                         if (config.rotationAngle % 180 != 0) 1f / baseAR else baseAR
                                     },
                                     isFillMode = config.cardDisplayMode == CardDisplayMode.FILL,
                                     onTap = { offset, size ->
                                         if (panelProgress.value > 0.1f) {
-                                            scope.launch { panelProgress.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                            scope.launch {
+                                                panelProgress.animateTo(
+                                                    0f,
+                                                    spring(dampingRatio = Spring.DampingRatioLowBouncy)
+                                                )
+                                            }
                                         } else if (!ignoreNextTap) {
                                             val width = size.width.toFloat()
                                             if (config.tapToSwipeEnabled) {
                                                 when {
-                                                    offset.x < width * 0.3f -> actions.onSwipe(SwipeDecision.DELETE)
-                                                    offset.x > width * 0.7f -> actions.onSwipe(SwipeDecision.KEEP)
+                                                    offset.x < width * 0.3f -> actions.onSwipe(
+                                                        com.markvoronin.immichswipe.feature.swipe.SwipeDecision.DELETE
+                                                    )
+
+                                                    offset.x > width * 0.7f -> actions.onSwipe(
+                                                        com.markvoronin.immichswipe.feature.swipe.SwipeDecision.KEEP
+                                                    )
+
                                                     else -> {
                                                         actions.onToggleMute()
                                                         showMuteIndicator = true
@@ -588,17 +603,23 @@ fun SwipeCard(
                                         if (wasReleased == true) {
                                             // Fast tap detected
                                             if (panelProgress.value > 0.1f) {
-                                                scope.launch { panelProgress.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                                scope.launch {
+                                                    panelProgress.animateTo(
+                                                        0f,
+                                                        spring(dampingRatio = Spring.DampingRatioLowBouncy)
+                                                    )
+                                                }
                                                 ignoreNextTap = true
                                             } else if (config.tapToSwipeEnabled) {
                                                 val width = size.width.toFloat()
                                                 when {
                                                     offset.x < width * 0.3f -> {
-                                                        actions.onSwipe(SwipeDecision.DELETE)
+                                                        actions.onSwipe(com.markvoronin.immichswipe.feature.swipe.SwipeDecision.DELETE)
                                                         ignoreNextTap = true
                                                     }
+
                                                     offset.x > width * 0.7f -> {
-                                                        actions.onSwipe(SwipeDecision.KEEP)
+                                                        actions.onSwipe(com.markvoronin.immichswipe.feature.swipe.SwipeDecision.KEEP)
                                                         ignoreNextTap = true
                                                     }
                                                 }
@@ -667,20 +688,33 @@ fun SwipeCard(
                         resetOnRelease = true,
                         enabled = !isNext,
                         aspectRatio = asset.exifInfo?.let { (imageWidth, imageHeight) ->
-                            val baseAR = (imageWidth?.toFloat() ?: 1f) / (imageHeight?.toFloat() ?: 1f)
+                            val baseAR =
+                                (imageWidth?.toFloat() ?: 1f) / (imageHeight?.toFloat() ?: 1f)
                             if (config.rotationAngle % 180 != 0) 1f / baseAR else baseAR
                         },
                         isFillMode = config.cardDisplayMode == CardDisplayMode.FILL,
                         onTap = { offset, size ->
                             if (panelProgress.value > 0.1f) {
-                                scope.launch { panelProgress.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                scope.launch {
+                                    panelProgress.animateTo(
+                                        0f,
+                                        spring(dampingRatio = Spring.DampingRatioLowBouncy)
+                                    )
+                                }
                             } else if (!ignoreNextTap) {
                                 val width = size.width.toFloat()
                                 if (config.tapToSwipeEnabled) {
                                     when {
-                                        offset.x < width * 0.3f -> actions.onSwipe(SwipeDecision.DELETE)
-                                        offset.x > width * 0.7f -> actions.onSwipe(SwipeDecision.KEEP)
-                                        else -> { /* Middle tap for photos */ }
+                                        offset.x < width * 0.3f -> actions.onSwipe(
+                                            com.markvoronin.immichswipe.feature.swipe.SwipeDecision.DELETE
+                                        )
+
+                                        offset.x > width * 0.7f -> actions.onSwipe(
+                                            com.markvoronin.immichswipe.feature.swipe.SwipeDecision.KEEP
+                                        )
+
+                                        else -> { /* Middle tap for photos */
+                                        }
                                     }
                                 }
                             }
@@ -697,17 +731,23 @@ fun SwipeCard(
                             if (wasReleased == true) {
                                 // Fast tap detected
                                 if (panelProgress.value > 0.1f) {
-                                    scope.launch { panelProgress.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                    scope.launch {
+                                        panelProgress.animateTo(
+                                            0f,
+                                            spring(dampingRatio = Spring.DampingRatioLowBouncy)
+                                        )
+                                    }
                                     ignoreNextTap = true
                                 } else if (config.tapToSwipeEnabled) {
                                     val width = size.width.toFloat()
                                     when {
                                         offset.x < width * 0.3f -> {
-                                            actions.onSwipe(SwipeDecision.DELETE)
+                                            actions.onSwipe(com.markvoronin.immichswipe.feature.swipe.SwipeDecision.DELETE)
                                             ignoreNextTap = true
                                         }
+
                                         offset.x > width * 0.7f -> {
-                                            actions.onSwipe(SwipeDecision.KEEP)
+                                            actions.onSwipe(com.markvoronin.immichswipe.feature.swipe.SwipeDecision.KEEP)
                                             ignoreNextTap = true
                                         }
                                     }
@@ -757,7 +797,9 @@ fun SwipeCard(
                                 shape = RoundedCornerShape(4.dp)
                             ) {
                                 Text(
-                                    text = formatSize(asset.exifInfo?.fileSizeInBytes ?: 0L),
+                                    text = formatSize(
+                                        asset.exifInfo?.fileSizeInBytes ?: 0L
+                                    ),
                                     color = Color.White,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
@@ -804,8 +846,14 @@ fun SwipeCard(
                                 asset = asset,
                                 onClose = {
                                     scope.launch {
-                                        offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
-                                        panelProgress.animateTo(0f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                                        offsetX.animateTo(
+                                            0f,
+                                            spring(dampingRatio = Spring.DampingRatioLowBouncy)
+                                        )
+                                        panelProgress.animateTo(
+                                            0f,
+                                            spring(dampingRatio = Spring.DampingRatioLowBouncy)
+                                        )
                                     }
                                 },
                                 onDrag = { deltaY ->
@@ -815,7 +863,12 @@ fun SwipeCard(
                                         }
                                         if (metadataHeightPx > 0f) {
                                             val deltaProgress = -deltaY / metadataHeightPx
-                                            panelProgress.snapTo((panelProgress.value + deltaProgress).coerceIn(0f, 1f))
+                                            panelProgress.snapTo(
+                                                (panelProgress.value + deltaProgress).coerceIn(
+                                                    0f,
+                                                    1f
+                                                )
+                                            )
                                         }
                                     }
                                 },
@@ -824,8 +877,10 @@ fun SwipeCard(
                                         if (offsetX.value != 0f) {
                                             offsetX.snapTo(0f)
                                         }
-                                        val heightPx = if (metadataHeightPx > 0f) metadataHeightPx else maxHeightPx
-                                        val progressVelocity = if (heightPx > 0f) -velocityY / heightPx else 0f
+                                        val heightPx =
+                                            if (metadataHeightPx > 0f) metadataHeightPx else maxHeightPx
+                                        val progressVelocity =
+                                            if (heightPx > 0f) -velocityY / heightPx else 0f
 
                                         val targetProgress = if (velocityY < -500f) {
                                             1f
@@ -851,9 +906,17 @@ fun SwipeCard(
                     }
 
                     if (offsetX.value > 0f) {
-                        IndicatorBadge(stringResource(R.string.swipe_keep_upper), MaterialGreen, Alignment.TopStart) { (offsetX.value / 200f).coerceIn(0f, 1f) * 0.9f }
+                        IndicatorBadge(
+                            stringResource(R.string.swipe_keep_upper),
+                            MaterialGreen,
+                            Alignment.TopStart
+                        ) { (offsetX.value / 200f).coerceIn(0f, 1f) * 0.9f }
                     } else if (offsetX.value < 0f) {
-                        IndicatorBadge(stringResource(R.string.swipe_delete_upper), MaterialRed, Alignment.TopEnd) { (-offsetX.value / 200f).coerceIn(0f, 1f) * 0.9f }
+                        IndicatorBadge(
+                            stringResource(R.string.swipe_delete_upper),
+                            MaterialRed,
+                            Alignment.TopEnd
+                        ) { (-offsetX.value / 200f).coerceIn(0f, 1f) * 0.9f }
                     }
                 }
 

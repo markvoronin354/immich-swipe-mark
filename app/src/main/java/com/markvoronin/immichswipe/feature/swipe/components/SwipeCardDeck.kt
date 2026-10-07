@@ -45,11 +45,10 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.feature.home.components.ErrorView
-import com.markvoronin.immichswipe.feature.swipe.SwipeCard
-import com.markvoronin.immichswipe.feature.swipe.SwipeCardActions
-import com.markvoronin.immichswipe.feature.swipe.SwipeCardConfig
 import com.markvoronin.immichswipe.feature.swipe.SwipeUiState
 import com.markvoronin.immichswipe.feature.swipe.SwipeViewModel
+import com.markvoronin.immichswipe.feature.swipe.models.SwipeCardActions
+import com.markvoronin.immichswipe.feature.swipe.models.SwipeCardConfig
 
 @Composable
 fun SwipeCardDeck(
@@ -82,7 +81,7 @@ fun SwipeCardDeck(
                 }
             }
         } else if (uiState.error != null && uiState.assets.isEmpty()) {
-            ErrorView(error = uiState.error!!) {
+            ErrorView(error = uiState.error) {
                 viewModel.retryLoading()
             }
         } else if (uiState.currentIndex < uiState.assets.size) {

@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.SessionManager
 import com.markvoronin.immichswipe.data.local.dao.UnsyncedDecisionCounts
-import com.markvoronin.immichswipe.data.local.entity.SyncHistoryEntity
 import com.markvoronin.immichswipe.data.repository.AccountRepository
 import com.markvoronin.immichswipe.data.repository.AlbumRepository
 import com.markvoronin.immichswipe.data.repository.AssetRepository
@@ -33,9 +32,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 
-/**
- * ViewModel de l'écran d'accueil.
- */
+
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
@@ -54,7 +51,6 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        // Observe les préférences
         viewModelScope.launch {
             sessionRepository.playbackBehavior.collect { behavior ->
                 _uiState.update { it.copy(playbackBehavior = behavior) }
@@ -69,7 +65,6 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             sessionRepository.includeArchived.collect { include ->
                 _uiState.update { it.copy(includeArchived = include) }
-                // On rafraîchit les albums si cette option change car les comptes vont changer
                 refreshAlbums()
             }
         }
@@ -80,23 +75,19 @@ class HomeViewModel @Inject constructor(
             }
         }
 
-        // Applique et observe le mode d'affichage (liste vs grille)
         viewModelScope.launch {
             sessionRepository.defaultLayoutGrid.collect { isGrid ->
                 _uiState.update { it.copy(isGridView = isGrid) }
             }
         }
 
-        // SOLUTION : Observe l'état de santé global de la connexion.
-        // Puisque SessionManager met à jour son Flow à chaque requête réseau,
-        // la pastille réagira à tout (refresh, swipe, vidéo, etc.)
+
         viewModelScope.launch {
             sessionManager.connectionStatus.collect { status ->
                 _uiState.update { it.copy(connectionStatus = status) }
             }
         }
 
-        @OptIn(ExperimentalCoroutinesApi::class)
         viewModelScope.launch {
             sessionManager.sessionConfig.collect { config ->
                 if (config != null) {
@@ -122,7 +113,6 @@ class HomeViewModel @Inject constructor(
             }
         }
 
-        // Observe les décisions locales pour mettre à jour les barres de progression
         @OptIn(ExperimentalCoroutinesApi::class)
         viewModelScope.launch {
             sessionManager.sessionConfig
@@ -153,14 +143,13 @@ class HomeViewModel @Inject constructor(
                 }
         }
 
-        // Observe les statistiques globales (Historique + Albums)
         @OptIn(ExperimentalCoroutinesApi::class)
         viewModelScope.launch {
             sessionManager.sessionConfig
                 .map { it?.userId ?: "" }
                 .distinctUntilChanged()
                 .flatMapLatest { userId ->
-                    if (userId.isEmpty()) flowOf(Pair(emptyList<SyncHistoryEntity>(), UnsyncedDecisionCounts(0, 0)))
+                    if (userId.isEmpty()) flowOf(Pair(emptyList(), UnsyncedDecisionCounts(0, 0)))
                     else combine(
                         swipeDecisionRepository.getSyncHistory(userId),
                         swipeDecisionRepository.getUnsyncedDecisionCounts(userId)
@@ -205,14 +194,12 @@ class HomeViewModel @Inject constructor(
                 }
         }
 
-        // Observe les comptes sauvegardés
         viewModelScope.launch {
             accountRepository.allAccounts.collect { accounts ->
                 _uiState.update { it.copy(savedAccounts = accounts) }
             }
         }
 
-        // Observe l'avertissement de backup
         viewModelScope.launch {
             sessionRepository.backupWarningShown.collect { shown ->
                 _uiState.update { it.copy(showBackupWarning = !shown) }
@@ -226,20 +213,16 @@ class HomeViewModel @Inject constructor(
             try {
                 AppLogger.d("Home", "Loading user data and albums")
                 
-                // 1. Récupération du profil utilisateur (très rapide)
                 val user = userRepository.getCurrentUser()
                 _uiState.update { it.copy(user = user) }
 
-                // 2. Récupération des données en mode progressif pour la réactivité
                 val includeArchived = _uiState.value.includeArchived
                 
                 coroutineScope {
-                    // Stats globales en parallèle
                     val allCountDeferred = async { assetRepository.getTotalAssetCount(includeArchived) }
                     val orphansCountDeferred = async { assetRepository.getOrphansCount(includeArchived) }
                     val duplicatesCountDeferred = async { assetRepository.getDuplicatesCount() }
 
-                    // Albums : on récupère la liste brute immédiatement
                     val rawAlbums = albumRepository.getAlbumsRaw()
                     
                     AppLogger.i("Home", "Raw album list retrieved: ${rawAlbums.size}")
@@ -250,12 +233,11 @@ class HomeViewModel @Inject constructor(
                             allAssetsCount = allCountDeferred.await(),
                             orphansCount = orphansCountDeferred.await(),
                             duplicatesCount = duplicatesCountDeferred.await(),
-                            isLoading = false, // On peut déjà afficher la liste !
+                            isLoading = false,
                             error = null
                         )
                     }
 
-                    // 3. Raffinement des compteurs d'albums si nécessaire (background)
                     if (!includeArchived) {
                         val refinedAlbums = albumRepository.refineAlbumCounts(rawAlbums)
                         _uiState.update { it.copy(albums = refinedAlbums) }
@@ -277,7 +259,6 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true) }
             try {
-                // On mémorise l'heure de début
                 val startTime = System.currentTimeMillis()
                 
                 val includeArchived = _uiState.value.includeArchived
@@ -287,7 +268,6 @@ class HomeViewModel @Inject constructor(
                     val orphansCountDeferred = async { assetRepository.getOrphansCount(includeArchived) }
                     val duplicatesCountDeferred = async { assetRepository.getDuplicatesCount() }
 
-                    // Liste brute immédiate
                     val rawAlbums = albumRepository.getAlbumsRaw()
                     
                     _uiState.update { 
@@ -299,13 +279,11 @@ class HomeViewModel @Inject constructor(
                         )
                     }
 
-                    // Raffinement si nécessaire
                     if (!includeArchived) {
                         val refinedAlbums = albumRepository.refineAlbumCounts(rawAlbums)
                         _uiState.update { it.copy(albums = refinedAlbums) }
                     }
 
-                    // On calcule combien de temps a duré la requête pour l'animation
                     val duration = System.currentTimeMillis() - startTime
                     if (duration < 800) {
                         delay((800 - duration).milliseconds)
@@ -318,30 +296,6 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(isRefreshing = false) }
             }
         }
-    }
-
-    fun onTabSelected(tab: HomeTab) {
-        val current = _uiState.value.currentTab
-        
-        // SOLUTION : Rafraîchissement systématique si on revient sur HOME
-        if ((tab == HomeTab.HOME) && (current != HomeTab.HOME)) {
-            refreshAlbums()
-        }
-
-        val nextPrevious = if (tab == HomeTab.SETTINGS) current else _uiState.value.previousTab
-        _uiState.update { 
-            it.copy(currentTab = tab, previousTab = nextPrevious, showProfilePopup = false)
-        }
-    }
-
-    fun goBack() {
-        val previous = _uiState.value.previousTab
-        
-        if (previous == HomeTab.HOME) {
-            refreshAlbums()
-        }
-        
-        _uiState.update { it.copy(currentTab = previous) }
     }
 
     fun onAlbumSelected(album: Album) {
@@ -362,11 +316,9 @@ class HomeViewModel @Inject constructor(
         val currentUserId = _uiState.value.user?.id
         _uiState.update { it.copy(currentTab = HomeTab.HOME, showProfilePopup = false) }
         
-        // Supprime le compte de la base locale
-        currentUserId?.let { accountRepository.deleteAccount(it) }
+         currentUserId?.let { accountRepository.deleteAccount(it) }
         
-        // Déconnexion de la session active
-        sessionRepository.clearSession()
+         sessionRepository.clearSession()
     }
 
     fun removeAccount(userId: String) = viewModelScope.launch {
@@ -382,11 +334,9 @@ class HomeViewModel @Inject constructor(
         val account = accountRepository.getAccount(userId) ?: return@launch
         AppLogger.i("Home", "Switching to account ${account.userName} ($userId)")
         
-        // On met à jour l'heure d'activité
-        accountRepository.updateLastActive(userId)
+         accountRepository.updateLastActive(userId)
         
-        // On sauvegarde la session active (cela va déclencher le re-rendu de MainActivity via AppViewModel)
-        sessionRepository.saveSession(
+         sessionRepository.saveSession(
             baseUrl = account.baseUrl,
             token = account.apiKey,
             userId = account.userId
@@ -412,13 +362,6 @@ class HomeViewModel @Inject constructor(
                 newDescs[id] = description
             }
             it.copy(virtualNames = newNames, virtualDescriptions = newDescs)
-        }
-    }
-
-    fun toggleLayoutMode() {
-        val newGridState = !_uiState.value.isGridView
-        viewModelScope.launch {
-            sessionRepository.saveDefaultLayoutGrid(newGridState)
         }
     }
 
@@ -455,8 +398,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             swipeDecisionRepository.clearUserData(activeUserId)
             toggleGlobalResetConfirmation(false)
-            // Recharger les données pour mettre à jour les barres de progression
-            refreshAlbums()
+             refreshAlbums()
         }
     }
 

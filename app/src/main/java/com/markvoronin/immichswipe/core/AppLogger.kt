@@ -13,10 +13,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * Logger personnalisé qui enregistre les logs localement dans des fichiers de façon asynchrone.
- * Évite le blocage du thread UI lors des écritures disque.
- */
+
 object AppLogger {
     private const val TAG = "AppLogger"
     private const val CURRENT_LOG_FILE = "current_logs.txt"
@@ -37,9 +34,7 @@ object AppLogger {
         }
     }
 
-    /**
-     * Initialise le logger avec le contexte de l'application.
-     */
+
     fun init(context: Context) {
         this.logsDir = context.applicationContext.filesDir
         enqueueRaw("\n\n" + "=".repeat(50) + "\n" + "   NEW SESSION START   \n" + "=".repeat(50) + "\n\n")
@@ -80,7 +75,7 @@ object AppLogger {
         try {
             val currentFile = File(dir, CURRENT_LOG_FILE)
 
-            // Rotation des fichiers si le fichier actuel dépasse 1 Mo
+
             if (currentFile.exists() && currentFile.length() > MAX_FILE_SIZE) {
                 val previousFile = File(dir, PREVIOUS_LOG_FILE)
                 if (previousFile.exists()) previousFile.delete()
@@ -95,9 +90,7 @@ object AppLogger {
         }
     }
 
-    /**
-     * Flush les logs en attente dans le channel avant de lire ou vider les logs.
-     */
+
     private fun flushPendingLogs() {
         while (true) {
             val line = logChannel.tryReceive().getOrNull() ?: break
@@ -105,9 +98,7 @@ object AppLogger {
         }
     }
 
-    /**
-     * Récupère l'intégralité des logs stockés (actuels et précédents).
-     */
+
     @Synchronized
     fun getLogs(): String {
         flushPendingLogs()
@@ -138,9 +129,7 @@ object AppLogger {
         return if (logs.isEmpty()) "No logs available" else logs.toString()
     }
 
-    /**
-     * Supprime tous les fichiers de logs locaux.
-     */
+
     @Synchronized
     fun clearLogs() {
         flushPendingLogs()

@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
 class SwipeViewModel @Inject constructor(
@@ -97,7 +98,7 @@ class SwipeViewModel @Inject constructor(
 
     private fun observeSettings() {
         viewModelScope.launch {
-            combine(
+            combine<Any, Unit>(
                 sessionRepository.playbackBehavior,
                 sessionRepository.fullscreenButtonPosition,
                 sessionRepository.immichButtonPosition,
@@ -317,14 +318,11 @@ class SwipeViewModel @Inject constructor(
                 var nextIndex = if (shouldForceJump) {
                     sorted.indexOfFirst { !decisions.containsKey(it.id) }
                 } else {
-                    // Try to find where the current asset moved to in the new list
                     val indexInNewList = if (currentAssetId != null) sorted.indexOfFirst { it.id == currentAssetId } else -1
                     
-                    // If we found it and it's still unprocessed, stay on it
                     if (indexInNewList != -1 && !decisions.containsKey(currentAssetId)) {
                         indexInNewList
                     } else {
-                        // Otherwise, find the first unprocessed item in the whole list
                         sorted.indexOfFirst { !decisions.containsKey(it.id) }
                     }
                 }
@@ -380,15 +378,13 @@ class SwipeViewModel @Inject constructor(
                 _uiState.update { it.copy(assets = updatedAssets, masterWorkPile = masterWorkPile, assetSizes = newSizes) }
 
                 // Call preloader logic for the next items in queue
-                preloadNextAssets(index)
+                preloadNextAssets()
             } catch (_: Exception) {}
         }
     }
 
-    private fun preloadNextAssets(currentIndex: Int) {
-        val state = _uiState.value
-        val prefetchCount = 3
-        
+    private fun preloadNextAssets() {
+
         // Context needs to be provided somehow for VideoPreloader and Coil.
         // Usually ViewModels shouldn't have Android context. 
         // We will emit an event or state to handle it in Compose instead.
@@ -474,20 +470,8 @@ class SwipeViewModel @Inject constructor(
             viewModelScope.launch { sessionRepository.saveSortOrder(order) }
         }
     }
-    fun setSortCategory(category: SortCategory) {
-        val defaultOrder = when (category) {
-            SortCategory.TIME -> SortOrder.CHRONOLOGICAL_DESC
-            SortCategory.SIZE -> SortOrder.SIZE_DESC
-            SortCategory.TYPE -> SortOrder.TYPE_VIDEO_FIRST
-        }
-        setSortOrder(defaultOrder)
-    }
 
     fun retryLoading() { loadAssetsAndDecisions() }
-    fun resetToFirstUnprocessed() {
-        pendingJumpToFirstUnprocessed = true
-        refreshSortedWorkPile(jumpToFirstUnprocessed = true)
-    }
     fun toggleFavorite() {
         val asset = _uiState.value.currentAsset ?: return
         val current = _uiState.value.isFavorite(asset.id)
@@ -554,7 +538,7 @@ class SwipeViewModel @Inject constructor(
             assetRepository.updateAssetRotation(asset.id, config.userId, nextRot)
         }
     }
-    fun toggleDisplayMode() { rotateCurrentAsset() }
+
     fun toggleArchive() { onSwipe(SwipeDecision.ARCHIVE) }
     fun toggleLock() { onSwipe(SwipeDecision.LOCK) }
     fun enterBulkMode(isDelete: Boolean) { _uiState.update { it.copy(isBulkDeleteMode = isDelete, isBulkKeepMode = !isDelete, bulkSelection = emptySet()) } }
@@ -788,7 +772,7 @@ class SwipeViewModel @Inject constructor(
                     overrideHistory = emptyList()
                 )
 
-                delay(2000)
+                delay(2000.milliseconds)
                 _uiState.update { it.copy(showSuccessAnimation = false) }
             } catch (e: Exception) {
                 AppLogger.e("SwipeViewModel", "Error applying changes: ${e.message}", e)

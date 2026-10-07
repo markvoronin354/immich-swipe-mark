@@ -1,4 +1,4 @@
-package com.markvoronin.immichswipe.feature.swipe
+package com.markvoronin.immichswipe.feature.swipe.components
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -83,6 +83,10 @@ import coil.size.Precision
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.feature.duplicates.components.DuplicateVideoPlayer
+import com.markvoronin.immichswipe.feature.swipe.utils.MaterialGreen
+import com.markvoronin.immichswipe.feature.swipe.utils.MaterialRed
+import com.markvoronin.immichswipe.feature.swipe.SwipeUiState
+import com.markvoronin.immichswipe.feature.swipe.utils.formatSize
 import kotlinx.coroutines.launch
 
 
@@ -580,16 +584,17 @@ fun SummaryFullscreenPreviewDialog(
                             contentScale = ContentScale.Fit
                         )
                     } else {
-                        val photoRequest = remember(pageAsset.id, baseUrlClean, apiKey, pageAsset.isGif) {
-                            ImageRequest.Builder(context)
-                                .data(
-                                    if (pageAsset.isGif) "$baseUrlClean/api/assets/${pageAsset.id}/original"
-                                    else "$baseUrlClean/api/assets/${pageAsset.id}/thumbnail?format=WEBP&size=preview"
-                                )
-                                .addHeader("x-api-key", apiKey)
-                                .crossfade(true)
-                                .build()
-                        }
+                        val photoRequest =
+                            remember(pageAsset.id, baseUrlClean, apiKey, pageAsset.isGif) {
+                                ImageRequest.Builder(context)
+                                    .data(
+                                        if (pageAsset.isGif) "$baseUrlClean/api/assets/${pageAsset.id}/original"
+                                        else "$baseUrlClean/api/assets/${pageAsset.id}/thumbnail?format=WEBP&size=preview"
+                                    )
+                                    .addHeader("x-api-key", apiKey)
+                                    .crossfade(true)
+                                    .build()
+                            }
 
                         AsyncImage(
                             model = photoRequest,

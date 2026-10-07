@@ -9,17 +9,12 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Repository qui gère les décisions de swipe.
- * Il fait le lien entre le ViewModel et le DAO (la base Room).
- */
+
 @Singleton
 class SwipeDecisionRepository @Inject constructor(
     private val swipeDecisionDao: SwipeDecisionDao
 ) {
-    /**
-     * Observe le compte des décisions pour tous les albums d'un utilisateur.
-     */
+
     fun getAllAlbumDecisionCounts(userId: String): Flow<List<AlbumDecisionCount>> {
         return swipeDecisionDao.getAllAlbumDecisionCounts(userId)
     }
@@ -57,9 +52,7 @@ class SwipeDecisionRepository @Inject constructor(
         swipeDecisionDao.insertDecision(entity)
     }
 
-    /**
-     * Enregistre plusieurs décisions en base locale.
-     */
+
     suspend fun saveDecisions(decisions: List<SwipeDecisionEntity>) {
         if (decisions.isNotEmpty()) {
             decisions.chunked(500).forEach { chunk ->
@@ -68,9 +61,7 @@ class SwipeDecisionRepository @Inject constructor(
         }
     }
 
-    /**
-     * Marque plusieurs assets comme synchronisés pour un utilisateur.
-     */
+
     suspend fun markAsSynced(assetIds: List<String>, userId: String) {
         if (assetIds.isNotEmpty()) {
             assetIds.chunked(500).forEach { chunk ->
@@ -79,25 +70,17 @@ class SwipeDecisionRepository @Inject constructor(
         }
     }
 
-    /**
-     * Récupère toutes les décisions d'un album pour un utilisateur sous forme de Flow.
-     */
+
     fun getDecisionsForAlbum(albumId: String, userId: String): Flow<List<SwipeDecisionEntity>> {
         return swipeDecisionDao.getDecisionsForAlbum(albumId, userId)
     }
 
-    /**
-     * Supprime une décision (pour l'undo).
-     * Si l'asset était un SKIP synchronisé avant cette session (wasSyncedSkip),
-     * on restaure son état SKIP synchronisé au lieu de supprimer l'entrée.
-     */
+
     suspend fun removeDecision(assetId: String, userId: String) {
         swipeDecisionDao.deleteDecision(assetId, userId)
     }
 
-    /**
-     * Supprime plusieurs décisions d'un coup.
-     */
+
     suspend fun removeDecisions(assetIds: List<String>, userId: String) {
         if (assetIds.isNotEmpty()) {
             assetIds.chunked(500).forEach { chunk ->
@@ -106,16 +89,12 @@ class SwipeDecisionRepository @Inject constructor(
         }
     }
 
-    /**
-     * Supprime toutes les décisions d'un album.
-     */
+
     suspend fun deleteDecisionsForAlbum(albumId: String, userId: String) {
         swipeDecisionDao.deleteDecisionsForAlbum(albumId, userId)
     }
 
-    /**
-     * Enregistre un historique de synchronisation.
-     */
+
     suspend fun saveSyncHistory(
         userId: String,
         deletedCount: Int,
@@ -136,12 +115,9 @@ class SwipeDecisionRepository @Inject constructor(
         swipeDecisionDao.insertSyncHistory(history)
     }
 
-    /**
-     * Récupère l'historique complet pour un utilisateur.
-     */
+
     fun getSyncHistory(userId: String) = swipeDecisionDao.getSyncHistory(userId)
 
-    // --- Opérations d'administration ---
 
     suspend fun clearAllData() {
         swipeDecisionDao.deleteAllDecisions()

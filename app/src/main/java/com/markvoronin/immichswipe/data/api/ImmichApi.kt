@@ -28,7 +28,7 @@ interface ImmichApi {
     @GET("api/duplicates")
     suspend fun getDuplicates(): List<DuplicateCluster>
 
-    // Nouveau Endpoint à utiliser à partir de la version v3 du serveur Immich
+
     @POST("api/search/metadata")
     suspend fun searchAssets(@Body request: SearchAssetsRequest): SearchResponse
 
@@ -38,21 +38,12 @@ interface ImmichApi {
     @GET("api/assets/{id}")
     suspend fun getAssetDetail(@Path("id") assetId: String): Asset
 
-    /**
-     * Supprime une liste d'assets (les déplace vers la corbeille).
-     * Retourne 204 No Content en cas de succès.
-     */
+
     @HTTP(method = "DELETE", path = "api/assets", hasBody = true)
     suspend fun deleteAssets(@Body request: DeleteAssetsRequest)
 
     @PUT("api/assets")
     suspend fun updateAssets(@Body request: UpdateAssetsRequest)
-
-    @PUT("api/assets/{id}")
-    suspend fun updateAssetDetail(
-        @Path("id") assetId: String,
-        @Body request: UpdateAssetDetailRequest
-    )
 
     @PUT("api/assets/{id}/edits")
     suspend fun editAsset(
@@ -67,9 +58,7 @@ interface ImmichApi {
     )
 }
 
-/**
- * Corps de la requête pour éditer un asset (rotation, etc).
- */
+
 data class EditAssetRequest(
     val edits: List<AssetEditActionItem>
 )
@@ -80,19 +69,15 @@ data class AssetEditActionItem(
 )
 
 enum class AssetEditAction {
-    crop, rotate, mirror
+    crop, rotate,
 }
 
-/**
- * Corps de la requête pour la rotation d'un asset (legacy).
- */
+
 data class RotateAssetRequest(
     val direction: String = "cw"
 )
 
-/**
- * Corps de la requête pour mettre à jour des assets.
- */
+
 data class UpdateAssetsRequest(
     val ids: List<String>,
     val isFavorite: Boolean? = null,
@@ -100,30 +85,16 @@ data class UpdateAssetsRequest(
     val rotation: Int? = null
 )
 
-/**
- * Corps de la requête pour mettre à jour un asset individuel.
- */
-data class UpdateAssetDetailRequest(
-    val rotation: Int? = null,
-    val isFavorite: Boolean? = null,
-    val isArchived: Boolean? = null
-)
 
-/**
- * Corps de la requête pour supprimer des assets.
- */
 data class DeleteAssetsRequest(
     val ids: List<String>,
     val force: Boolean = false
 )
 
-/**
- * Corps de la requête pour récupérer des assets.
- * Basé sur l'endpoint /api/search/metadata
- */
+
 data class SearchAssetsRequest(
     val albumIds: List<String>? = null,
-    val ids: List<String>? = null, // A vérifier si supporté ou si c'est 'id' unique
+    val ids: List<String>? = null,
     val isNotInAlbum: Boolean? = null,
     val size: Int = 500,
     val page: Int = 1,
@@ -142,25 +113,19 @@ data class SearchStatisticsResponse(
     val total: Int
 )
 
-/**
- * Détail des assets trouvés.
- */
+
 data class SearchAssetResult(
     val items: List<Asset>,
     val total: Int,
     val nextPage: String? = null
 )
 
-/**
- * Représente un groupe d'assets dupliqués renvoyés par Immich.
- */
+
 data class DuplicateCluster(
     val assets: List<Asset>
 )
 
-/**
- * Corps de la requête pour ajouter des assets à un album.
- */
+
 data class AddAssetsToAlbumRequest(
     val ids: List<String>
 )

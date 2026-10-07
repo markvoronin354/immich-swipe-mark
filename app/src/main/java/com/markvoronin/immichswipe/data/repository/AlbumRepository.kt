@@ -14,9 +14,7 @@ import kotlinx.coroutines.sync.withPermit
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Repository gérant la récupération des albums depuis le serveur Immich.
- */
+
 @Singleton
 class AlbumRepository @Inject constructor(
     private val sessionManager: SessionManager,
@@ -29,9 +27,7 @@ class AlbumRepository @Inject constructor(
         return api.getAlbums()
     }
 
-    /**
-     * Calcule le nombre d'assets archivés pour un album donné.
-     */
+
     suspend fun getAlbumArchiveCount(albumId: String): Int {
         return try {
             api.getSearchStatistics(
@@ -43,7 +39,7 @@ class AlbumRepository @Inject constructor(
     }
 
     suspend fun refineAlbumCounts(albums: List<Album>): List<Album> {
-        val semaphore = Semaphore(15) // Augmenté un peu pour la performance
+        val semaphore = Semaphore(15)
         return coroutineScope {
             albums.map { album ->
                 async {
@@ -56,20 +52,14 @@ class AlbumRepository @Inject constructor(
         }
     }
 
-    /**
-     * Rafraîchit la liste des albums depuis le serveur.
-     * @param includeArchived Si vrai, inclut les photos archivées dans le compte total.
-     *                        Si faux, soustrait les archives du compte total via search/statistics.
-     */
+
     suspend fun refreshAlbums(includeArchived: Boolean = false): List<Album> {
         val albums = getAlbumsRaw()
         if (includeArchived) return albums
         return refineAlbumCounts(albums)
     }
 
-    /**
-     * Ajoute un asset à un album spécifié.
-     */
+
     suspend fun addAssetToAlbum(albumId: String, assetId: String): Boolean {
         return try {
             val response = api.addAssetsToAlbum(albumId,

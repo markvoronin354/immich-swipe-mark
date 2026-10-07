@@ -8,59 +8,51 @@ import com.markvoronin.immichswipe.data.local.entity.UserAccountEntity
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.domain.model.User
 
-/**
- * Les différents onglets disponibles dans l'application.
- */
+
 enum class HomeTab {
-    HOME, SWIPE, SETTINGS
+    HOME, SWIPE,
 }
 
-/**
- * État global de l'écran principal (après connexion).
- */
+
 data class HomeUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val user: User? = null,
     val albums: List<Album> = emptyList(),
     val currentTab: HomeTab = HomeTab.HOME,
-    val selectedAlbum: Album? = null, // L'album que l'utilisateur a choisi de trier
+    val selectedAlbum: Album? = null,
     val error: String? = null,
     val playbackBehavior: PlaybackBehavior = PlaybackBehavior.PAUSE_OTHERS,
-    val showProfilePopup: Boolean = false, // État de visibilité de la fenêtre profil
+    val showProfilePopup: Boolean = false,
     val themeMode: AppTheme = AppTheme.SYSTEM,
     val previousTab: HomeTab = HomeTab.HOME,
-    // Map pour stocker le nombre de photos triées par albumId
     val albumTreatedCounts: Map<String, Int> = emptyMap(),
-    // Map pour stocker le nombre de modifications non synchronisées par albumId
     val albumUnsyncedChanges: Map<String, Int> = emptyMap(),
-    val isGridView: Boolean = false, // Toggle entre liste et grille
-    val searchQuery: String = "", // Texte de recherche pour filtrer les albums
+    val isGridView: Boolean = false,
+    val searchQuery: String = "",
     val connectionStatus: ConnectionStatus = ConnectionStatus(),
     val baseUrl: String = "",
     val apiKey: String = "",
-    val allAssetsCount: Int = 0, // Nombre total de médias
+    val allAssetsCount: Int = 0,
     val orphansCount: Int = 0,
-    val duplicatesCount: Int = 0, // Nombre de médias orphelins (sans album)
-    val includeArchived: Boolean = false, // Inclure ou non les archives externes
-    val sortOrder: SortOrder = SortOrder.CHRONOLOGICAL_DESC, // Ordre de tri
-    val virtualNames: Map<String, String> = emptyMap(), // Noms localisés des albums virtuels
-    val virtualDescriptions: Map<String, String> = emptyMap(), // Descriptions localisées
-    val showStatsPopup: Boolean = false, // Visibilité de la popup stats
-    val stats: StatsUiData = StatsUiData(), // Données des stats
+    val duplicatesCount: Int = 0,
+    val includeArchived: Boolean = false,
+    val sortOrder: SortOrder = SortOrder.CHRONOLOGICAL_DESC,
+    val virtualNames: Map<String, String> = emptyMap(),
+    val virtualDescriptions: Map<String, String> = emptyMap(),
+    val showStatsPopup: Boolean = false,
+    val stats: StatsUiData = StatsUiData(),
     val collapsedCategories: Set<AlbumStatus> = setOf(
         AlbumStatus.IN_PROGRESS,
         AlbumStatus.NOT_STARTED,
         AlbumStatus.COMPLETED
-    ), // Catégories réduites par défaut
-    val savedAccounts: List<UserAccountEntity> = emptyList(), // Comptes enregistrés
-    val isLoggingInToAnotherAccount: Boolean = false, // Si on est en train d'ajouter un compte
+    ),
+    val savedAccounts: List<UserAccountEntity> = emptyList(),
+    val isLoggingInToAnotherAccount: Boolean = false,
     val showBackupWarning: Boolean = false,
     val showGlobalResetConfirmation: Boolean = false
 ) {
-    /**
-     * Retourne la liste des albums filtrée par le texte de recherche.
-     */
+
     val filteredAlbums: List<Album>
         get() {
             val virtuals = mutableListOf<Album>()
@@ -112,9 +104,7 @@ data class HomeUiState(
             }
         }
 
-    /**
-     * Groupe les albums filtrés par état d'avancement.
-     */
+
     val groupedAlbums: Map<AlbumStatus, List<Album>>
         get() {
             val filtered = filteredAlbums
@@ -135,9 +125,7 @@ data class HomeUiState(
         }
 }
 
-/**
- * Données calculées pour l'affichage des statistiques.
- */
+
 data class StatsUiData(
     val totalDeleted: Int = 0,
     val totalBytesSaved: Long = 0,
@@ -163,9 +151,7 @@ data class StatsUiData(
     }
 }
 
-/**
- * Représente l'état d'avancement d'un album pour le tri.
- */
+
 enum class AlbumStatus(val label: String) {
     IN_PROGRESS("En cours"),
     NOT_STARTED("Pas commencé"),

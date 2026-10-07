@@ -72,6 +72,7 @@ import com.markvoronin.immichswipe.feature.settings.components.verticalFadingEdg
 import com.markvoronin.immichswipe.ui.theme.VirtualGold
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -269,7 +270,7 @@ fun AlbumGridItem(
             val row = itemIndex / 3
             val col = itemIndex % 3
             val delayMs = (row * 40 + col * 15).coerceAtMost(280)
-            delay(delayMs.toLong())
+            delay(delayMs.toLong().milliseconds)
             launch {
                 alphaAnim.animateTo(1f, tween(durationMillis = 220, easing = LinearOutSlowInEasing))
             }
@@ -288,9 +289,12 @@ fun AlbumGridItem(
                 translationY = translateYAnim.value
             }
             .clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
         Box(modifier = modifier.fillMaxSize()) {
             if (album.albumThumbnailAssetId != null && baseUrlClean.isNotEmpty()) {

@@ -16,9 +16,8 @@ object PlayerLoadControlFactory {
 
     private const val TAG = "PlayerLoadControl"
 
-    /**
-     * Creates a LoadControl tailored for the primary Swipe screen video player.
-     */
+     //Creates a LoadControl tailored for the primary Swipe screen video player.
+
     fun createSwipeLoadControl(context: Context): LoadControl {
         val tier = MemoryTier.getMemoryTier(context)
         val builder = DefaultLoadControl.Builder()

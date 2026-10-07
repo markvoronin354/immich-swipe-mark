@@ -65,7 +65,10 @@ import com.markvoronin.immichswipe.core.cache.VideoPreloader
 import com.markvoronin.immichswipe.core.player.PlayerLoadControlFactory
 import com.markvoronin.immichswipe.domain.model.Album
 import com.markvoronin.immichswipe.feature.swipe.components.AddToAlbumDialog
+import com.markvoronin.immichswipe.feature.swipe.components.AssetTimeline
 import com.markvoronin.immichswipe.feature.swipe.components.ResetConfirmationDialog
+import com.markvoronin.immichswipe.feature.swipe.components.SuccessAnimationOverlay
+import com.markvoronin.immichswipe.feature.swipe.components.SummaryDialog
 import com.markvoronin.immichswipe.feature.swipe.components.SwipeActionBar
 import com.markvoronin.immichswipe.feature.swipe.components.SwipeBulkOverlay
 import com.markvoronin.immichswipe.feature.swipe.components.SwipeCardDeck
@@ -209,8 +212,7 @@ fun SwipeScreen(
         }
     }
 
-    // Gestion partagée de l'ExoPlayer pour l'asset courant (Regular <-> Fullscreen)
-    val context = LocalContext.current
+     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val playbackBehavior = uiState.playbackBehavior
     val currentAsset = uiState.currentAsset
@@ -218,8 +220,7 @@ fun SwipeScreen(
     val baseUrl = uiState.baseUrl.removeSuffix("/")
     val apiKey = uiState.apiKey
 
-    // On crée l'ExoPlayer une seule fois pour tout l'écran Swipe et on change juste la source
-    val sharedPlayer: ExoPlayer = remember {
+     val sharedPlayer: ExoPlayer = remember {
         val loadControl = PlayerLoadControlFactory.createSwipeLoadControl(context)
         
         val audioAttributes = AudioAttributes.Builder()
@@ -247,21 +248,19 @@ fun SwipeScreen(
             }
     }
 
-    // Mise à jour de la source du player quand l'asset change
-    LaunchedEffect(currentAsset?.id) {
-        val asset = currentAsset
-        if (asset?.type == "VIDEO") {
+     LaunchedEffect(currentAsset?.id) {
+        if (currentAsset?.type == "VIDEO") {
             // Do NOT stop/clear the player, as it forces the underlying surface to go blank
             // which causes a flicker when recycling the TextureView.
             // Just update the media source.
-            val videoUrl = "$baseUrl/api/assets/${asset.id}/video/playback"
+            val videoUrl = "$baseUrl/api/assets/${currentAsset.id}/video/playback"
 
             val dataSourceFactory = VideoCache.getCacheDataSourceFactory(context, apiKey)
             val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
                 .createMediaSource(MediaItem.Builder()
                     .setUri(videoUrl)
-                    .setMediaId(asset.id)
-                    .setCustomCacheKey(asset.id) // Ensure consistent cache mapping
+                    .setMediaId(currentAsset.id)
+                    .setCustomCacheKey(currentAsset.id) // Ensure consistent cache mapping
                     .build())
             
             // Using setMediaSource with resetPosition=true is smoother than stop()+clear()
@@ -274,8 +273,7 @@ fun SwipeScreen(
         }
     }
 
-    // Configuration des attributs audio selon le comportement choisi
-    LaunchedEffect(playbackBehavior) {
+     LaunchedEffect(playbackBehavior) {
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
             .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
@@ -284,8 +282,7 @@ fun SwipeScreen(
         sharedPlayer.setAudioAttributes(audioAttributes, handleAudioFocus)
     }
 
-    // Mise à jour du volume quand isMuted change
-    LaunchedEffect(uiState.isMuted) {
+     LaunchedEffect(uiState.isMuted) {
         sharedPlayer.volume = if (uiState.isMuted) 0f else 1f
     }
 

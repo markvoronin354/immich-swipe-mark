@@ -1,4 +1,4 @@
-package com.markvoronin.immichswipe.feature.swipe
+package com.markvoronin.immichswipe.feature.swipe.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -32,8 +32,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.markvoronin.immichswipe.R
+import com.markvoronin.immichswipe.feature.swipe.utils.MaterialGreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun SuccessAnimationOverlay() {
@@ -54,7 +56,7 @@ fun SuccessAnimationOverlay() {
         launch {
             alpha.animateTo(1f, tween(400))
         }
-        delay(200)
+        delay(200.milliseconds)
         iconScale.animateTo(
             targetValue = 1.2f,
             animationSpec = spring(dampingRatio = Spring.DampingRatioHighBouncy)

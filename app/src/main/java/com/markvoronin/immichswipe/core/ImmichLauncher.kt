@@ -10,9 +10,7 @@ import androidx.core.net.toUri
 object ImmichLauncher {
     private const val IMMICH_PACKAGE_NAME = "app.alextran.immich"
 
-    /**
-     * Opens the asset directly in the official Immich app or web browser based on mode.
-     */
+
     fun openAssetInImmich(
         context: Context,
         baseUrl: String?,

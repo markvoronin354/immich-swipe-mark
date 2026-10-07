@@ -1,13 +1,11 @@
-package com.markvoronin.immichswipe.feature.swipe
+package com.markvoronin.immichswipe.feature.swipe.utils
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.markvoronin.immichswipe.R
 import java.util.Locale
 
-/**
- * Formate une taille en bytes vers une chaîne lisible (Go, Mo).
- */
+
 @Composable
 fun formatSize(bytes: Long): String {
     val kb = bytes / 1024.0

@@ -15,9 +15,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 
-/**
- * Utility to pre-cache the first segments of video files to ensure instant playback.
- */
 @OptIn(UnstableApi::class)
 object VideoPreloader {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -32,9 +29,6 @@ object VideoPreloader {
         }
     }
 
-    /**
-     * Starts pre-caching the first segment of a video.
-     */
     fun preload(context: Context, assetId: String, videoUrl: String, apiKey: String) {
         if (activeJobs.containsKey(assetId)) return
 
@@ -77,19 +71,9 @@ object VideoPreloader {
         activeJobs[assetId] = job
     }
 
-    /**
-     * Cancels any active preload for the given asset.
-     */
     fun cancel(assetId: String) {
         activeJobs[assetId]?.cancel()
         activeJobs.remove(assetId)
     }
 
-    /**
-     * Cancels all active preloads.
-     */
-    fun cancelAll() {
-        activeJobs.values.forEach { it.cancel() }
-        activeJobs.clear()
-    }
 }

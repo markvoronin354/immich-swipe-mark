@@ -264,7 +264,7 @@ fun AddToAlbumDialog(
                                     .verticalFadingEdges(listState, length = 24.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                if (showLockInDialog && onLockSelect != null) {
+                                if (showLockInDialog) {
                                     item(key = "locked_folder_item") {
                                         LockedFolderSelectionItem(onClick = onLockSelect)
                                     }

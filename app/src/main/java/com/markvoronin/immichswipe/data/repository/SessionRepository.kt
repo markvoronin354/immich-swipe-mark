@@ -18,21 +18,16 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Repository gérant la persistence de la session utilisateur.
- * C'est la Source Unique de Vérité (SSOT) pour l'état de connexion.
- */
+
 @Singleton
 class SessionRepository @Inject constructor(
     @ApplicationContext context: Context,
-    private val accountRepository: AccountRepository
+    accountRepository: AccountRepository
 ) {
 
     private val dataStore = SessionDataStore(context)
 
-    /**
-     * Expose la liste des URLs de serveur sauvegardées.
-     */
+
     val savedServerUrls: Flow<List<String>> = combine(
         dataStore.getSavedServerUrls(),
         accountRepository.allAccounts
@@ -45,10 +40,7 @@ class SessionRepository @Inject constructor(
             .sorted()
     }
 
-    /**
-     * Expose la configuration de session actuelle sous forme de Flow.
-     * Si l'un des deux éléments (URL ou Clé) est manquant, émet null.
-     */
+
     val sessionConfig: Flow<SessionConfig?> = combine(
         dataStore.getBaseUrl(),
         dataStore.getApiKey(),
@@ -61,78 +53,59 @@ class SessionRepository @Inject constructor(
         }
     }
 
-    /**
-     * Expose le comportement de lecture actuel.
-     * Par défaut: PAUSE_OTHERS.
-     */
+
     val playbackBehavior: Flow<PlaybackBehavior> = dataStore.getAudioFocusMode().map { modeString ->
         if (modeString == null) return@map PlaybackBehavior.PAUSE_OTHERS
         try {
             PlaybackBehavior.valueOf(modeString)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             PlaybackBehavior.PAUSE_OTHERS
         }
     }
 
-    /**
-     * Expose le thème actuel.
-     */
+
     val themeMode: Flow<AppTheme> = dataStore.getThemeMode().map {
-        it?.let { try { AppTheme.valueOf(it) } catch(e: Exception) { AppTheme.SYSTEM } } ?: AppTheme.SYSTEM
+        it?.let { try { AppTheme.valueOf(it) } catch(_: Exception) { AppTheme.SYSTEM } } ?: AppTheme.SYSTEM
     }
 
-    /**
-     * Expose si les couleurs dynamiques (Material You) sont activées.
-     */
+
     val dynamicColor: Flow<Boolean> = dataStore.isDynamicColor()
 
-    /**
-     * Expose la position de l'icône plein écran.
-     */
+
     val fullscreenButtonPosition: Flow<IconPosition> = dataStore.getFullscreenIconPosition().map {
-        it?.let { try { IconPosition.valueOf(it) } catch(e: Exception) { IconPosition.TOP_RIGHT } } ?: IconPosition.TOP_RIGHT
+        it?.let { try { IconPosition.valueOf(it) } catch(_: Exception) { IconPosition.TOP_RIGHT } } ?: IconPosition.TOP_RIGHT
     }
 
-    /**
-     * Expose la position de l'icône Immich.
-     */
+
     val immichButtonPosition: Flow<IconPosition> = dataStore.getImmichIconPosition().map {
-        it?.let { try { IconPosition.valueOf(it) } catch(e: Exception) { IconPosition.BOTTOM_LEFT } } ?: IconPosition.BOTTOM_LEFT
+        it?.let { try { IconPosition.valueOf(it) } catch(_: Exception) { IconPosition.BOTTOM_LEFT } } ?: IconPosition.BOTTOM_LEFT
     }
 
     val immichOpenMode: Flow<ImmichOpenMode> = dataStore.getImmichOpenMode().map {
-        it?.let { try { ImmichOpenMode.valueOf(it) } catch(e: Exception) { ImmichOpenMode.APP } } ?: ImmichOpenMode.APP
+        it?.let { try { ImmichOpenMode.valueOf(it) } catch(_: Exception) { ImmichOpenMode.APP } } ?: ImmichOpenMode.APP
     }
 
     val immichLongPressWeb: Flow<Boolean> = dataStore.getImmichLongPressWeb()
 
-    /**
-     * Expose la position de l'icône de rotation d'asset.
-     */
+
     val rotationButtonPosition: Flow<IconPosition> = dataStore.getCardDisplayIconPosition().map {
-        it?.let { try { IconPosition.valueOf(it) } catch(e: Exception) { IconPosition.TOP_LEFT } } ?: IconPosition.TOP_LEFT
+        it?.let { try { IconPosition.valueOf(it) } catch(_: Exception) { IconPosition.TOP_LEFT } } ?: IconPosition.TOP_LEFT
     }
     val cardDisplayButtonPosition: Flow<IconPosition> get() = rotationButtonPosition
 
-    /**
-     * Expose la position de l'icône mute.
-     */
+
     val muteButtonPosition: Flow<IconPosition> = dataStore.getMuteIconPosition().map {
-        it?.let { try { IconPosition.valueOf(it) } catch(e: Exception) { IconPosition.BOTTOM_RIGHT } } ?: IconPosition.BOTTOM_RIGHT
+        it?.let { try { IconPosition.valueOf(it) } catch(_: Exception) { IconPosition.BOTTOM_RIGHT } } ?: IconPosition.BOTTOM_RIGHT
     }
 
-    /**
-     * Expose la position de l'icône download.
-     */
+
     val downloadButtonPosition: Flow<IconPosition> = dataStore.getDownloadIconPosition().map {
-        it?.let { try { IconPosition.valueOf(it) } catch(e: Exception) { IconPosition.BOTTOM_LEFT } } ?: IconPosition.BOTTOM_LEFT
+        it?.let { try { IconPosition.valueOf(it) } catch(_: Exception) { IconPosition.BOTTOM_LEFT } } ?: IconPosition.BOTTOM_LEFT
     }
 
-    /**
-     * Expose la position de l'icône share.
-     */
+
     val shareButtonPosition: Flow<IconPosition> = dataStore.getShareIconPosition().map {
-        it?.let { try { IconPosition.valueOf(it) } catch(e: Exception) { IconPosition.BOTTOM_RIGHT } } ?: IconPosition.BOTTOM_RIGHT
+        it?.let { try { IconPosition.valueOf(it) } catch(_: Exception) { IconPosition.BOTTOM_RIGHT } } ?: IconPosition.BOTTOM_RIGHT
     }
 
     val showFullscreenButton: Flow<Boolean> = dataStore.isShowFullscreenIcon()
@@ -143,9 +116,7 @@ class SessionRepository @Inject constructor(
     val showDownloadButton: Flow<Boolean> = dataStore.isShowDownloadIcon()
     val showShareButton: Flow<Boolean> = dataStore.isShowShareIcon()
 
-    /**
-     * Expose la préférence du mode d'affichage par défaut.
-     */
+
     val defaultLayoutGrid: Flow<Boolean> = dataStore.isDefaultLayoutGrid()
 
     val showFavoriteButton: Flow<Boolean> = dataStore.isShowFavorite()
@@ -161,55 +132,40 @@ class SessionRepository @Inject constructor(
     val tapToSwipeEnabled: Flow<Boolean> = dataStore.isTapToSwipeEnabled()
     
     val sortOrder: Flow<SortOrder> = dataStore.getSortOrder().map {
-        it?.let { try { SortOrder.valueOf(it) } catch(e: Exception) { SortOrder.CHRONOLOGICAL_DESC } } ?: SortOrder.CHRONOLOGICAL_DESC
+        it?.let { try { SortOrder.valueOf(it) } catch(_: Exception) { SortOrder.CHRONOLOGICAL_DESC } } ?: SortOrder.CHRONOLOGICAL_DESC
     }
 
-    /**
-     * Expose le mode d'affichage par défaut des cartes.
-     */
+
     val defaultCardDisplayMode: Flow<CardDisplayMode> = dataStore.getDefaultCardDisplayMode().map {
-        it?.let { try { CardDisplayMode.valueOf(it) } catch(e: Exception) { CardDisplayMode.FIT } } ?: CardDisplayMode.FIT
+        it?.let { try { CardDisplayMode.valueOf(it) } catch(_: Exception) { CardDisplayMode.FIT } } ?: CardDisplayMode.FIT
     }
 
-    /**
-     * Sauvegarde une nouvelle session. 
-     * Grâce au Flow ci-dessus, tous les observateurs seront notifiés automatiquement.
-     */
+
     suspend fun saveSession(baseUrl: String, token: String, userId: String) {
         dataStore.saveSession(baseUrl, token, userId)
     }
 
-    /**
-     * Sauvegarde la préférence de lecture.
-     */
+
     suspend fun savePlaybackBehavior(behavior: PlaybackBehavior) {
         dataStore.saveAudioFocusMode(behavior.name)
     }
 
-    /**
-     * Sauvegarde le thème.
-     */
+
     suspend fun saveThemeMode(theme: AppTheme) {
         dataStore.saveThemeMode(theme.name)
     }
 
-    /**
-     * Sauvegarde si les couleurs dynamiques sont activées.
-     */
+
     suspend fun saveDynamicColor(enabled: Boolean) {
         dataStore.saveDynamicColor(enabled)
     }
 
-    /**
-     * Sauvegarde la position de l'icône plein écran.
-     */
+
     suspend fun saveFullscreenButtonPosition(pos: IconPosition) {
         dataStore.saveFullscreenIconPosition(pos.name)
     }
 
-    /**
-     * Sauvegarde la position de l'icône Immich.
-     */
+
     suspend fun saveImmichButtonPosition(pos: IconPosition) {
         dataStore.saveImmichIconPosition(pos.name)
     }
@@ -225,27 +181,18 @@ class SessionRepository @Inject constructor(
     suspend fun saveRotationButtonPosition(pos: IconPosition) {
         dataStore.saveCardDisplayIconPosition(pos.name)
     }
-    suspend fun saveCardDisplayButtonPosition(pos: IconPosition) {
-        saveRotationButtonPosition(pos)
-    }
 
-    /**
-     * Sauvegarde la position de l'icône mute.
-     */
+
     suspend fun saveMuteButtonPosition(pos: IconPosition) {
         dataStore.saveMuteIconPosition(pos.name)
     }
 
-    /**
-     * Sauvegarde la position de l'icône download.
-     */
+
     suspend fun saveDownloadButtonPosition(pos: IconPosition) {
         dataStore.saveDownloadIconPosition(pos.name)
     }
 
-    /**
-     * Sauvegarde la position de l'icône share.
-     */
+
     suspend fun saveShareButtonPosition(pos: IconPosition) {
         dataStore.saveShareIconPosition(pos.name)
     }
@@ -253,21 +200,17 @@ class SessionRepository @Inject constructor(
     suspend fun saveShowFullscreenButton(show: Boolean) { dataStore.saveShowFullscreenIcon(show) }
     suspend fun saveShowImmichButton(show: Boolean) { dataStore.saveShowImmichIcon(show) }
     suspend fun saveShowRotationButton(show: Boolean) { dataStore.saveShowCardDisplayIcon(show) }
-    suspend fun saveShowCardDisplayButton(show: Boolean) { saveShowRotationButton(show) }
     suspend fun saveShowMuteButton(show: Boolean) { dataStore.saveShowMuteIcon(show) }
     suspend fun saveShowDownloadButton(show: Boolean) { dataStore.saveShowDownloadIcon(show) }
     suspend fun saveShowShareButton(show: Boolean) { dataStore.saveShowShareIcon(show) }
 
-    /**
-     * Sauvegarde le mode d'affichage par défaut.
-     */
+
     suspend fun saveDefaultLayoutGrid(isGrid: Boolean) {
         dataStore.saveDefaultLayoutGrid(isGrid)
     }
 
     suspend fun saveShowFavorite(show: Boolean) { dataStore.saveShowFavorite(show) }
     suspend fun saveAutoNextOnFav(autoNextOnFav: Boolean) { dataStore.saveAutoNextOnFav(autoNextOnFav) }
-    suspend fun saveIncludeArchived(include: Boolean) { dataStore.saveIncludeArchived(include) }
     suspend fun saveShowSwipeButtons(show: Boolean) { dataStore.saveShowSwipeButtons(show) }
     suspend fun saveShowArchiveButton(show: Boolean) { dataStore.saveShowArchiveButton(show) }
     suspend fun saveShowLockButton(show: Boolean) { dataStore.saveShowLockButton(show) }
@@ -277,13 +220,7 @@ class SessionRepository @Inject constructor(
     suspend fun saveTapToSwipeEnabled(enabled: Boolean) { dataStore.saveTapToSwipeEnabled(enabled) }
     suspend fun saveSortOrder(order: SortOrder) { dataStore.saveSortOrder(order.name) }
 
-    suspend fun saveDefaultCardDisplayMode(mode: CardDisplayMode) {
-        dataStore.saveDefaultCardDisplayMode(mode.name)
-    }
 
-    /**
-     * Vérifie si une session partielle existe (ancienne version) et la nettoie.
-     */
     suspend fun cleanupLegacySession() {
         val url = dataStore.getBaseUrl().first()
         val key = dataStore.getApiKey().first()
@@ -292,13 +229,11 @@ class SessionRepository @Inject constructor(
         if ((url != null || key != null) && userId == null) {
             dataStore.clearSession()
             AppLogger.i("Auth","User ID was missing from the session config, probably due to to upgrading from room v2" +
-                    "A reconnexion is required.")
+                    "A reconnection is required.")
         }
     }
 
-    /**
-     * Supprime la session actuelle (Déconnexion).
-     */
+
     suspend fun clearSession() {
         dataStore.clearSession()
     }

@@ -227,40 +227,6 @@ class DuplicatesViewModel @Inject constructor(
             }
         }
     }
-    
-    fun setDecision(assetId: String, decision: DuplicateDecision) {
-        _uiState.update { state ->
-            state.copy(
-                decisions = state.decisions.toMutableMap().apply { put(assetId, decision) }
-            )
-        }
-
-        viewModelScope.launch {
-            val userId = sessionManager.getUserId() ?: return@launch
-            val asset = _uiState.value.clusters.flatMap { it.assets }.find { it.id == assetId }
-            val fileSize = asset?.exifInfo?.fileSizeInBytes
-            when (decision) {
-                DuplicateDecision.KEEP -> swipeDecisionRepository.saveDecision(
-                    assetId = assetId,
-                    albumId = Album.VIRTUAL_DUPLICATES_ID,
-                    userId = userId,
-                    decision = "KEEP",
-                    fileSize = fileSize
-                )
-                DuplicateDecision.DELETE -> swipeDecisionRepository.saveDecision(
-                    assetId = assetId,
-                    albumId = Album.VIRTUAL_DUPLICATES_ID,
-                    userId = userId,
-                    decision = "DELETE",
-                    fileSize = fileSize
-                )
-                DuplicateDecision.NONE -> swipeDecisionRepository.removeDecision(
-                    assetId = assetId,
-                    userId = userId
-                )
-            }
-        }
-    }
 
     fun syncDeletions() {
         viewModelScope.launch {
@@ -328,10 +294,6 @@ class DuplicatesViewModel @Inject constructor(
     
     fun toggleDeleteConfirmation(show: Boolean) {
         _uiState.update { it.copy(showDeleteConfirmation = show) }
-    }
-
-    fun dismissError() {
-        _uiState.update { it.copy(error = null) }
     }
 
     fun resetDecisions() {

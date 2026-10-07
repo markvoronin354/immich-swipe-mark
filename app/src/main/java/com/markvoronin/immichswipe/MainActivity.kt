@@ -40,9 +40,7 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
-        // enableEdgeToEdge est conservé pour permettre le dessin derrière les barres système.
-        
-        // On verrouille l'application en mode Portrait par défaut.
+
         @SuppressLint("SourceLockedOrientationActivity")
         if (savedInstanceState == null) {
             requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT

@@ -1,4 +1,4 @@
-package com.markvoronin.immichswipe.feature.swipe
+package com.markvoronin.immichswipe.feature.swipe.utils
 
 import android.app.Activity
 import android.content.Context
@@ -10,9 +10,7 @@ import com.markvoronin.immichswipe.core.IconPosition
 val MaterialGreen = Color(0xFF2E7D32)
 val MaterialRed = Color(0xFFC62828)
 
-/**
- * Helper pour trouver l'Activity à partir du Context.
- */
+
 fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
     is ContextWrapper -> baseContext.findActivity()

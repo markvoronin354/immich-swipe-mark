@@ -54,6 +54,7 @@ import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.feature.swipe.SwipeUiState
 import com.markvoronin.immichswipe.feature.swipe.SwipeViewModel
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun SortOrderPopupMenu(
@@ -83,7 +84,7 @@ fun SortOrderPopupMenu(
 
     LaunchedEffect(isDismissing) {
         if (isDismissing) {
-            delay(180)
+            delay(180.milliseconds)
             if (selectedSortOrder != uiState.sortOrder) {
                 viewModel.setSortOrder(selectedSortOrder)
             }
@@ -140,7 +141,7 @@ fun SortOrderPopupMenu(
                         .pointerInput(Unit) { detectTapGestures {} },
                     shape = RoundedCornerShape(28.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 6.dp,
+                    tonalElevation = 2.dp,
                     shadowElevation = 8.dp,
                     border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
                 ) {

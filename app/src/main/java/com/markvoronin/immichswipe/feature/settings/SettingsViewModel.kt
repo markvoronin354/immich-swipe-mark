@@ -10,7 +10,6 @@ import com.markvoronin.immichswipe.core.IconPosition
 import com.markvoronin.immichswipe.core.ImmichOpenMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SessionManager
-import com.markvoronin.immichswipe.core.SortOrder
 import com.markvoronin.immichswipe.core.cache.CacheManager
 import com.markvoronin.immichswipe.data.local.model.DatabaseExport
 import com.markvoronin.immichswipe.data.repository.AccountRepository
@@ -263,7 +262,6 @@ class SettingsViewModel @Inject constructor(
             sessionRepository.saveRotationButtonPosition(pos)
         }
     }
-    fun setCardDisplayButtonPosition(pos: IconPosition) { setRotationButtonPosition(pos) }
 
     fun setMuteButtonPosition(pos: IconPosition) {
         viewModelScope.launch {
@@ -294,7 +292,6 @@ class SettingsViewModel @Inject constructor(
     fun setShowRotationButton(show: Boolean) {
         viewModelScope.launch { sessionRepository.saveShowRotationButton(show) }
     }
-    fun setShowCardDisplayButton(show: Boolean) { setShowRotationButton(show) }
 
     fun setShowMuteButton(show: Boolean) {
         viewModelScope.launch { sessionRepository.saveShowMuteButton(show) }
@@ -320,20 +317,6 @@ class SettingsViewModel @Inject constructor(
 
     fun setAutoNextOnFav(autoNextOnFav: Boolean) {
         viewModelScope.launch { sessionRepository.saveAutoNextOnFav(autoNextOnFav) }
-    }
-
-    fun setIncludeArchived(include: Boolean) {
-        viewModelScope.launch { sessionRepository.saveIncludeArchived(include) }
-    }
-
-    fun setSortOrder(order: SortOrder) {
-        viewModelScope.launch { sessionRepository.saveSortOrder(order) }
-    }
-
-    fun setDefaultCardDisplayMode(mode: com.markvoronin.immichswipe.core.CardDisplayMode) {
-        viewModelScope.launch {
-            sessionRepository.saveDefaultCardDisplayMode(mode)
-        }
     }
 
     fun setShowSwipeButtons(show: Boolean) {
@@ -423,7 +406,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun exportDatabase(scope: DatabaseScope, outputStream: OutputStream, context: android.content.Context) {
+    fun exportDatabase(scope: DatabaseScope, outputStream: OutputStream, context: Context) {
         viewModelScope.launch {
             try {
                 val userId = sessionManager.getUserId()
@@ -461,7 +444,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun importDatabase(inputStream: InputStream, context: android.content.Context) {
+    fun importDatabase(inputStream: InputStream, context: Context) {
         viewModelScope.launch {
             try {
                 val json = inputStream.bufferedReader().use { it.readText() }
@@ -510,7 +493,7 @@ class SettingsViewModel @Inject constructor(
         return AppLogger.getLogs()
     }
 
-    fun clearAppCache(context: android.content.Context) {
+    fun clearAppCache(context: Context) {
         viewModelScope.launch {
             try {
                 CacheManager.clearAllCache(context)

@@ -3,10 +3,7 @@ package com.markvoronin.immichswipe.data.local.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-/**
- * Représente un historique de synchronisation (validation du résumé).
- * Permet de calculer des statistiques globales et temporelles par utilisateur.
- */
+
 @Entity(tableName = "sync_history")
 data class SyncHistoryEntity(
     @PrimaryKey(autoGenerate = true)

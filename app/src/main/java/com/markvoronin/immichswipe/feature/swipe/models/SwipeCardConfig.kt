@@ -1,10 +1,11 @@
-package com.markvoronin.immichswipe.feature.swipe
+package com.markvoronin.immichswipe.feature.swipe.models
 
 import com.markvoronin.immichswipe.core.CardDisplayMode
 import com.markvoronin.immichswipe.core.IconPosition
 import com.markvoronin.immichswipe.core.ImmichOpenMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.domain.model.Asset
+import com.markvoronin.immichswipe.feature.swipe.SwipeDecision
 
 data class SwipeCardConfig(
     val baseUrl: String = "",
@@ -28,10 +29,7 @@ data class SwipeCardConfig(
     val tapToSwipeEnabled: Boolean = false,
     val showSizeIndicator: Boolean = false,
     val rotationAngle: Int = 0
-) {
-    val cardDisplayButtonPosition: IconPosition get() = rotationButtonPosition
-    val showCardDisplayButton: Boolean get() = showRotationButton
-}
+)
 
 data class SwipeCardActions(
     val onSwipe: (SwipeDecision) -> Unit,
@@ -42,6 +40,4 @@ data class SwipeCardActions(
     val onShare: (Asset) -> Unit = {},
     val onToggleMute: () -> Unit = {},
     val onSwipeOffsetChanged: (Float) -> Unit = {}
-) {
-    val onToggleDisplayMode: () -> Unit get() = onRotateAsset
-}
+)

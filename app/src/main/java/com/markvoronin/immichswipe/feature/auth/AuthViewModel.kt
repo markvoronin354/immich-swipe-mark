@@ -15,10 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * ViewModel gérant la logique de l'écran de connexion.
- * Il délègue les appels réseau au AuthRepository.
- */
+
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
@@ -31,8 +28,7 @@ class AuthViewModel @Inject constructor(
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     init {
-        // On observe la session : si elle devient null (déconnexion), 
-        // on réinitialise l'état du formulaire de login.
+
         observeSessionReset()
         observeSavedServerUrls()
     }
@@ -69,26 +65,19 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Remet l'état à zéro (utile après une déconnexion).
-     */
+
     fun resetState() {
         val currentSavedUrls = _uiState.value.savedServerUrls
         _uiState.value = AuthUiState(savedServerUrls = currentSavedUrls)
     }
 
-    /**
-     * Vide tous les champs de texte du formulaire.
-     */
+
     fun clearAllFields() {
         val currentSavedUrls = _uiState.value.savedServerUrls
         _uiState.value = AuthUiState(savedServerUrls = currentSavedUrls)
     }
 
-    /**
-     * Prépare le formulaire pour l'ajout d'un nouveau compte en s'assurant
-     * que la clé API est vide. L'URL du serveur peut être optionnellement pré-remplie.
-     */
+
     fun prepareForAddAccount(defaultBaseUrl: String? = null) {
         val initialUrl = defaultBaseUrl?.takeIf { it.isNotEmpty() } ?: _uiState.value.baseUrl
         _uiState.value = _uiState.value.copy(
@@ -100,9 +89,7 @@ class AuthViewModel @Inject constructor(
         )
     }
 
-    /**
-     * Tente de connecter l'utilisateur.
-     */
+
     fun login() {
         viewModelScope.launch {
             val baseUrl = _uiState.value.baseUrl.trim()
@@ -110,7 +97,6 @@ class AuthViewModel @Inject constructor(
 
             AppLogger.i("Auth", "Attempting connection to $baseUrl")
 
-            // Validation basique
             if (baseUrl.isEmpty() || apiKey.isEmpty()) {
                 _uiState.value = _uiState.value.copy(error = AuthError.EmptyFields)
                 return@launch
@@ -119,15 +105,12 @@ class AuthViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
             try {
-                // 1. On demande au Repository de vérifier les identifiants
                 val user = authRepository.checkCredentials(baseUrl, apiKey)
                 AppLogger.i("Auth", "Valid credentials. User: ${user.name} (${user.id})")
 
-                // 2. Si on arrive ici, c'est que la connexion a réussi !
                 val config = SessionConfig(baseUrl = baseUrl, apiKey = apiKey, userId = user.id)
                 sessionManager.initialize(config)
 
-                // 3. On sauvegarde le compte dans la base locale, la session active et l'historique des URLs
                 accountRepository.saveAccount(baseUrl, apiKey, user)
                 sessionRepository.saveSession(baseUrl = baseUrl, token = apiKey, userId = user.id)
                 sessionRepository.saveRecentServerUrl(baseUrl)

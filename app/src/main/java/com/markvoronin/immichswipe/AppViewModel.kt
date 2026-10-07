@@ -11,10 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * ViewModel principal de l'application (niveau Activity).
- * Il s'occupe de l'initialisation et du thème.
- */
+
 @HiltViewModel
 class AppViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
@@ -25,7 +22,6 @@ class AppViewModel @Inject constructor(
     val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
 
     init {
-        // Au démarrage, on initialise l'état du tutoriel et l'observation réactive de la session et du thème
         initializeTutorialState()
         observeSession()
         observeTheme()
@@ -40,27 +36,20 @@ class AppViewModel @Inject constructor(
 
     private fun observeSession() {
         viewModelScope.launch {
-            // On s'abonne au tuyau de la session
             sessionRepository.sessionConfig.collect { config ->
                 if (config != null) {
-                    // Si on a une config sauvegardée, on initialise le SessionManager
                     sessionManager.initialize(config)
 
-                    // On met à jour l'UI : on est connecté !
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isLoggedIn = true,
                         activeUserId = config.userId
                     )
                 } else {
-                    // Si on reçoit null, on nettoie tout
                     sessionManager.clear()
 
-                    // SOLUTION : Si on vient d'une version v2, on force le nettoyage complet
-                    // pour obliger à une reconnexion propre (multi-compte).
-                    sessionRepository.cleanupLegacySession()
 
-                    // On met à jour l'UI : on est déconnecté
+
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isLoggedIn = false,

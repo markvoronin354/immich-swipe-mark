@@ -68,7 +68,6 @@ fun CategorySegmentedRow(
         SortCategory.TYPE -> 2
     }
 
-    // Shevery navigation bar physics: Track child item bounds dynamically in parent
     val buttonBounds = remember { mutableStateMapOf<Int, Rect>() }
     val targetRect = buttonBounds[selectedIndex]
     val firstRect = buttonBounds[0]
@@ -78,7 +77,7 @@ fun CategorySegmentedRow(
             .fillMaxWidth()
             .height(44.dp)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f))
             .border(
                 width = 0.5.dp,
                 color = MaterialTheme.colorScheme.outlineVariant,
@@ -96,7 +95,6 @@ fun CategorySegmentedRow(
             fallbackSlotWidthPx * selectedIndex
         }
 
-        // Low stiffness, low bouncy spring physics matching Shevery Expressive Navigation Bar
         val springSpec = remember {
             spring<Float>(
                 dampingRatio = Spring.DampingRatioLowBouncy,
@@ -122,7 +120,6 @@ fun CategorySegmentedRow(
         val scaleX = 1.0f + (jellyStretch * 0.18f)
         val scaleY = 1.0f - (jellyStretch * 0.22f)
 
-        // Layer 1: Unselected category labels with bounds tracking
         Row(modifier = Modifier.fillMaxSize()) {
             categories.forEachIndexed { index, (category, stringRes) ->
                 Box(
@@ -150,7 +147,6 @@ fun CategorySegmentedRow(
             }
         }
 
-        // Layer 2: Animated Shevery Jelly Pill Indicator with clipped selected labels
         if (pillAnimatedWidth > 0f) {
             val pillWidthDp = with(density) { pillAnimatedWidth.toDp() }
 
