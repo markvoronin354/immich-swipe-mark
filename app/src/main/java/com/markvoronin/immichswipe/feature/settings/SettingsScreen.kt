@@ -466,8 +466,8 @@ fun SettingsScreen(
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 2.dp,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            tonalElevation = 0.dp,
             border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
             Row(

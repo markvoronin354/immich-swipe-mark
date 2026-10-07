@@ -249,8 +249,8 @@ fun SettingsSection(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 2.dp,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            tonalElevation = 0.dp,
             border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
             content()
@@ -341,7 +341,7 @@ fun ThemeButton(
         onClick = onClick,
         modifier = modifier.height(72.dp),
         shape = RoundedCornerShape(14.dp),
-        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLowest,
         border = BorderStroke(
             width = if (selected) 1.5.dp else 1.dp,
             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)

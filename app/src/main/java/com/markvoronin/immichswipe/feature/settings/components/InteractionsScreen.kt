@@ -56,8 +56,8 @@ fun InteractionsScreen(
 
         Surface(
             shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 2.dp,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            tonalElevation = 0.dp,
             border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
             modifier = Modifier.fillMaxWidth()
         ) {

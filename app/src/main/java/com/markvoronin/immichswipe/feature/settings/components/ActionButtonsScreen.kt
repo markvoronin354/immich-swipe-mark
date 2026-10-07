@@ -156,8 +156,8 @@ fun IconPositionPickerCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 0.dp,
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(
@@ -330,8 +330,8 @@ fun ImmichCardAction(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 0.dp,
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
