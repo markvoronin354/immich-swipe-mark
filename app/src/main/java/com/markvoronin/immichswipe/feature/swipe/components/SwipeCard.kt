@@ -526,22 +526,26 @@ fun SwipeCard(
                             .build()
                     }
 
-                    // Always render base thumbnail to prevent 1-frame unmount flicker when transitioning from next -> top card
-                    AsyncImage(
-                        model = placeholderRequest,
-                        contentDescription = null,
-                        contentScale = if (config.cardDisplayMode == CardDisplayMode.FILL) ContentScale.Crop else ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer { rotationZ = animatedRotation }
-                            .rotateLayout(config.rotationAngle)
-                    )
+                    // Render base thumbnail until video is ready to prevent flicker when transitioning cards or loading
+                    if (!isVideoReady) {
+                        AsyncImage(
+                            model = placeholderRequest,
+                            contentDescription = null,
+                            contentScale = if (config.cardDisplayMode == CardDisplayMode.FILL) ContentScale.Crop else ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer { rotationZ = animatedRotation }
+                                .rotateLayout(config.rotationAngle)
+                        )
+                    }
 
                     if (!isNext && exoPlayer != null && !isFullscreenOpen) {
                         SharedVideoPlayer(
                             player = exoPlayer,
                             isFullscreen = false,
                             assetId = asset.id,
+                            baseUrl = baseUrl,
+                            apiKey = apiKey,
                             isMuted = isMuted,
                             isPaused = pausedByHoldState,
                             isVideoReady = isVideoReady,
