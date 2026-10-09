@@ -1,7 +1,5 @@
 package com.markvoronin.immichswipe.feature.duplicates.components
 
-import com.markvoronin.immichswipe.R
-
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -10,8 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
@@ -35,8 +31,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.NavigateBefore
 import androidx.compose.material.icons.automirrored.filled.NavigateNext
@@ -77,7 +75,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -85,6 +82,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -95,8 +93,8 @@ import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import coil.compose.AsyncImage
-import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.ImmichLauncher
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.feature.duplicates.DuplicateDecision
@@ -597,46 +595,54 @@ fun FullScreenPreviewModal(
                             }
                         )
                     } else {
-                        ZoomableBox(
-                            modifier = swipeModifier,
-                            resetOnRelease = false,
-                            enableDoubleTapZoom = isZoomedIn,
-                            onIsZoomedChanged = { zoomed ->
-                                isZoomedIn = zoomed
-                            },
-                            onTap = { _, _ ->
-                                if (!isZoomedIn) {
-                                    currentOnDecisionToggle(currentAsset.id)
-                                }
-                            }
-                        ) {
-                            val imageRequest = remember(currentAsset.id, baseUrlClean, apiKey) {
-                                ImageRequest.Builder(context)
-                                    .data("$baseUrlClean/api/assets/${currentAsset.id}/original")
-                                    .addHeader("x-api-key", apiKey)
-                                    .crossfade(false)
-                                    .build()
-                            }
-                            SubcomposeAsyncImage(
-                                model = imageRequest,
-                                contentDescription = null,
-                                contentScale = ContentScale.Fit,
+                        var isImageLoading by remember(currentAsset.id) { mutableStateOf(true) }
+
+                        Box(modifier = swipeModifier) {
+                            ZoomableBox(
                                 modifier = Modifier.fillMaxSize(),
-                                loading = {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(Color.Black.copy(alpha = 0.2f)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator(
-                                            color = Color.White,
-                                            strokeWidth = 3.dp,
-                                            modifier = Modifier.size(40.dp)
-                                        )
+                                resetOnRelease = false,
+                                enableDoubleTapZoom = isZoomedIn,
+                                onIsZoomedChanged = { zoomed ->
+                                    isZoomedIn = zoomed
+                                },
+                                onTap = { _, _ ->
+                                    if (!isZoomedIn) {
+                                        currentOnDecisionToggle(currentAsset.id)
                                     }
                                 }
-                            )
+                            ) {
+                                val imageRequest = remember(currentAsset.id, baseUrlClean, apiKey) {
+                                    ImageRequest.Builder(context)
+                                        .data("$baseUrlClean/api/assets/${currentAsset.id}/original")
+                                        .addHeader("x-api-key", apiKey)
+                                        .crossfade(false)
+                                        .build()
+                                }
+                                AsyncImage(
+                                    model = imageRequest,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier.fillMaxSize(),
+                                    onState = { state ->
+                                        isImageLoading = state is coil.compose.AsyncImagePainter.State.Loading
+                                    }
+                                )
+                            }
+                            
+                            if (isImageLoading) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.Black.copy(alpha = 0.2f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        color = Color.White,
+                                        strokeWidth = 3.dp,
+                                        modifier = Modifier.size(40.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
