@@ -15,7 +15,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -23,8 +25,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.domain.model.Asset
 import com.markvoronin.immichswipe.feature.duplicates.DuplicateClusterUiModel
 import com.markvoronin.immichswipe.feature.duplicates.DuplicateDecision
@@ -39,7 +43,10 @@ fun DuplicateClusterCard(
     apiKey: String = "",
     onDecisionToggle: (String) -> Unit,
     onAssetLongPress: (Asset) -> Unit,
-    onZoomStateUpdate: (ZoomData?) -> Unit
+    onZoomStateUpdate: (ZoomData?) -> Unit,
+    onOpenFullScreen: () -> Unit = {
+        cluster.assets.firstOrNull()?.let { onAssetLongPress(it) }
+    }
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -52,6 +59,7 @@ fun DuplicateClusterCard(
             val unsortedInCluster = cluster.assets.count { asset ->
                 decisions[asset.id] == null || decisions[asset.id] == DuplicateDecision.NONE
             }
+            val sortedInCluster = cluster.assets.size - unsortedInCluster
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -60,40 +68,49 @@ fun DuplicateClusterCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${cluster.assets.size} similar photos",
+                    text = "$sortedInCluster/${cluster.assets.size}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                if (unsortedInCluster == 0) {
-                    Surface(
-                        color = Color(0xFF4CAF50).copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (unsortedInCluster == 0) {
+                        Surface(
+                            color = Color(0xFF4CAF50).copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = Color(0xFF4CAF50),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                text = "Sorted",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF4CAF50),
-                                fontWeight = FontWeight.Bold
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Color(0xFF4CAF50),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = "Sorted",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color(0xFF4CAF50),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
-                } else {
-                    Text(
-                        text = "$unsortedInCluster left to sort",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    IconButton(
+                        onClick = onOpenFullScreen,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Fullscreen,
+                            contentDescription = stringResource(R.string.settings_fullscreen_pos_label),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 

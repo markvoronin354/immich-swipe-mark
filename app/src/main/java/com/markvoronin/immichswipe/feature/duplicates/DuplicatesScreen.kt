@@ -349,6 +349,9 @@ fun DuplicatesScreen(
                                         val initialIdx = cluster.assets.indexOfFirst { it.id == clickedAsset.id }.coerceAtLeast(0)
                                         fullScreenPreviewData = FullScreenPreviewData(cluster = cluster, initialIndex = initialIdx)
                                     },
+                                    onOpenFullScreen = {
+                                        fullScreenPreviewData = FullScreenPreviewData(cluster = cluster, initialIndex = 0)
+                                    },
                                     onZoomStateUpdate = { zoomData ->
                                         activeZoomData = zoomData
                                     }
