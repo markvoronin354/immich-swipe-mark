@@ -17,5 +17,7 @@ data class ZoomData(
 
 data class FullScreenPreviewData(
     val cluster: DuplicateClusterUiModel,
-    val initialIndex: Int
+    val initialIndex: Int,
+    val clusters: List<DuplicateClusterUiModel> = emptyList(),
+    val clusterIndex: Int = 0
 )

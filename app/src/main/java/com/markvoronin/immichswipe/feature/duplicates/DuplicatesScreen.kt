@@ -346,11 +346,23 @@ fun DuplicatesScreen(
                                     modifier = if (index == 0) Modifier.tutorialTarget("dup_photos", tutorialController) else Modifier,
                                     onDecisionToggle = { assetId -> viewModel.toggleDecision(assetId) },
                                     onAssetLongPress = { clickedAsset ->
+                                        val clusterIdx = uiState.clusters.indexOfFirst { it.clusterId == cluster.clusterId }.coerceAtLeast(0)
                                         val initialIdx = cluster.assets.indexOfFirst { it.id == clickedAsset.id }.coerceAtLeast(0)
-                                        fullScreenPreviewData = FullScreenPreviewData(cluster = cluster, initialIndex = initialIdx)
+                                        fullScreenPreviewData = FullScreenPreviewData(
+                                            cluster = cluster,
+                                            initialIndex = initialIdx,
+                                            clusters = uiState.clusters,
+                                            clusterIndex = clusterIdx
+                                        )
                                     },
                                     onOpenFullScreen = {
-                                        fullScreenPreviewData = FullScreenPreviewData(cluster = cluster, initialIndex = 0)
+                                        val clusterIdx = uiState.clusters.indexOfFirst { it.clusterId == cluster.clusterId }.coerceAtLeast(0)
+                                        fullScreenPreviewData = FullScreenPreviewData(
+                                            cluster = cluster,
+                                            initialIndex = 0,
+                                            clusters = uiState.clusters,
+                                            clusterIndex = clusterIdx
+                                        )
                                     },
                                     onZoomStateUpdate = { zoomData ->
                                         activeZoomData = zoomData

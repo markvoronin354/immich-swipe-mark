@@ -5,9 +5,11 @@ import com.markvoronin.immichswipe.R
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -36,6 +38,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.NavigateBefore
+import androidx.compose.material.icons.automirrored.filled.NavigateNext
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.CalendarToday
@@ -50,7 +54,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SdStorage
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -101,6 +104,7 @@ import com.markvoronin.immichswipe.feature.settings.components.horizontalFadingE
 import com.markvoronin.immichswipe.feature.swipe.components.ZoomableBox
 import kotlin.math.abs
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FullScreenPreviewModal(
     previewData: FullScreenPreviewData?,
@@ -114,7 +118,15 @@ fun FullScreenPreviewModal(
 ) {
     if (previewData == null) return
 
-    val assets = previewData.cluster.assets
+    val clusters = remember(previewData) {
+        previewData.clusters.ifEmpty { listOf(previewData.cluster) }
+    }
+    var currentClusterIdx by remember(previewData) {
+        mutableIntStateOf(previewData.clusterIndex.coerceIn(0, clusters.size - 1))
+    }
+
+    val currentCluster = clusters.getOrNull(currentClusterIdx) ?: previewData.cluster
+    val assets = currentCluster.assets
     if (assets.isEmpty()) return
 
     val context = LocalContext.current
@@ -124,9 +136,15 @@ fun FullScreenPreviewModal(
     val currentOnDecisionToggle by rememberUpdatedState(onDecisionToggle)
     val currentOnFavoriteToggle by rememberUpdatedState(onFavoriteToggle)
 
-    val initialIndex = remember(previewData) { previewData.initialIndex.coerceIn(0, assets.size - 1) }
-    var selectedIndex by remember(previewData) { mutableIntStateOf(initialIndex) }
-    val carouselState = remember(previewData) {
+    val initialIndex = remember(currentCluster.clusterId, previewData) {
+        if (currentCluster.clusterId == previewData.cluster.clusterId) {
+            previewData.initialIndex.coerceIn(0, assets.size - 1)
+        } else {
+            0
+        }
+    }
+    var selectedIndex by remember(currentCluster.clusterId) { mutableIntStateOf(initialIndex) }
+    val carouselState = remember(currentCluster.clusterId) {
         LazyListState(firstVisibleItemIndex = initialIndex)
     }
     val isUserDragging by carouselState.interactionSource.collectIsDraggedAsState()
@@ -414,22 +432,52 @@ fun FullScreenPreviewModal(
 
                                 Spacer(Modifier.height(20.dp))
 
-                                Button(
-                                    onClick = {
-                                        ImmichLauncher.openAssetInImmich(context, baseUrlClean, currentAsset.id)
-                                    },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp)
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .combinedClickable(
+                                            onClick = {
+                                                ImmichLauncher.openAssetInImmich(context, baseUrlClean, currentAsset.id)
+                                            },
+                                            onLongClick = if (baseUrlClean.isNotBlank()) {
+                                                {
+                                                    ImmichLauncher.openInWeb(context, baseUrlClean, currentAsset.id)
+                                                }
+                                            } else null
+                                        )
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(Modifier.width(8.dp))
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 12.dp),
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            text = stringResource(R.string.settings_card_immich),
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.labelLarge
+                                        )
+                                    }
+                                }
+
+                                if (baseUrlClean.isNotBlank()) {
+                                    Spacer(Modifier.height(6.dp))
                                     Text(
-                                        text = stringResource(R.string.settings_card_immich),
-                                        fontWeight = FontWeight.Bold
+                                        text = stringResource(R.string.settings_immich_long_press_web),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
                                     )
                                 }
                             }
@@ -587,7 +635,7 @@ fun FullScreenPreviewModal(
                         .fillMaxWidth()
                         .background(Color.Black.copy(alpha = 0.6f))
                         .navigationBarsPadding()
-                        .padding(vertical = 8.dp),
+                        .padding(top = 8.dp, bottom = 12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     val badgeColor = when (currentDecision) {
@@ -749,24 +797,81 @@ fun FullScreenPreviewModal(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.5f),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Swipe down to dismiss",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                            color = Color.White.copy(alpha = 0.5f)
-                        )
+                        val hasPreviousGroup = currentClusterIdx > 0
+                        IconButton(
+                            onClick = { if (hasPreviousGroup) currentClusterIdx-- },
+                            enabled = hasPreviousGroup,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(
+                                    if (hasPreviousGroup) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f),
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.NavigateBefore,
+                                contentDescription = "Previous Group",
+                                tint = if (hasPreviousGroup) Color.White else Color.White.copy(alpha = 0.2f),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = if (clusters.size > 1) {
+                                    "Group ${currentClusterIdx + 1} of ${clusters.size}"
+                                } else {
+                                    "${selectedIndex + 1} / ${assets.size}"
+                                },
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = Color.White.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    text = "Swipe down to dismiss",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    color = Color.White.copy(alpha = 0.5f)
+                                )
+                            }
+                        }
+
+                        val hasNextGroup = currentClusterIdx < clusters.size - 1
+                        IconButton(
+                            onClick = { if (hasNextGroup) currentClusterIdx++ },
+                            enabled = hasNextGroup,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(
+                                    if (hasNextGroup) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f),
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.NavigateNext,
+                                contentDescription = "Next Group",
+                                tint = if (hasNextGroup) Color.White else Color.White.copy(alpha = 0.2f),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 }
             }
