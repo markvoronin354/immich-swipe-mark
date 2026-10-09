@@ -1,11 +1,15 @@
 package com.markvoronin.immichswipe.feature.duplicates.components
 
+import com.markvoronin.immichswipe.R
+
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
@@ -33,16 +37,25 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SdStorage
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -60,6 +73,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -77,6 +92,7 @@ import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.markvoronin.immichswipe.core.ImmichLauncher
 import com.markvoronin.immichswipe.domain.model.Asset
@@ -228,6 +244,7 @@ fun FullScreenPreviewModal(
                 val currentIsFav = isFavorite(currentAsset)
 
                 var isFileNameExpanded by remember(currentAsset.id) { mutableStateOf(false) }
+                var showMetadataDialog by remember { mutableStateOf(false) }
 
                 Row(
                     modifier = Modifier
@@ -289,15 +306,15 @@ fun FullScreenPreviewModal(
 
                         IconButton(
                             onClick = {
-                                ImmichLauncher.openAssetInImmich(context, baseUrlClean, currentAsset.id)
+                                showMetadataDialog = true
                             },
                             modifier = Modifier
                                 .padding(end = 8.dp)
                                 .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                                contentDescription = "Open in Immich",
+                                imageVector = Icons.Outlined.Info,
+                                contentDescription = "Asset Info",
                                 tint = Color.White
                             )
                         }
@@ -311,6 +328,111 @@ fun FullScreenPreviewModal(
                                 contentDescription = "Close",
                                 tint = Color.White
                             )
+                        }
+                    }
+                }
+
+                if (showMetadataDialog) {
+                    Dialog(onDismissRequest = { showMetadataDialog = false }) {
+                        Surface(
+                            shape = RoundedCornerShape(24.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 6.dp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(20.dp)
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Info,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            text = stringResource(R.string.swipe_metadata_title),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    IconButton(onClick = { showMetadataDialog = false }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = stringResource(R.string.common_close)
+                                        )
+                                    }
+                                }
+
+                                Spacer(Modifier.height(12.dp))
+
+                                val originalName = currentAsset.originalFileName ?: stringResource(R.string.diag_unknown)
+                                val formatLabel = if (currentAsset.fileExtension != null) {
+                                    "${currentAsset.type} (.${currentAsset.fileExtension.lowercase()})"
+                                } else currentAsset.type
+                                val sizeLabel = currentAsset.exifInfo?.fileSizeInBytes?.let { formatSizeStr(it) } ?: "Unknown"
+                                val resolutionLabel = currentAsset.exifInfo?.let {
+                                    "${it.imageWidth ?: "?"} × ${it.imageHeight ?: "?"}"
+                                } ?: "Unknown"
+                                val dateLabel = currentAsset.effectiveDate.substringBefore("T")
+
+                                MetadataRow(
+                                    icon = Icons.Default.Description,
+                                    label = stringResource(R.string.swipe_metadata_file),
+                                    value = originalName
+                                )
+                                MetadataRow(
+                                    icon = Icons.Default.CalendarToday,
+                                    label = stringResource(R.string.swipe_metadata_date),
+                                    value = dateLabel
+                                )
+                                MetadataRow(
+                                    icon = Icons.Default.Info,
+                                    label = stringResource(R.string.swipe_metadata_format),
+                                    value = formatLabel
+                                )
+                                MetadataRow(
+                                    icon = Icons.Default.SdStorage,
+                                    label = stringResource(R.string.swipe_metadata_size),
+                                    value = sizeLabel
+                                )
+                                MetadataRow(
+                                    icon = Icons.Default.AspectRatio,
+                                    label = stringResource(R.string.swipe_metadata_resolution),
+                                    value = resolutionLabel
+                                )
+
+                                Spacer(Modifier.height(20.dp))
+
+                                Button(
+                                    onClick = {
+                                        ImmichLauncher.openAssetInImmich(context, baseUrlClean, currentAsset.id)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text = stringResource(R.string.settings_card_immich),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -405,6 +527,7 @@ fun FullScreenPreviewModal(
                                 ZoomableBox(
                                     modifier = Modifier.fillMaxSize(),
                                     resetOnRelease = false,
+                                    enableDoubleTapZoom = false,
                                     onIsZoomedChanged = { zoomed ->
                                         isZoomedIn = zoomed
                                     },
@@ -420,6 +543,7 @@ fun FullScreenPreviewModal(
                         ZoomableBox(
                             modifier = swipeModifier,
                             resetOnRelease = false,
+                            enableDoubleTapZoom = false,
                             onIsZoomedChanged = { zoomed ->
                                 isZoomedIn = zoomed
                             },
@@ -434,11 +558,25 @@ fun FullScreenPreviewModal(
                                     .crossfade(false)
                                     .build()
                             }
-                            AsyncImage(
+                            SubcomposeAsyncImage(
                                 model = imageRequest,
                                 contentDescription = null,
                                 contentScale = ContentScale.Fit,
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.fillMaxSize(),
+                                loading = {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(Color.Black.copy(alpha = 0.2f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(
+                                            color = Color.White,
+                                            strokeWidth = 3.dp,
+                                            modifier = Modifier.size(40.dp)
+                                        )
+                                    }
+                                }
                             )
                         }
                     }
@@ -633,5 +771,43 @@ fun FullScreenPreviewModal(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MetadataRow(
+    icon: ImageVector,
+    label: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+            modifier = Modifier
+                .padding(top = 2.dp)
+                .size(18.dp)
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline,
+            modifier = Modifier
+                .padding(top = 2.dp)
+                .width(80.dp)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f)
+        )
     }
 }

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -229,6 +230,21 @@ fun DuplicateVideoPlayer(
                             alpha = if (isVideoReady) 1f else 0f
                         }
                 )
+
+                if (!isVideoReady) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            strokeWidth = 3.dp,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                }
             }
         }
 

@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.toSize
 import kotlinx.coroutines.launch
 
-
 @Composable
 fun ZoomableBox(
     modifier: Modifier = Modifier,
@@ -41,6 +40,7 @@ fun ZoomableBox(
     enabled: Boolean = true,
     aspectRatio: Float? = null,
     isFillMode: Boolean = false,
+    enableDoubleTapZoom: Boolean = true,
     onTap: ((Offset, IntSize) -> Unit)? = null,
     onDoubleTap: (() -> Unit)? = null,
     onPress: (suspend PressGestureScope.(Offset, IntSize) -> Unit)? = null,
@@ -65,8 +65,26 @@ fun ZoomableBox(
     val isZoomedIn = currentScale > 1.05f
     val currentIsZoomedIn by rememberUpdatedState(isZoomedIn)
 
+    val currentOnTap by rememberUpdatedState(onTap)
+    val currentOnDoubleTap by rememberUpdatedState(onDoubleTap)
+    val currentOnPress by rememberUpdatedState(onPress)
+
     LaunchedEffect(isZoomedIn) {
         onIsZoomedChanged?.invoke(isZoomedIn)
+    }
+
+    fun resetZoom() {
+        if (resetOnRelease) {
+            scope.launch {
+                launch { animatedScale.animateTo(if (isFillMode) fillScale else 1f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                launch { animatedOffset.animateTo(Offset.Zero, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+            }
+        } else {
+            scope.launch {
+                launch { animate(scale, 1f, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> scale = v } }
+                launch { animate(typeConverter = Offset.VectorConverter, initialValue = offset, targetValue = Offset.Zero, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> offset = v } }
+            }
+        }
     }
 
     LaunchedEffect(isFillMode, fillScale) {
@@ -79,10 +97,6 @@ fun ZoomableBox(
             offset = Offset.Zero
         }
     }
-
-    val currentOnTap by rememberUpdatedState(onTap)
-    val currentOnDoubleTap by rememberUpdatedState(onDoubleTap)
-    val currentOnPress by rememberUpdatedState(onPress)
 
     Box(
         modifier = modifier
@@ -105,7 +119,7 @@ fun ZoomableBox(
                         val zoomChange = event.calculateZoom()
                         val panChange = event.calculatePan()
                         val centroid = event.calculateCentroid(useCurrent = false)
-                        val pressedCount = event.changes.filter { it.pressed }.size
+                        val pressedCount = event.changes.count { it.pressed }
 
                         if (pressedCount >= 2) {
                             // Zooming with 2 fingers
@@ -113,9 +127,8 @@ fun ZoomableBox(
                                 val oldScale = if (resetOnRelease) animatedScale.value else scale
                                 val newScale = (oldScale * zoomChange).coerceIn(0.7f, 5f)
                                 val effectiveZoomChange = if (oldScale > 0.0001f) newScale / oldScale else 1f
-                                
+
                                 val oldOffset = if (resetOnRelease) animatedOffset.value else offset
-                                // Correct formula for zooming around centroid with default Center origin using actual scale ratio
                                 val newOffset = (centroid - size.toSize().center) * (1f - effectiveZoomChange) + (oldOffset * effectiveZoomChange) + panChange
 
                                 if (resetOnRelease) {
@@ -129,7 +142,7 @@ fun ZoomableBox(
                                 }
                                 event.changes.forEach { it.consume() }
                             }
-                        } else if (pressedCount == 1 && (if(resetOnRelease) animatedScale.value else scale) > 1.05f) {
+                        } else if (pressedCount == 1 && (if (resetOnRelease) animatedScale.value else scale) > 1.05f) {
                             // Panning with 1 finger ONLY if zoomed in
                             if (panChange != Offset.Zero) {
                                 if (resetOnRelease) {
@@ -144,50 +157,34 @@ fun ZoomableBox(
                         }
                     } while (event.changes.any { it.pressed })
 
-                    if (resetOnRelease) {
-                        scope.launch {
-                            launch { animatedScale.animateTo(if (isFillMode) fillScale else 1f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
-                            launch { animatedOffset.animateTo(Offset.Zero, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
-                        }
-                    } else if (scale < 1.01f) {
-                        // Snap back to default if zoomed out in fullscreen
-                        scope.launch {
-                            launch { animate(scale, 1f, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> scale = v } }
-                            launch { animate(typeConverter = Offset.VectorConverter, initialValue = offset, targetValue = Offset.Zero, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> offset = v } }
-                        }
+                    if (resetOnRelease || scale < 1.01f) {
+                        resetZoom()
                     }
                 }
             }
-            .pointerInput(Unit) {
+            .pointerInput(enableDoubleTapZoom, onDoubleTap != null) {
+                val shouldHandleDoubleTap = enableDoubleTapZoom || onDoubleTap != null
                 detectTapGestures(
-                    onTap = { offset -> currentOnTap?.invoke(offset, boxSize) },
-                    onDoubleTap = { tapOffset ->
-                        if (currentIsZoomedIn) {
-                            if (resetOnRelease) {
+                    onTap = { tapOffset -> currentOnTap?.invoke(tapOffset, boxSize) },
+                    onDoubleTap = if (shouldHandleDoubleTap) {
+                        { tapOffset ->
+                            if (currentIsZoomedIn) {
+                                resetZoom()
+                            } else if (currentOnDoubleTap != null) {
+                                currentOnDoubleTap?.invoke()
+                            } else if (!resetOnRelease) {
+                                val targetScale = 3f
+                                val zoomChange = targetScale / scale
+                                val targetOffset = (tapOffset - boxSize.toSize().center) * (1f - zoomChange) + offset * zoomChange
                                 scope.launch {
-                                    launch { animatedScale.animateTo(if (isFillMode) fillScale else 1f, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
-                                    launch { animatedOffset.animateTo(Offset.Zero, spring(dampingRatio = Spring.DampingRatioLowBouncy)) }
+                                    launch { animate(scale, targetScale, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> scale = v } }
+                                    launch { animate(typeConverter = Offset.VectorConverter, initialValue = offset, targetValue = targetOffset, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> offset = v } }
                                 }
-                            } else {
-                                scope.launch {
-                                    launch { animate(scale, 1f, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> scale = v } }
-                                    launch { animate(typeConverter = Offset.VectorConverter, initialValue = offset, targetValue = Offset.Zero, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> offset = v } }
-                                }
-                            }
-                        } else if (currentOnDoubleTap != null) {
-                            currentOnDoubleTap?.invoke()
-                        } else if (!resetOnRelease) {
-                            val targetScale = 3f
-                            val zoomChange = targetScale / scale
-                            val targetOffset = (tapOffset - boxSize.toSize().center) * (1f - zoomChange) + offset * zoomChange
-                            scope.launch {
-                                launch { animate(scale, targetScale, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> scale = v } }
-                                launch { animate(typeConverter = Offset.VectorConverter, initialValue = offset, targetValue = targetOffset, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) { v, _ -> offset = v } }
                             }
                         }
-                    },
-                    onPress = { offset ->
-                        currentOnPress?.invoke(this, offset, boxSize)
+                    } else null,
+                    onPress = { tapOffset ->
+                        currentOnPress?.invoke(this, tapOffset, boxSize)
                     }
                 )
             }
