@@ -79,13 +79,14 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import coil.size.Precision
 import com.markvoronin.immichswipe.R
 import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.IconPosition
 import com.markvoronin.immichswipe.domain.model.Asset
+import com.markvoronin.immichswipe.feature.swipe.components.AssetErrorView
 import com.markvoronin.immichswipe.feature.swipe.components.IndicatorBadge
 import com.markvoronin.immichswipe.feature.swipe.components.SharedVideoPlayer
 import com.markvoronin.immichswipe.feature.swipe.components.ZoomableBox
@@ -350,11 +351,14 @@ fun FullscreenViewer(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    AsyncImage(
+                    SubcomposeAsyncImage(
                         model = nextPhotoRequest,
                         contentDescription = null,
                         contentScale = ContentScale.Fit,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        error = {
+                            AssetErrorView()
+                        }
                     )
                 }
             }
@@ -613,14 +617,17 @@ fun FullscreenViewer(
                             .build()
                     }
 
-                    AsyncImage(
+                    SubcomposeAsyncImage(
                         model = photoRequest,
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxSize()
                             .graphicsLayer { rotationZ = animatedRotation }
                             .rotateLayout(rotation),
-                        contentScale = ContentScale.Fit
+                        contentScale = ContentScale.Fit,
+                        error = {
+                            AssetErrorView()
+                        }
                     )
                 }
             }

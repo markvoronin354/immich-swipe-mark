@@ -171,7 +171,10 @@
     <string name="swipe_sync_changes">Sync changes</string>
     <string name="swipe_congratulations">Congratulations! Album sorted.</string>
     <string name="swipe_check_before_delete">Check before deletion</string>
-  <string name="swipe_revert_delete">Restore asset</string>
+    <string name="swipe_revert_delete">Restore asset</string>
+    <string name="swipe_asset_error">Error loading asset</string>
+    <string name="swipe_asset_error_sub">Incompatible format or server error</string>
+    <string name="swipe_video_error">Error playing video</string>
 
     <!-- Size units -->
     <string name="size_unit_gb">%1$.2f GB</string>

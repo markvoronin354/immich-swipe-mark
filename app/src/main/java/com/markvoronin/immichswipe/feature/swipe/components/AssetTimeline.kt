@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.BrokenImage
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -51,7 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.size.Precision
@@ -249,7 +250,7 @@ private fun AssetTimelineItem(
                     .diskCachePolicy(CachePolicy.ENABLED)
                     .build()
             }
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = thumbnailRequest,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
@@ -257,7 +258,20 @@ private fun AssetTimelineItem(
                     .fillMaxSize()
                     .graphicsLayer { rotationZ = animatedRotation }
                     .rotateLayout(rotation)
-                    .alpha(itemAlpha)
+                    .alpha(itemAlpha),
+                error = {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.BrokenImage,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
             )
         }
 

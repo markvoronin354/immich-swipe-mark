@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.VideocamOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,17 +54,19 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import coil.size.Precision
 import com.markvoronin.immichswipe.R
@@ -101,6 +104,8 @@ fun SharedVideoPlayer(
     var isScrubbing by remember(assetId) { mutableStateOf(value = false) }
     var scrubValue by remember(assetId) { mutableLongStateOf(0L) }
 
+    var hasPlaybackError by remember(player, assetId) { mutableStateOf(false) }
+
         val togglePlayPause = {
             if (player.playWhenReady && (player.playbackState != Player.STATE_ENDED)) {
                 player.pause()
@@ -121,6 +126,7 @@ fun SharedVideoPlayer(
                 }
                 override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                     currentMediaId = mediaItem?.mediaId
+                    hasPlaybackError = false
                 }
                 override fun onTimelineChanged(timeline: Timeline, reason: Int) {
                     currentMediaId = player.currentMediaItem?.mediaId
@@ -130,7 +136,12 @@ fun SharedVideoPlayer(
                     val newMediaId = player.currentMediaItem?.mediaId
                     if (currentMediaId != newMediaId) {
                         currentMediaId = newMediaId
+                        hasPlaybackError = false
                     }
+                }
+                override fun onPlayerError(error: PlaybackException) {
+                    AppLogger.e("VideoPlayer", "Playback error for asset=$assetId: ${error.message}", error)
+                    hasPlaybackError = true
                 }
             }
             player.addListener(listener)
@@ -175,7 +186,7 @@ fun SharedVideoPlayer(
                                 .precision(Precision.INEXACT)
                                 .build()
                         }
-                        AsyncImage(
+                        SubcomposeAsyncImage(
                             model = thumbnailRequest,
                             contentDescription = null,
                             contentScale = if (isFullscreen) {
@@ -183,7 +194,20 @@ fun SharedVideoPlayer(
                             } else {
                                 if (cardDisplayMode == CardDisplayMode.FILL) ContentScale.Crop else ContentScale.Fit
                             },
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
+                            error = {
+                                AssetErrorView(
+                                    title = stringResource(R.string.swipe_video_error),
+                                    icon = Icons.Outlined.VideocamOff
+                                )
+                            }
+                        )
+                    }
+
+                    if (hasPlaybackError) {
+                        AssetErrorView(
+                            title = stringResource(R.string.swipe_video_error),
+                            icon = Icons.Outlined.VideocamOff
                         )
                     }
 

@@ -171,7 +171,10 @@
     <string name="swipe_sync_changes">Sincronizar cambios</string>
     <string name="swipe_congratulations">¡Enhorabuena! Álbum ordenado.</string>
     <string name="swipe_check_before_delete">Revisar antes de eliminar</string>
-  <string name="swipe_revert_delete">Restaurar elemento</string>
+    <string name="swipe_revert_delete">Restaurar elemento</string>
+    <string name="swipe_asset_error">Error al cargar el elemento</string>
+    <string name="swipe_asset_error_sub">Formato incompatible o error del servidor</string>
+    <string name="swipe_video_error">Error al reproducir el video</string>
 
     <!-- Unidades de tamaño -->
     <string name="size_unit_gb">%1$.2f GB</string>

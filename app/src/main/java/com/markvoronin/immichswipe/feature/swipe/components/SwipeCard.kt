@@ -85,8 +85,9 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.compose.material.icons.outlined.VideocamOff
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import coil.size.Precision
 import com.markvoronin.immichswipe.R
@@ -528,14 +529,20 @@ fun SwipeCard(
 
                     // Render base thumbnail until video is ready to prevent flicker when transitioning cards or loading
                     if (!isVideoReady) {
-                        AsyncImage(
+                        SubcomposeAsyncImage(
                             model = placeholderRequest,
                             contentDescription = null,
                             contentScale = if (config.cardDisplayMode == CardDisplayMode.FILL) ContentScale.Crop else ContentScale.Fit,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer { rotationZ = animatedRotation }
-                                .rotateLayout(config.rotationAngle)
+                                .rotateLayout(config.rotationAngle),
+                            error = {
+                                AssetErrorView(
+                                    title = stringResource(R.string.swipe_video_error),
+                                    icon = Icons.Outlined.VideocamOff
+                                )
+                            }
                         )
                     }
 
@@ -771,14 +778,17 @@ fun SwipeCard(
                             }
                         }
                     ) {
-                        AsyncImage(
+                        SubcomposeAsyncImage(
                             model = photoRequest,
                             contentDescription = null,
                             contentScale = ContentScale.Fit,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer { rotationZ = animatedRotation }
-                                .rotateLayout(config.rotationAngle)
+                                .rotateLayout(config.rotationAngle),
+                            error = {
+                                AssetErrorView()
+                            }
                         )
                     }
                 }
