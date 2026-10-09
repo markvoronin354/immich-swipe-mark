@@ -180,14 +180,14 @@ fun FullScreenPreviewModal(
                 }?.index
             } else null
         }.collect { closestIndex ->
-            if (closestIndex != null && closestIndex != selectedIndex) {
+            if (closestIndex != null && closestIndex in 0 until assets.size && closestIndex != selectedIndex) {
                 selectedIndex = closestIndex
             }
         }
     }
 
     LaunchedEffect(selectedIndex, carouselWidthPx) {
-        if (carouselWidthPx > 0 && !carouselState.isScrollInProgress) {
+        if (carouselWidthPx > 0 && !carouselState.isScrollInProgress && selectedIndex in 0 until assets.size) {
             carouselState.scrollToItem(selectedIndex, 0)
         }
     }
@@ -207,11 +207,11 @@ fun FullScreenPreviewModal(
                         val itemCenter = contentStart + item.offset + item.size / 2
                         abs(itemCenter - viewportCenter)
                     }?.index
-                    if (closest != null) {
+                    if (closest != null && closest in 0 until assets.size) {
                         selectedIndex = closest
+                        carouselState.animateScrollToItem(closest, 0)
                     }
                 }
-                carouselState.animateScrollToItem(selectedIndex, 0)
             }
         }
     }
@@ -485,7 +485,12 @@ fun FullScreenPreviewModal(
                     }
                 }
 
-                var isZoomedIn by remember(currentAsset.id) { mutableStateOf(false) }
+                var isZoomedIn by remember { mutableStateOf(false) }
+
+                LaunchedEffect(currentAsset.id) {
+                    dismissOffsetY = 0f
+                    isDraggingDismiss = false
+                }
 
                 BoxWithConstraints(
                     modifier = Modifier
@@ -569,18 +574,22 @@ fun FullScreenPreviewModal(
                             modifier = swipeModifier,
                             contentScale = ContentScale.Fit,
                             onTap = {
-                                currentOnDecisionToggle(currentAsset.id)
+                                if (!isZoomedIn) {
+                                    currentOnDecisionToggle(currentAsset.id)
+                                }
                             },
                             videoSurfaceWrapper = { videoSurface ->
                                 ZoomableBox(
                                     modifier = Modifier.fillMaxSize(),
                                     resetOnRelease = false,
-                                    enableDoubleTapZoom = false,
+                                    enableDoubleTapZoom = isZoomedIn,
                                     onIsZoomedChanged = { zoomed ->
                                         isZoomedIn = zoomed
                                     },
                                     onTap = { _, _ ->
-                                        currentOnDecisionToggle(currentAsset.id)
+                                        if (!isZoomedIn) {
+                                            currentOnDecisionToggle(currentAsset.id)
+                                        }
                                     }
                                 ) {
                                     videoSurface()
@@ -591,12 +600,14 @@ fun FullScreenPreviewModal(
                         ZoomableBox(
                             modifier = swipeModifier,
                             resetOnRelease = false,
-                            enableDoubleTapZoom = false,
+                            enableDoubleTapZoom = isZoomedIn,
                             onIsZoomedChanged = { zoomed ->
                                 isZoomedIn = zoomed
                             },
                             onTap = { _, _ ->
-                                currentOnDecisionToggle(currentAsset.id)
+                                if (!isZoomedIn) {
+                                    currentOnDecisionToggle(currentAsset.id)
+                                }
                             }
                         ) {
                             val imageRequest = remember(currentAsset.id, baseUrlClean, apiKey) {

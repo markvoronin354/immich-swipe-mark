@@ -122,7 +122,6 @@ fun ZoomableBox(
                         val pressedCount = event.changes.count { it.pressed }
 
                         if (pressedCount >= 2) {
-                            // Zooming with 2 fingers
                             if (zoomChange != 1f || panChange != Offset.Zero) {
                                 val oldScale = if (resetOnRelease) animatedScale.value else scale
                                 val newScale = (oldScale * zoomChange).coerceIn(0.7f, 5f)
@@ -143,7 +142,6 @@ fun ZoomableBox(
                                 event.changes.forEach { it.consume() }
                             }
                         } else if (pressedCount == 1 && (if (resetOnRelease) animatedScale.value else scale) > 1.05f) {
-                            // Panning with 1 finger ONLY if zoomed in
                             if (panChange != Offset.Zero) {
                                 if (resetOnRelease) {
                                     scope.launch {
