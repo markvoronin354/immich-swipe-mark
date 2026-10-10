@@ -2,6 +2,7 @@ package com.markvoronin.immichswipe.feature.swipe
 
 import com.markvoronin.immichswipe.core.CardDisplayMode
 import com.markvoronin.immichswipe.core.ConnectionStatus
+import com.markvoronin.immichswipe.core.DoubleTapAction
 import com.markvoronin.immichswipe.core.IconPosition
 import com.markvoronin.immichswipe.core.ImmichOpenMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
@@ -71,6 +72,8 @@ data class SwipeUiState(
     val syncLocalDeletion: Boolean = false,
     val trashLocalDeletion: Boolean = true,
     val tapToSwipeEnabled: Boolean = false,
+    val doubleTapEnabled: Boolean = false,
+    val doubleTapAction: DoubleTapAction = DoubleTapAction.FULLSCREEN,
     val localDeletePendingIntent: android.app.PendingIntent? = null,
     val userQuotaBytes: Long? = null,
     val albumId: String = "",
@@ -78,7 +81,7 @@ data class SwipeUiState(
     val isBulkKeepMode: Boolean = false,
     val bulkSelection: Set<String> = emptySet(),
     val bulkLastIndex: Int? = null,
-    val hasCompletedSwipeTutorial: Boolean = true
+    val hasCompletedSwipeTutorial: Boolean = true,
 ) {
     val currentAsset: Asset? get() = assets.getOrNull(bulkLastIndex ?: currentIndex)
 

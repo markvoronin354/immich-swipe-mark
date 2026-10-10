@@ -11,6 +11,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
+import com.markvoronin.immichswipe.core.DoubleTapAction
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -617,7 +618,14 @@ fun SwipeScreen(
                 viewModel.onSwipe(it)
             },
             onUndo = { viewModel.undo() },
-            onDoubleTap = { viewModel.toggleFavorite() },
+            onDoubleTap = {
+                if (uiState.doubleTapEnabled) {
+                    when (uiState.doubleTapAction) {
+                        DoubleTapAction.FULLSCREEN -> viewModel.toggleFullscreen(false)
+                        DoubleTapAction.FAVORITE -> viewModel.toggleFavorite()
+                    }
+                }
+            },
             onClose = { viewModel.toggleFullscreen(false) },
             tapToSwipeEnabled = uiState.tapToSwipeEnabled,
             providedPlayer = sharedPlayer,

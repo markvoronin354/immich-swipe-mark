@@ -145,6 +145,16 @@ class SwipeViewModel @Inject constructor(
                 _uiState.update { it.copy(hasCompletedSwipeTutorial = completed) }
             }
         }
+        viewModelScope.launch {
+            sessionRepository.doubleTapEnabled.collect { enabled ->
+                _uiState.update { it.copy(doubleTapEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            sessionRepository.doubleTapAction.collect { action ->
+                _uiState.update { it.copy(doubleTapAction = action) }
+            }
+        }
     }
 
     fun completeSwipeTutorial() {

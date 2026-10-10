@@ -213,6 +213,16 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update { it.copy(tapToSwipeEnabled = enabled) }
             }
         }
+        viewModelScope.launch {
+            sessionRepository.doubleTapEnabled.collect { enabled ->
+                _uiState.update { it.copy(doubleTapEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            sessionRepository.doubleTapAction.collect { action ->
+                _uiState.update { it.copy(doubleTapAction = action) }
+            }
+        }
     }
 
     fun setPlaybackBehavior(behavior: PlaybackBehavior) {
@@ -353,6 +363,18 @@ class SettingsViewModel @Inject constructor(
     fun setTapToSwipeEnabled(enabled: Boolean) {
         viewModelScope.launch {
             sessionRepository.saveTapToSwipeEnabled(enabled)
+        }
+    }
+
+    fun setDoubleTapEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            sessionRepository.saveDoubleTapEnabled(enabled)
+        }
+    }
+
+    fun setDoubleTapAction(action: com.markvoronin.immichswipe.core.DoubleTapAction) {
+        viewModelScope.launch {
+            sessionRepository.saveDoubleTapAction(action)
         }
     }
 

@@ -50,6 +50,8 @@ class SessionDataStore(private val context: Context) {
         private val KEY_SYNC_LOCAL_DELETION = booleanPreferencesKey("sync_local_deletion")
         private val KEY_TRASH_LOCAL_DELETION = booleanPreferencesKey("trash_local_deletion")
         private val KEY_TAP_TO_SWIPE = booleanPreferencesKey("tap_to_swipe")
+        private val KEY_DOUBLE_TAP_ENABLED = booleanPreferencesKey("double_tap_enabled")
+        private val KEY_DOUBLE_TAP_ACTION = stringPreferencesKey("double_tap_action")
         private val KEY_INITIAL_INSTALL_PROCESSED = booleanPreferencesKey("initial_install_processed")
         private val KEY_HAS_COMPLETED_SWIPE_TUTORIAL = booleanPreferencesKey("has_completed_swipe_tutorial")
         private val KEY_HAS_COMPLETED_DUPLICATES_TUTORIAL = booleanPreferencesKey("has_completed_duplicates_tutorial")
@@ -224,6 +226,12 @@ class SessionDataStore(private val context: Context) {
 
     fun isTapToSwipeEnabled(): Flow<Boolean> = context.dataStore.data.map { it[KEY_TAP_TO_SWIPE] ?: false }
     suspend fun saveTapToSwipeEnabled(enabled: Boolean) { context.dataStore.edit { it[KEY_TAP_TO_SWIPE] = enabled } }
+
+    fun isDoubleTapEnabled(): Flow<Boolean> = context.dataStore.data.map { it[KEY_DOUBLE_TAP_ENABLED] ?: false }
+    suspend fun saveDoubleTapEnabled(enabled: Boolean) { context.dataStore.edit { it[KEY_DOUBLE_TAP_ENABLED] = enabled } }
+
+    fun getDoubleTapAction(): Flow<String?> = context.dataStore.data.map { it[KEY_DOUBLE_TAP_ACTION] }
+    suspend fun saveDoubleTapAction(action: String) { context.dataStore.edit { it[KEY_DOUBLE_TAP_ACTION] = action } }
 
     suspend fun initializeTutorialStateForInstallOrUpgrade() {
         context.dataStore.edit { prefs ->

@@ -100,6 +100,8 @@
     <string name="settings_interactions_label">Interactions</string>
     <string name="settings_interactions_desc">Sorting bar actions, auto-advance, and tap gestures</string>
     <string name="settings_interactions_dialog_title">Interactions</string>
+    <string name="settings_section_button_visibility">Button visibility</string>
+    <string name="settings_section_actions">Actions</string>
     <string name="settings_action_buttons_label">Swipe card action buttons</string>
     <string name="settings_action_buttons_desc">Customize visibility and position of overlay buttons</string>
     <string name="settings_action_buttons_dialog_title">Action Buttons</string>
@@ -117,6 +119,9 @@
     <string name="settings_tri_favorite">Favorite button</string>
     <string name="settings_auto_next_label">Auto-advance</string>
     <string name="settings_auto_next_desc">Move to the next photo and automatically mark as KEEP after marking as favorite</string>
+    <string name="settings_double_tap_label">Double tap</string>
+    <string name="settings_double_tap_fullscreen">Fullscreen</string>
+    <string name="settings_double_tap_favorite">Favorite</string>
     <string name="settings_section_account">Account</string>
     <string name="settings_pos_top_left">Top-Left</string>
     <string name="settings_pos_top_right">Top-Right</string>

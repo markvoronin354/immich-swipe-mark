@@ -1,5 +1,6 @@
 package com.markvoronin.immichswipe.feature.swipe.components
 
+import com.markvoronin.immichswipe.core.DoubleTapAction
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -141,7 +142,14 @@ fun SwipeCardDeck(
                         actions = SwipeCardActions(
                             onSwipe = { viewModel.onSwipe(it) },
                             onRotateAsset = { viewModel.rotateCurrentAsset() },
-                            onDoubleTap = { viewModel.toggleFavorite() },
+                            onDoubleTap = {
+                                if (uiState.doubleTapEnabled) {
+                                    when (uiState.doubleTapAction) {
+                                        DoubleTapAction.FULLSCREEN -> viewModel.toggleFullscreen(true)
+                                        DoubleTapAction.FAVORITE -> viewModel.toggleFavorite()
+                                    }
+                                }
+                            },
                             onOpenFullscreen = { viewModel.toggleFullscreen(true) },
                             onDownload = { viewModel.downloadAsset(it) },
                             onShare = { viewModel.shareAsset(it) },

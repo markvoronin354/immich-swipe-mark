@@ -2,6 +2,7 @@ package com.markvoronin.immichswipe.feature.settings
 
 import com.markvoronin.immichswipe.core.AppTheme
 import com.markvoronin.immichswipe.core.CardDisplayMode
+import com.markvoronin.immichswipe.core.DoubleTapAction
 import com.markvoronin.immichswipe.core.IconPosition
 import com.markvoronin.immichswipe.core.ImmichOpenMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
@@ -52,6 +53,8 @@ data class SettingsUiState(
     val syncLocalDeletion: Boolean = false,
     val trashLocalDeletion: Boolean = true,
     val tapToSwipeEnabled: Boolean = false,
+    val doubleTapEnabled: Boolean = false,
+    val doubleTapAction: DoubleTapAction = DoubleTapAction.FULLSCREEN,
     val showActionButtonsDialog: Boolean = false,
     val showInteractionsDialog: Boolean = false,
     val showClearCacheConfirmation: Boolean = false,
@@ -59,5 +62,5 @@ data class SettingsUiState(
     // Database actions
     val pendingDatabaseAction: DatabaseAction? = null,
     val pendingDatabaseScope: DatabaseScope? = null,
-    val databaseActionStatus: String? = null
+    val databaseActionStatus: String? = null,
 )

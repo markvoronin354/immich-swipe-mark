@@ -1,10 +1,10 @@
 package com.markvoronin.immichswipe.data.repository
 
 import android.content.Context
-import com.markvoronin.immichswipe.core.AppLogger
 import com.markvoronin.immichswipe.core.AppTheme
 import com.markvoronin.immichswipe.core.CardDisplayMode
 import com.markvoronin.immichswipe.core.IconPosition
+import com.markvoronin.immichswipe.core.DoubleTapAction
 import com.markvoronin.immichswipe.core.ImmichOpenMode
 import com.markvoronin.immichswipe.core.PlaybackBehavior
 import com.markvoronin.immichswipe.core.SessionConfig
@@ -13,7 +13,6 @@ import com.markvoronin.immichswipe.data.datastore.SessionDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -131,6 +130,11 @@ class SessionRepository @Inject constructor(
     val trashLocalDeletion: Flow<Boolean> = dataStore.isTrashLocalDeletion()
     val tapToSwipeEnabled: Flow<Boolean> = dataStore.isTapToSwipeEnabled()
     
+    val doubleTapEnabled: Flow<Boolean> = dataStore.isDoubleTapEnabled()
+    val doubleTapAction: Flow<DoubleTapAction> = dataStore.getDoubleTapAction().map {
+        it?.let { try { DoubleTapAction.valueOf(it) } catch(_: Exception) { DoubleTapAction.FULLSCREEN } } ?: DoubleTapAction.FULLSCREEN
+    }
+    
     val sortOrder: Flow<SortOrder> = dataStore.getSortOrder().map {
         it?.let { try { SortOrder.valueOf(it) } catch(_: Exception) { SortOrder.CHRONOLOGICAL_DESC } } ?: SortOrder.CHRONOLOGICAL_DESC
     }
@@ -218,20 +222,9 @@ class SessionRepository @Inject constructor(
     suspend fun saveBackupWarningShown(shown: Boolean) { dataStore.saveBackupWarningShown(shown) }
     suspend fun saveSyncLocalDeletion(sync: Boolean) { dataStore.saveSyncLocalDeletion(sync) }
     suspend fun saveTapToSwipeEnabled(enabled: Boolean) { dataStore.saveTapToSwipeEnabled(enabled) }
+    suspend fun saveDoubleTapEnabled(enabled: Boolean) { dataStore.saveDoubleTapEnabled(enabled) }
+    suspend fun saveDoubleTapAction(action: DoubleTapAction) { dataStore.saveDoubleTapAction(action.name) }
     suspend fun saveSortOrder(order: SortOrder) { dataStore.saveSortOrder(order.name) }
-
-
-    suspend fun cleanupLegacySession() {
-        val url = dataStore.getBaseUrl().first()
-        val key = dataStore.getApiKey().first()
-        val userId = dataStore.getUserId().first()
-
-        if ((url != null || key != null) && userId == null) {
-            dataStore.clearSession()
-            AppLogger.i("Auth","User ID was missing from the session config, probably due to to upgrading from room v2" +
-                    "A reconnection is required.")
-        }
-    }
 
 
     suspend fun clearSession() {

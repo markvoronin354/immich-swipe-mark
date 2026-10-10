@@ -101,6 +101,8 @@
     <string name="settings_interactions_label">Interactions</string>
     <string name="settings_interactions_desc">Actions de la barre de tri, défilement auto et gestes tactiles</string>
     <string name="settings_interactions_dialog_title">Interactions</string>
+    <string name="settings_section_button_visibility">Visibilité des boutons</string>
+    <string name="settings_section_actions">Actions</string>
     <string name="settings_action_buttons_label">Boutons d\'action à l\'écran</string>
     <string name="settings_action_buttons_desc">Personnaliser la visibilité et la position des boutons superposés</string>
     <string name="settings_action_buttons_dialog_title">Boutons d\'Action</string>
@@ -118,6 +120,9 @@
     <string name="settings_tri_favorite">Bouton Favori</string>
     <string name="settings_auto_next_label">Avancer automatiquement</string>
     <string name="settings_auto_next_desc">Passer à la photo suivante et marquer automatiquement comme KEEP après avoir marqué en favori</string>
+    <string name="settings_double_tap_label">Double appui</string>
+    <string name="settings_double_tap_fullscreen">Plein écran</string>
+    <string name="settings_double_tap_favorite">Favoris</string>
     <string name="settings_section_account">Compte</string>
     <string name="settings_pos_top_left">Haut-Gauche</string>
     <string name="settings_pos_top_right">Haut-Droite</string>

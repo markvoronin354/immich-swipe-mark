@@ -100,6 +100,8 @@
     <string name="settings_interactions_label">Interacciones</string>
     <string name="settings_interactions_desc">Acciones de la barra de clasificación, avance automático y gestos táctiles</string>
     <string name="settings_interactions_dialog_title">Interacciones</string>
+    <string name="settings_section_button_visibility">Visibilidad de botones</string>
+    <string name="settings_section_actions">Acciones</string>
     <string name="settings_action_buttons_label">Botones de acción en pantalla</string>
     <string name="settings_action_buttons_desc">Personalizar la visibilidad y posición de los botones superpuestos</string>
     <string name="settings_action_buttons_dialog_title">Botones de Acción</string>
@@ -117,6 +119,9 @@
     <string name="settings_tri_favorite">Botón Favorito</string>
     <string name="settings_auto_next_label">Avanzar automáticamente</string>
     <string name="settings_auto_next_desc">Pasar a la siguiente foto y marcar automáticamente como CONSERVAR después de marcar como favorito</string>
+    <string name="settings_double_tap_label">Doble toque</string>
+    <string name="settings_double_tap_fullscreen">Pantalla completa</string>
+    <string name="settings_double_tap_favorite">Favorita</string>
     <string name="settings_section_account">Cuenta</string>
     <string name="settings_pos_top_left">Arriba a la izquierda</string>
     <string name="settings_pos_top_right">Arriba a la derecha</string>

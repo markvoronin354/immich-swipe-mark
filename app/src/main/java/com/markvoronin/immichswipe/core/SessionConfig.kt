@@ -3,7 +3,7 @@ package com.markvoronin.immichswipe.core
 data class SessionConfig(
     val baseUrl: String,
     val apiKey: String,
-    val userId: String = ""
+    val userId: String = "",
 )
 
 
@@ -20,6 +20,11 @@ enum class IconPosition {
     BOTTOM_RIGHT
 }
 
+
+enum class DoubleTapAction {
+    FULLSCREEN,
+    FAVORITE
+}
 
 enum class CardDisplayMode {
     FILL,
