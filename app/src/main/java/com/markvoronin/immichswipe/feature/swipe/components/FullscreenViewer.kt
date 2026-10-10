@@ -132,7 +132,7 @@ fun FullscreenViewer(
     isFavorite: Boolean,
     onSwipe: (SwipeDecision) -> Unit,
     onUndo: () -> Unit,
-    onDoubleTap: () -> Unit,
+    onToggleFavorite: () -> Unit = {},
     onClose: () -> Unit,
     tapToSwipeEnabled: Boolean = false,
     providedPlayer: ExoPlayer? = null,
@@ -460,7 +460,6 @@ fun FullscreenViewer(
                                     }
                                     ignoreNextTap = false
                                 },
-                                onDoubleTap = onDoubleTap,
                                 onPress = { offset, size ->
                                     ignoreNextTap = false
                                     wasHoldDetected = false
@@ -558,7 +557,6 @@ fun FullscreenViewer(
                         }
                         ignoreNextTap = false
                     },
-                    onDoubleTap = onDoubleTap,
                     onPress = { offset, size ->
                         ignoreNextTap = false
                         wasHoldDetected = false
@@ -687,7 +685,7 @@ fun FullscreenViewer(
                                 }
                                 .background(Color.Black.copy(alpha = 0.3f), CircleShape)
                                 .clip(CircleShape)
-                                .clickable { onDoubleTap() }
+                                .clickable { onToggleFavorite() }
                                 .padding(8.dp)
                         ) {
                             Icon(
