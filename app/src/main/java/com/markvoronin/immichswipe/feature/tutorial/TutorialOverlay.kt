@@ -1,5 +1,10 @@
 package com.markvoronin.immichswipe.feature.tutorial
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -49,6 +54,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -217,25 +223,46 @@ fun TutorialOverlay(
             label = "TooltipBottomPaddingAnimation"
         )
 
+        val targetVerticalBias = when (currentStep.placement) {
+            TooltipPlacement.TOP -> -1f
+            TooltipPlacement.BOTTOM -> 1f
+            TooltipPlacement.AUTO -> 1f
+        }
+
+        val animatedVerticalBias by animateFloatAsState(
+            targetValue = targetVerticalBias,
+            animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+            label = "TooltipVerticalBiasAnimation"
+        )
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
                 .padding(horizontal = 16.dp)
-                .padding(bottom = animatedBottomPaddingDp, top = 24.dp)
+                .padding(bottom = animatedBottomPaddingDp, top = 4.dp)
         ) {
-            TooltipCard(
-                step = currentStep,
-                stepIndex = stepIndex,
-                totalSteps = totalSteps,
-                onNext = { controller.nextStep() },
-                onPrevious = { controller.previousStep() },
-                onSkip = { controller.skipTutorial() },
+            AnimatedContent(
+                targetState = currentStep to stepIndex,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(400)) togetherWith fadeOut(animationSpec = tween(400))
+                },
+                label = "TooltipContentTransition",
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
+                    .align(BiasAlignment(0f, animatedVerticalBias))
                     .fillMaxWidth()
-            )
+            ) { (step, index) ->
+                TooltipCard(
+                    step = step,
+                    stepIndex = index,
+                    totalSteps = totalSteps,
+                    onNext = { controller.nextStep() },
+                    onPrevious = { controller.previousStep() },
+                    onSkip = { controller.skipTutorial() },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }

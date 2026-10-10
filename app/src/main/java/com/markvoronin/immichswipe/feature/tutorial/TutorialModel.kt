@@ -9,6 +9,8 @@ enum class TutorialPhase {
 
 enum class TooltipPlacement {
     AUTO,
+    TOP,
+    BOTTOM
 }
 
 enum class GestureAnimationType {

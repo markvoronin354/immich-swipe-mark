@@ -76,6 +76,7 @@ import com.markvoronin.immichswipe.feature.swipe.components.SwipeHeader
 import com.markvoronin.immichswipe.feature.tutorial.GestureAnimationType
 import com.markvoronin.immichswipe.feature.tutorial.LocalTutorialController
 import com.markvoronin.immichswipe.feature.tutorial.ProvideTutorialController
+import com.markvoronin.immichswipe.feature.tutorial.TooltipPlacement
 import com.markvoronin.immichswipe.feature.tutorial.TutorialPhase
 import com.markvoronin.immichswipe.feature.tutorial.TutorialStep
 import com.markvoronin.immichswipe.feature.tutorial.rememberTutorialController
@@ -118,7 +119,8 @@ fun SwipeScreen(
                 titleRes = R.string.tutorial_swipe_gestures_title,
                 descriptionRes = R.string.tutorial_swipe_gestures_desc,
                 targetKey = "swipe_deck",
-                gestureAnimation = GestureAnimationType.SWIPE_HORIZONTAL
+                placement = TooltipPlacement.TOP,
+                gestureAnimation = GestureAnimationType.NONE
             ),
             TutorialStep(
                 id = "header",
