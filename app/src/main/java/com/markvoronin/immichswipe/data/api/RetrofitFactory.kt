@@ -80,7 +80,42 @@ object RetrofitFactory {
             }
         }
 
+        val retryInterceptor = Interceptor { chain ->
+            val request = chain.request()
+            var response: okhttp3.Response? = null
+            var exception: Exception? = null
+            var tryCount = 0
+            val maxRetries = 3
+
+            while (true) {
+                try {
+                    response?.close() // Close the previous response if it exists
+                    response = chain.proceed(request)
+                    if (response.isSuccessful || tryCount >= maxRetries - 1) {
+                        break
+                    }
+                } catch (e: Exception) {
+                    exception = e
+                    val isTransientError = e is UnknownHostException || e is SocketTimeoutException || e is IOException
+                    
+                    if (!isTransientError || tryCount >= maxRetries - 1) {
+                        break
+                    }
+                }
+                
+                tryCount++
+                // Exponential backoff: 500ms, 1000ms, 2000ms...
+                val sleepTime = 500L * (1 shl (tryCount - 1))
+                AppLogger.d("Retrofit", "Network request failed. Retrying ($tryCount/$maxRetries) in ${sleepTime}ms...")
+                Thread.sleep(sleepTime)
+            }
+
+            // If we successfully got a response, return it. Otherwise, throw the last exception.
+            response ?: throw exception ?: IOException("Unknown network error occurred after $maxRetries retries")
+        }
+
         val client = OkHttpClient.Builder()
+            .addInterceptor(retryInterceptor)
             .addInterceptor(apiKeyInterceptor)
             .addInterceptor(connectivityInterceptor)
             .addInterceptor(logging)
