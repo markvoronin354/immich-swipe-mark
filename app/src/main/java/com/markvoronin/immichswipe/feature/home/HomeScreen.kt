@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.SearchOff
@@ -32,7 +31,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -41,7 +39,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -475,19 +472,10 @@ fun homeScreen(
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
             Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                Column {
-                    TopAppBar(
-                        title = { Text(stringResource(R.string.profile_add_account_title)) },
-                        navigationIcon = {
-                            IconButton(onClick = { viewModel.cancelAddAccount() }) {
-                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.common_cancel))
-                            }
-                        }
-                    )
-                    AuthScreen(
-                        viewModel = authViewModel
-                    )
-                }
+                AuthScreen(
+                    viewModel = authViewModel,
+                    onCancel = { viewModel.cancelAddAccount() }
+                )
             }
         }
         

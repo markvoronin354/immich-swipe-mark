@@ -294,4 +294,12 @@
     <string name="tutorial_duplicates_selection_desc">Tap any photo card to toggle between Keep and Delete choices. Long-press any photo for a full-screen comparison view!</string>
     <string name="tutorial_duplicates_action_title">Free Up Server Space</string>
     <string name="tutorial_duplicates_action_desc">Once duplicate photos are marked for deletion, tap the top-right \"Delete\" button to remove them from your Immich server!</string>
+
+    <string name="login_api_key_tutorial_link">How to create an API Key?</string>
+    <string name="login_api_key_tutorial_title">Creating an API Key</string>
+    <string name="login_api_key_tutorial_step1">1. Open your Immich Web Interface (creating keys is not supported in the mobile app).</string>
+    <string name="login_api_key_tutorial_step2">2. Go to Account Settings > API Keys.</string>
+    <string name="login_api_key_tutorial_step3">3. Click \"New API Key\" and name it \"Immich Swipe\".</string>
+    <string name="login_api_key_tutorial_step4">4. Under Permissions, select:\n• Asset (All)\n• Album (Read, Update)\n• Duplicate (Read)\n• User (Read)\n• userProfileImage (Read)</string>
+    <string name="login_api_key_tutorial_step5">5. Click Create, then copy and paste the key here.</string>
 </resources>

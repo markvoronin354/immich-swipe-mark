@@ -299,4 +299,12 @@
     <string name="tutorial_duplicates_selection_desc">Appuyez sur une photo pour alterner entre Garder et Supprimer. Maintien long pour une comparaison en plein écran !</string>
     <string name="tutorial_duplicates_action_title">Libérer de l\'espace</string>
     <string name="tutorial_duplicates_action_desc">Une fois les doublons marqués pour suppression, appuyez sur le bouton \"Supprimer\" en haut à droite pour les effacer du serveur !</string>
+
+    <string name="login_api_key_tutorial_link">Comment créer une clé d\'API ?</string>
+    <string name="login_api_key_tutorial_title">Création d\'une clé d\'API</string>
+    <string name="login_api_key_tutorial_step1">1. Ouvrez l\'interface web Immich (impossible via l\'application mobile).</string>
+    <string name="login_api_key_tutorial_step2">2. Allez dans Paramètres du compte > Clés d\'API.</string>
+    <string name="login_api_key_tutorial_step3">3. Cliquez sur \"Nouvelle clé d\'API\" et nommez-la \"Immich Swipe\".</string>
+    <string name="login_api_key_tutorial_step4">4. Dans les permissions, sélectionnez:\n• Asset (Tous)\n• Album (Read, Update)\n• Duplicate (Read)\n• User (Read)\n• userProfileImage (Read)</string>
+    <string name="login_api_key_tutorial_step5">5. Cliquez sur Créer, puis copiez et collez la clé ici.</string>
 </resources>

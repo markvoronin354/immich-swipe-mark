@@ -298,4 +298,12 @@
     <string name="tutorial_duplicates_selection_desc">Toca cualquier foto para alternar entre Conservar y Eliminar. ¡Mantén presionado para una vista de comparación en pantalla completa!</string>
     <string name="tutorial_duplicates_action_title">Liberar espacio</string>
     <string name="tutorial_duplicates_action_desc">Una vez marcadas las fotos para eliminar, ¡toca el botón \"Eliminar\" arriba a la derecha para borrarlas del servidor!</string>
+
+    <string name="login_api_key_tutorial_link">¿Cómo crear una API Key?</string>
+    <string name="login_api_key_tutorial_title">Creación de una API Key</string>
+    <string name="login_api_key_tutorial_step1">1. Abre la interfaz web de Immich (no se puede en la app móvil).</string>
+    <string name="login_api_key_tutorial_step2">2. Ve a Ajustes de la cuenta > Claves de API.</string>
+    <string name="login_api_key_tutorial_step3">3. Haz clic en \"Nueva clave de API\" y nómbrala \"Immich Swipe\".</string>
+    <string name="login_api_key_tutorial_step4">4. En Permisos, selecciona:\n• Asset (Todos)\n• Album (Read, Update)\n• Duplicate (Read)\n• User (Read)\n• userProfileImage (Read)</string>
+    <string name="login_api_key_tutorial_step5">5. Haz clic en Crear, copia la clave y pégala aquí.</string>
 </resources>
